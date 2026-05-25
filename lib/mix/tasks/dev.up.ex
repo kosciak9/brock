@@ -1,0 +1,336 @@
+defmodule Mix.Tasks.Dev.Up do
+  @shortdoc "Sets up worktree dev environment (env, services, db, caddy)"
+
+  @moduledoc """
+  Sets up a complete worktree development environment.
+
+  1. Loads configuration from .env.local (or uses defaults)
+  2. Verifies .env exists (copied by `wt step copy-ignored`)
+  3. Starts Podman Compose services via local/compose.yml (Postgres, SeaweedFS S3)
+  4. Runs mix setup
+  5. Registers Caddy route for `{branch}.brock.localhost`
+  6. Starts Phoenix server in background
+  """
+
+  use Mix.Task
+
+  alias Mix.Tasks.Dev.Shared
+
+  @defaults %{
+    "PORT" => "4001",
+    "DB_PORT" => "5434",
+    "S3_PORT" => "4567",
+    "BRANCH" => "main",
+    "DATABASE_URL" => "postgresql://postgres:postgres@localhost:5434/brock_dev",
+    "AWS_ACCESS_KEY_ID" => "test",
+    "AWS_SECRET_ACCESS_KEY" => "test"
+  }
+
+  @impl Mix.Task
+  def run(_args) do
+    Application.ensure_all_started(:req)
+
+    env = load_env()
+
+    branch = Map.fetch!(env, "BRANCH")
+    port = Map.fetch!(env, "PORT")
+    db_port = Map.fetch!(env, "DB_PORT")
+    s3_port = Map.fetch!(env, "S3_PORT")
+
+    verify_env_exists()
+    start_services(branch, port, db_port, s3_port)
+    run_setup()
+    sync_usage_rules()
+    register_caddy_route(branch, port)
+    start_phoenix_server(port)
+
+    Mix.shell().info("")
+    Mix.shell().info("Environment ready:")
+
+    Mix.shell().info(
+      "  Phoenix:   https://#{sanitize_branch(branch)}.brock.localhost (or http://localhost:#{port})"
+    )
+
+    Mix.shell().info("  Tidewave:  http://localhost:#{port}/tidewave/mcp")
+    Mix.shell().info("  Postgres:  localhost:#{db_port}")
+    Mix.shell().info("  S3:        localhost:#{s3_port}")
+    Mix.shell().info("")
+    Mix.shell().info("Logs: tail -f tmp/phoenix.log")
+    Mix.shell().info("Stop: mix dev.down")
+  end
+
+  defp load_env do
+    case File.read(".env.local") do
+      {:ok, content} ->
+        Mix.shell().info("Loading configuration from .env.local")
+        Shared.parse_env(content)
+
+      {:error, :enoent} ->
+        Mix.shell().info("No .env.local found, using defaults (main branch setup)")
+        generate_env_files(@defaults)
+        @defaults
+    end
+  end
+
+  defp generate_env_files(env) do
+    content = """
+    PORT=#{env["PORT"]}
+    DB_PORT=#{env["DB_PORT"]}
+    S3_PORT=#{env["S3_PORT"]}
+    BRANCH=#{env["BRANCH"]}
+    DATABASE_URL=#{env["DATABASE_URL"]}
+
+    # AWS credentials for SeaweedFS S3
+    AWS_ACCESS_KEY_ID=#{env["AWS_ACCESS_KEY_ID"]}
+    AWS_SECRET_ACCESS_KEY=#{env["AWS_SECRET_ACCESS_KEY"]}
+    """
+
+    File.write!(".env.local", content)
+    Mix.shell().info("Generated .env.local with defaults")
+  end
+
+  defp verify_env_exists do
+    if File.exists?(".env") do
+      Mix.shell().info(".env found (copied by worktrunk)")
+    else
+      Mix.raise("""
+      .env file not found!
+
+      This file should be copied automatically by `wt step copy-ignored` during worktree creation.
+      If you're setting up manually, copy .env from env.template first.
+      """)
+    end
+  end
+
+  defp start_services(branch, port, db_port, s3_port) do
+    Mix.shell().info("Starting Podman Compose services...")
+
+    compose_env = [
+      {"COMPOSE_PROJECT_NAME", "brock-#{branch}"},
+      {"PORT", to_string(port)},
+      {"DB_PORT", to_string(db_port)},
+      {"S3_PORT", to_string(s3_port)}
+    ]
+
+    case Shared.podman(["compose", "-f", "local/compose.yml", "up", "-d"], compose_env) do
+      {output, 0} ->
+        Mix.shell().info(output)
+        Mix.shell().info("Podman Compose services started")
+
+      {output, code} ->
+        Mix.shell().error("Podman Compose failed (exit #{code}):")
+        Mix.shell().error(output)
+        exit({:shutdown, code})
+    end
+
+    Mix.shell().info("Waiting for Postgres to be ready...")
+    wait_for_postgres(db_port)
+  end
+
+  defp wait_for_postgres(port, attempts \\ 30) do
+    case System.cmd("pg_isready", ["-h", "localhost", "-p", to_string(port)],
+           stderr_to_stdout: true
+         ) do
+      {_, 0} ->
+        Mix.shell().info("Postgres is ready")
+
+      {_, _} when attempts > 0 ->
+        Process.sleep(1000)
+        wait_for_postgres(port, attempts - 1)
+
+      {output, _} ->
+        Mix.raise("Postgres not ready after 30 seconds: #{output}")
+    end
+  end
+
+  defp run_setup do
+    Mix.shell().info("Running mix setup...")
+
+    case System.cmd("mix", ["setup"], stderr_to_stdout: true, into: IO.stream(:stdio, :line)) do
+      {_, 0} ->
+        Mix.shell().info("Setup complete")
+
+      {_, code} ->
+        Mix.raise("mix setup failed with exit code #{code}")
+    end
+  end
+
+  defp sync_usage_rules do
+    Mix.shell().info("Syncing usage rules into AGENTS.md...")
+
+    case System.cmd("mix", ["usage_rules.sync", "--yes"], stderr_to_stdout: true) do
+      {_, 0} ->
+        Mix.shell().info("Usage rules synced")
+
+      {output, _code} ->
+        Mix.shell().error("Warning: usage_rules.sync failed (non-critical)")
+        Mix.shell().error(output)
+    end
+  end
+
+  defp start_phoenix_server(port) do
+    Mix.shell().info("Starting Phoenix server in background...")
+
+    File.mkdir_p!("tmp")
+
+    pid_file = "tmp/phoenix.pid"
+    log_file = "tmp/phoenix.log"
+    session = "brock-#{port}"
+
+    if System.find_executable("tmux") do
+      case System.cmd("tmux", ["has-session", "-t", session], stderr_to_stdout: true) do
+        {_, 0} ->
+          File.write!(pid_file, "tmux:#{session}\n")
+
+          Mix.shell().info(
+            "Tmux session '#{session}' already exists. Attach with: tmux attach -t #{session}"
+          )
+
+        _ ->
+          cmd = "tmux new -d -s #{session} \"sh -lc 'env TERM=xterm-256color mix phx.server'\""
+
+          case System.cmd("sh", ["-c", cmd], stderr_to_stdout: true) do
+            {_output, 0} ->
+              File.write!(pid_file, "tmux:#{session}\n")
+              Mix.shell().info("Phoenix server started in tmux session '#{session}'")
+              Mix.shell().info("Attach: tmux attach -t #{session}")
+              Mix.shell().info("Stop: tmux kill-session -t #{session}")
+              Mix.shell().info("Logs: tail -f #{log_file}")
+
+            {output, code} ->
+              Mix.shell().error("Failed to start Phoenix in tmux (exit #{code}):")
+              Mix.shell().error(output)
+              Mix.shell().info("Falling back to nohup start")
+              start_phoenix_server_nohup(pid_file, log_file)
+          end
+      end
+    else
+      start_phoenix_server_nohup(pid_file, log_file)
+    end
+  end
+
+  defp start_phoenix_server_nohup(pid_file, log_file) do
+    spawn(fn ->
+      System.cmd(
+        "sh",
+        ["-c", "nohup mix phx.server > #{log_file} 2>&1 & echo $! > #{pid_file}"],
+        stderr_to_stdout: true
+      )
+    end)
+
+    Process.sleep(1000)
+
+    case File.read(pid_file) do
+      {:ok, pid} ->
+        Mix.shell().info("Phoenix server started (PID: #{String.trim(pid)})")
+
+      {:error, _} ->
+        Mix.shell().info("Phoenix server starting... (check #{log_file})")
+    end
+  end
+
+  defp register_caddy_route(branch, port) do
+    branch = sanitize_branch(branch)
+    hostname = dev_hostname(branch)
+
+    Mix.shell().info("Registering Caddy route for #{hostname}...")
+
+    if System.user_home!() =~ "kosciak" do
+      route_config = %{
+        "id" => branch,
+        "hostname" => hostname,
+        "upstream" => "127.0.0.1:#{port}"
+      }
+
+      case Req.post("http://localhost:11190/api/routes", json: route_config) do
+        {:ok, %{status: status}} when status in 200..299 ->
+          Mix.shell().info(
+            "Caddy route registered: https://#{branch}.brock.localhost -> localhost:#{port}"
+          )
+
+        {:ok, %{status: status, body: body}} ->
+          Mix.shell().error("Warning: Failed to register Caddy route (status #{status})")
+          Mix.shell().error(inspect(body))
+
+        {:error, reason} ->
+          Mix.shell().error(
+            "Warning: Failed to register Caddy route (is development-caddy running?)"
+          )
+
+          Mix.shell().error(inspect(reason))
+      end
+    else
+      admin_base_url = System.get_env("CADDY_ADMIN_URL") || "http://localhost:2019"
+
+      case ensure_wt_server_exists(admin_base_url, branch, port) do
+        :ok ->
+          Mix.shell().info("Caddy route registered: http://#{hostname}:8080 -> localhost:#{port}")
+
+        {:error, reason} ->
+          Mix.shell().error("Warning: Failed to register Caddy route")
+          Mix.shell().error(reason)
+      end
+    end
+  end
+
+  defp sanitize_branch(branch), do: Shared.sanitize_branch(branch)
+
+  defp dev_hostname(branch), do: "#{branch}.brock.localhost"
+
+  defp ensure_wt_server_exists(admin_base_url, branch, port) do
+    wt_server_config = %{
+      "listen" => [":8080"],
+      "automatic_https" => %{"disable" => true},
+      "routes" => []
+    }
+
+    maybe_create_wt_server(admin_base_url, wt_server_config)
+
+    _ = Req.delete("#{admin_base_url}/id/wt:brock:#{branch}")
+
+    route_config = %{
+      "@id" => "wt:brock:#{branch}",
+      "match" => [%{"host" => [dev_hostname(branch)]}],
+      "handle" => [
+        %{"handler" => "reverse_proxy", "upstreams" => [%{"dial" => "127.0.0.1:#{port}"}]}
+      ]
+    }
+
+    caddy_put(
+      admin_base_url <> "/config/apps/http/servers/wt/routes/0",
+      route_config,
+      "register Caddy route"
+    )
+  end
+
+  defp maybe_create_wt_server(admin_base_url, wt_server_config) do
+    wt_url = admin_base_url <> "/config/apps/http/servers/wt"
+
+    case Req.get(wt_url, connect_options: [timeout: 200], receive_timeout: 300) do
+      {:ok, %{status: 200, body: nil}} ->
+        caddy_put(wt_url, wt_server_config, "create Caddy wt server")
+
+      {:ok, %{status: status}} when status in 200..299 ->
+        :ok
+
+      {:ok, %{status: status, body: body}} ->
+        {:error, "Failed to read Caddy wt server (status #{status}): #{inspect(body)}"}
+
+      {:error, reason} ->
+        {:error, "Failed to read Caddy wt server: #{inspect(reason)}"}
+    end
+  end
+
+  defp caddy_put(url, json, operation) do
+    case Req.put(url, json: json, connect_options: [timeout: 200], receive_timeout: 1_000) do
+      {:ok, %{status: status}} when status in 200..299 ->
+        :ok
+
+      {:ok, %{status: status, body: body}} ->
+        {:error, "Failed to #{operation} (status #{status}): #{inspect(body)}"}
+
+      {:error, reason} ->
+        {:error, "Failed to #{operation}: #{inspect(reason)}"}
+    end
+  end
+end

@@ -1,0 +1,50 @@
+# Worktrunk Project Configuration
+# Enables isolated dev environments per worktree with deterministic ports
+
+# Phase 1: Copy deps/_build/.env from main worktree
+[[pre-start]]
+copy_ignored = "wt step copy-ignored"
+
+[[pre-start]]
+deps = "mix deps.get"
+
+[[pre-start]]
+env = """
+{% if branch == 'main' %}
+cat > .env.local << 'EOF'
+PORT=4001
+DB_PORT=5434
+S3_PORT=4567
+BRANCH=main
+DATABASE_URL=postgresql://postgres:postgres@localhost:5434/brock_dev
+
+# AWS credentials for SeaweedFS S3 (required by req_s3)
+AWS_ACCESS_KEY_ID=test
+AWS_SECRET_ACCESS_KEY=test
+EOF
+{% else %}
+cat > .env.local << 'EOF'
+PORT={{ branch | hash_port }}
+DB_PORT={{ ('db-' ~ branch) | hash_port }}
+S3_PORT={{ ('s3-' ~ branch) | hash_port }}
+BRANCH={{ branch | sanitize }}
+DATABASE_URL=postgresql://postgres:postgres@localhost:{{ ('db-' ~ branch) | hash_port }}/brock_dev
+
+# AWS credentials for SeaweedFS S3 (required by req_s3)
+AWS_ACCESS_KEY_ID=test
+AWS_SECRET_ACCESS_KEY=test
+EOF
+{% endif %}
+"""
+
+[[pre-start]]
+opencode = "{% if branch == 'main' %}echo '4001'{% else %}echo '{{ branch | hash_port }}'{% endif %} > .server.port"
+
+[[pre-start]]
+up = "mix dev.up"
+
+[pre-remove]
+down = "mix dev.down"
+
+[list]
+url = "https://{% if branch == 'main' %}main{% else %}{{ branch | sanitize }}{% endif %}.brock.localhost"
