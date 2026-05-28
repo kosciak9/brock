@@ -59,6 +59,7 @@ The first reducer lives in `Brock.Tcg.Sim.Engine` and supports:
 - declaring scripted attacks and metadata-backed real attacks,
 - validating attack costs against attached Energy,
 - resolving verified Abra/Dunsparce switch attacks, Alakazam Powerful Hand hand-scaling damage, and Dragapult ex Phantom Dive Active damage plus Benched damage counters,
+- resolving verified Rellor Slight Intrusion self-damage,
 - storing and resolving pending attack state,
 - resolving explicit attack damage,
 - knocking out Active Pokémon,
@@ -155,6 +156,7 @@ Current tests cover:
 - Judge, Hilda, and Lana's Aid supported-scope behavior,
 - Team Rocket's Watchtower blocking Dudunsparce Run Away Draw,
 - Forest of Vitality allowing Rellor to evolve into Rabsca on the same turn after the first turn,
+- Rellor Slight Intrusion opponent damage and self-damage,
 - Drakloak Recon Directive, Alakazam Psychic Draw, Dudunsparce Run Away Draw,
 - turn handoff to the opponent,
 - scripted attack declaration and damage resolution,
@@ -175,9 +177,9 @@ Focused validation command used:
 mix format && mix test test/brock/tcg/sim
 ```
 
-Result on 2026-05-28 after Forest of Vitality slice: 55 simulator tests, 0 failures.
+Result on 2026-05-28 after Rellor Slight Intrusion slice: 56 simulator tests, 0 failures.
 
-Full project validation also passed via `mix precommit`: 60 tests, 0 failures.
+Full project validation also passed via `mix precommit`: 61 tests, 0 failures.
 
 ## Next implementation questions
 

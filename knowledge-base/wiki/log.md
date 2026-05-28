@@ -32,6 +32,7 @@
 - Added: Verified Air Balloon retreat-cost reduction note
 - Added: Verified Team Rocket's Watchtower Colorless Ability lock note
 - Added: Verified Forest of Vitality same-turn Grass Evolution note
+- Added: Verified Rellor Slight Intrusion self-damage attack note
 - Updated: Engine index with full-game two-deck simulator implementation entry
 
 ## [2026-05-27] research | Card Engine Authoring Models

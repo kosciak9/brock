@@ -207,7 +207,15 @@ defmodule Brock.Tcg.Sim.CardRegistry do
       type: :grass,
       stage: :basic,
       hp: 50,
-      prize_count: 1
+      prize_count: 1,
+      attacks: %{
+        slight_intrusion: %{
+          name: "Slight Intrusion",
+          cost: [:colorless],
+          damage: 30,
+          effect: %{type: :self_damage, damage: 10}
+        }
+      }
     },
     "TEF-024" => %{
       name: "Rabsca",

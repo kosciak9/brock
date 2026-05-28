@@ -958,6 +958,58 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
     assert :ok = Invariants.validate_card_accounting(state)
   end
 
+  test "Rellor Slight Intrusion damages the opponent and itself" do
+    assert {:ok, state} = setup_game(active_player: :dragapult)
+    assert {:ok, state} = pass_turn(state, :dragapult)
+    assert {:ok, state} = open_turn(state, :alakazam)
+    assert {:ok, state, rellor} = search_to_hand_by_card_id(state, :alakazam, "TEF-023")
+    assert {:ok, state, energy} = search_to_hand_by_card_id(state, :alakazam, "SSP-191")
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :play_basic_to_bench,
+               player_id: :alakazam,
+               params: %{instance_id: rellor.instance_id}
+             })
+
+    rellor = Enum.find(state.players.alakazam.bench, &(&1.card_id == "TEF-023"))
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :attach_energy,
+               player_id: :alakazam,
+               params: %{instance_id: energy.instance_id, target_id: rellor.instance_id}
+             })
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :switch_active_with_bench,
+               player_id: :alakazam,
+               params: %{bench_id: rellor.instance_id}
+             })
+
+    dreepy = state.players.dragapult.active
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :declare_attack,
+               player_id: :alakazam,
+               params: %{attack_id: :slight_intrusion}
+             })
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :resolve_declared_attack,
+               player_id: :alakazam
+             })
+
+    assert state.players.dragapult.active.instance_id == dreepy.instance_id
+    assert state.players.dragapult.active.damage == 30
+    assert state.players.alakazam.active.card_id == "TEF-023"
+    assert state.players.alakazam.active.damage == 10
+    assert :ok = Invariants.validate_card_accounting(state)
+  end
+
   test "Dragapult ex Phantom Dive damages Active and places six bench counters" do
     assert {:ok, state} = setup_game(active_player: :dragapult, alakazam_bench?: true)
     assert {:ok, state} = open_turn(state, :dragapult)

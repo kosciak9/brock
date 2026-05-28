@@ -1615,6 +1615,17 @@ defmodule Brock.Tcg.Sim.Engine do
     end)
   end
 
+  defp resolve_attack_effect(state, %{
+         attack: %{effect: %{type: :self_damage, damage: damage}},
+         player_id: player_id,
+         attacker_id: attacker_id
+       }) do
+    with {:ok, opponent_id} <- opponent_id(state, player_id),
+         {:ok, state} <- damage_pokemon(state, player_id, attacker_id, damage) do
+      resolve_knock_outs_after_damage(state, opponent_id, player_id, attacker_id)
+    end
+  end
+
   defp resolve_attack_effect(state, _pending_attack), do: {:ok, state}
 
   defp require_attack_effect_params(
