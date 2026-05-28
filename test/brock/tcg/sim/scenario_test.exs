@@ -469,6 +469,95 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
     assert :ok = Invariants.validate_card_accounting(state)
   end
 
+  test "Poké Pad searches a non-Rule Box Pokemon from deck" do
+    assert {:ok, state} = setup_game(active_player: :dragapult)
+    assert {:ok, state} = open_turn(state, :dragapult)
+
+    assert {:ok, state, poke_pad} = search_to_hand_by_card_id(state, :dragapult, "POR-081")
+    drakloak = card_in_deck(state, :dragapult, "TWM-129")
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :poke_pad,
+               player_id: :dragapult,
+               params: %{instance_id: poke_pad.instance_id, target_id: drakloak.instance_id}
+             })
+
+    assert Enum.any?(state.players.dragapult.hand, &(&1.instance_id == drakloak.instance_id))
+    assert Enum.any?(state.players.dragapult.discard, &(&1.instance_id == poke_pad.instance_id))
+    assert :ok = Invariants.validate_card_accounting(state)
+  end
+
+  test "Dawn searches one Basic, Stage 1, and Stage 2 Pokemon" do
+    assert {:ok, state} = setup_game(active_player: :alakazam)
+    assert {:ok, state} = open_turn(state, :alakazam)
+
+    dawn = card_in_hand(state, :alakazam, "PFL-087")
+    basic = pokemon_in_deck_by_stage(state, :alakazam, :basic)
+    stage_1 = pokemon_in_deck_by_stage(state, :alakazam, :stage_1)
+    stage_2 = pokemon_in_deck_by_stage(state, :alakazam, :stage_2)
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :dawn,
+               player_id: :alakazam,
+               params: %{
+                 instance_id: dawn.instance_id,
+                 basic_id: basic.instance_id,
+                 stage_1_id: stage_1.instance_id,
+                 stage_2_id: stage_2.instance_id
+               }
+             })
+
+    assert Enum.any?(state.players.alakazam.hand, &(&1.instance_id == basic.instance_id))
+    assert Enum.any?(state.players.alakazam.hand, &(&1.instance_id == stage_1.instance_id))
+    assert Enum.any?(state.players.alakazam.hand, &(&1.instance_id == stage_2.instance_id))
+    assert Enum.any?(state.players.alakazam.discard, &(&1.instance_id == dawn.instance_id))
+    assert state.players.alakazam.supporter_played?
+    assert :ok = Invariants.validate_card_accounting(state)
+  end
+
+  test "Sacred Ash shuffles five Pokemon from discard into deck" do
+    assert {:ok, state} = setup_game(active_player: :alakazam)
+    assert {:ok, state} = open_turn(state, :alakazam)
+    assert {:ok, state, sacred_ash} = search_to_hand_by_card_id(state, :alakazam, "DRI-168")
+
+    {state, discarded_pokemon} =
+      Enum.reduce(
+        ["MEG-055", "MEG-056", "TEF-129", "TEF-023", "TEF-024"],
+        {state, []},
+        fn card_id, {state, discarded} ->
+          assert {:ok, state, card} = search_to_hand_by_card_id(state, :alakazam, card_id)
+
+          assert {:ok, state} =
+                   Engine.apply_action(state, %Action{
+                     type: :discard_from_hand,
+                     player_id: :alakazam,
+                     params: %{instance_id: card.instance_id}
+                   })
+
+          {state, [card | discarded]}
+        end
+      )
+
+    target_ids = Enum.map(discarded_pokemon, & &1.instance_id)
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :sacred_ash,
+               player_id: :alakazam,
+               params: %{instance_id: sacred_ash.instance_id, target_ids: target_ids}
+             })
+
+    for card <- discarded_pokemon do
+      assert Enum.any?(state.players.alakazam.deck, &(&1.instance_id == card.instance_id))
+      refute Enum.any?(state.players.alakazam.discard, &(&1.instance_id == card.instance_id))
+    end
+
+    assert Enum.any?(state.players.alakazam.discard, &(&1.instance_id == sacred_ash.instance_id))
+    assert :ok = Invariants.validate_card_accounting(state)
+  end
+
   test "retreat pays Energy, switches with Bench, and is once per turn" do
     assert {:ok, state} = setup_game(active_player: :dragapult)
     assert {:ok, state} = open_turn(state, :dragapult)
@@ -1033,6 +1122,13 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
 
   defp card_in_deck(state, player_id, card_id),
     do: Enum.find(state.players[player_id].deck, &(&1.card_id == card_id))
+
+  defp pokemon_in_deck_by_stage(state, player_id, stage) do
+    Enum.find(state.players[player_id].deck, fn card ->
+      metadata = CardRegistry.fetch!(card.card_id)
+      metadata[:supertype] == :pokemon && metadata[:stage] == stage
+    end)
+  end
 
   defp deck_with_prefix(prefix, full_deck_ids) do
     remainder = Enum.reduce(prefix, full_deck_ids, &remove_one/2)

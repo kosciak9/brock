@@ -50,6 +50,7 @@ The first reducer lives in `Brock.Tcg.Sim.Engine` and supports:
 - card-specific Crushing Hammer / Enhanced Hammer attached-Energy discard checks,
 - verified Lillie's Determination shuffle-hand/draw, Crispin Basic Energy search/attach, and Night Stretcher discard recovery slices,
 - verified Unfair Stamp KO-last-turn eligibility plus both-player shuffle/draw slice,
+- verified Poké Pad non-Rule Box Pokémon search, Dawn staged Pokémon search, and Sacred Ash discard-to-deck recovery slices,
 - verified Drakloak Recon Directive, Kadabra/Alakazam Psychic Draw, and Dudunsparce Run Away Draw ability slices,
 - declaring scripted attacks and metadata-backed real attacks,
 - validating attack costs against attached Energy,
@@ -113,7 +114,10 @@ The current exact-text slice was checked against Limitless card pages for:
 - `MEG-119` Lillie's Determination,
 - `SCR-133` Crispin,
 - `ASC-196` Night Stretcher,
-- `TWM-165` Unfair Stamp.
+- `TWM-165` Unfair Stamp,
+- `POR-081` Poké Pad,
+- `PFL-087` Dawn,
+- `DRI-168` Sacred Ash.
 
 ## Verification
 
@@ -134,6 +138,7 @@ Current tests cover:
 - Rare Candy, Buddy-Buddy Poffin, Ultra Ball, Boss's Orders, Crushing Hammer, and Enhanced Hammer supported-scope behavior,
 - Lillie's Determination, Crispin, and Night Stretcher supported-scope behavior,
 - Unfair Stamp KO-last-turn eligibility rejection and successful shuffle/draw behavior,
+- Poké Pad, Dawn, and Sacred Ash supported-scope behavior,
 - Drakloak Recon Directive, Alakazam Psychic Draw, Dudunsparce Run Away Draw,
 - turn handoff to the opponent,
 - scripted attack declaration and damage resolution,
@@ -154,9 +159,9 @@ Focused validation command used:
 mix format && mix test test/brock/tcg/sim
 ```
 
-Result on 2026-05-28 after Unfair Stamp slice: 46 simulator tests, 0 failures.
+Result on 2026-05-28 after Poké Pad/Dawn/Sacred Ash slice: 49 simulator tests, 0 failures.
 
-Full project validation also passed via `mix precommit`: 51 tests, 0 failures.
+Full project validation also passed via `mix precommit`: 54 tests, 0 failures.
 
 ## Next implementation questions
 

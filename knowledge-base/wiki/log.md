@@ -27,6 +27,7 @@
 - Added: Verified Abra, Dunsparce, Alakazam, and Dragapult ex attack/effect notes
 - Added: Verified Lillie's Determination, Crispin, and Night Stretcher Supporter/Item effect notes
 - Added: Verified Unfair Stamp KO-last-turn eligibility and shuffle/draw notes
+- Added: Verified Poké Pad, Dawn, and Sacred Ash Trainer effect notes
 - Updated: Engine index with full-game two-deck simulator implementation entry
 
 ## [2026-05-27] research | Card Engine Authoring Models

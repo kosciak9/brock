@@ -486,6 +486,68 @@ defmodule Brock.Tcg.Sim.Engine do
     end
   end
 
+  defp reduce(state, %Action{
+         type: :poke_pad,
+         player_id: player_id,
+         params: %{instance_id: poke_pad_id, target_id: target_id}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, poke_pad} <- find_in_player_zone(state, player_id, :hand, poke_pad_id),
+         :ok <- require_card_id(poke_pad, "POR-081"),
+         {:ok, target} <- find_in_player_zone(state, player_id, :deck, target_id),
+         {:ok, target_metadata} <- CardRegistry.fetch(target.card_id),
+         :ok <- require_non_rule_box_pokemon(target_metadata),
+         {:ok, state} <- discard_card_from_hand(state, player_id, poke_pad, %{}) do
+      move_deck_card_to_hand(state, player_id, target)
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :dawn,
+         player_id: player_id,
+         params: %{
+           instance_id: dawn_id,
+           basic_id: basic_id,
+           stage_1_id: stage_1_id,
+           stage_2_id: stage_2_id
+         }
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, dawn} <- find_in_player_zone(state, player_id, :hand, dawn_id),
+         {:ok, dawn_metadata} <- CardRegistry.fetch(dawn.card_id),
+         :ok <- require_card_id(dawn, "PFL-087"),
+         :ok <- require_supporter_available_if_supporter(dawn_metadata, state, player_id),
+         {:ok, targets} <- fetch_deck_cards(state, player_id, [basic_id, stage_1_id, stage_2_id]),
+         :ok <- require_pokemon_stage(Enum.at(targets, 0), :basic),
+         :ok <- require_pokemon_stage(Enum.at(targets, 1), :stage_1),
+         :ok <- require_pokemon_stage(Enum.at(targets, 2), :stage_2),
+         {:ok, state} <- discard_card_from_hand(state, player_id, dawn, dawn_metadata) do
+      move_deck_cards_to_hand(state, player_id, targets)
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :sacred_ash,
+         player_id: player_id,
+         params: %{instance_id: sacred_ash_id, target_ids: target_ids}
+       })
+       when is_list(target_ids) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         true <-
+           length(target_ids) == 5 ||
+             {:error, {:sacred_ash_requires_five_targets, length(target_ids)}},
+         {:ok, sacred_ash} <- find_in_player_zone(state, player_id, :hand, sacred_ash_id),
+         :ok <- require_card_id(sacred_ash, "DRI-168"),
+         {:ok, targets} <- fetch_discard_cards(state, player_id, target_ids),
+         :ok <- require_all_pokemon(targets),
+         {:ok, state} <- discard_card_from_hand(state, player_id, sacred_ash, %{}) do
+      move_discard_cards_to_deck(state, player_id, targets)
+    end
+  end
+
   defp reduce(
          state,
          %Action{
@@ -1038,6 +1100,14 @@ defmodule Brock.Tcg.Sim.Engine do
     end
   end
 
+  defp move_deck_cards_to_hand(state, _player_id, []), do: {:ok, state}
+
+  defp move_deck_cards_to_hand(state, player_id, [card | rest]) do
+    with {:ok, state} <- move_deck_card_to_hand(state, player_id, card) do
+      move_deck_cards_to_hand(state, player_id, rest)
+    end
+  end
+
   defp move_discard_card_to_hand(state, player_id, card) do
     with {:ok, player} <- fetch_player(state, player_id) do
       moved = %{card | zone: :hand, lifecycle: :in_hand}
@@ -1049,6 +1119,28 @@ defmodule Brock.Tcg.Sim.Engine do
       }
 
       {:ok, put_player(state, player)}
+    end
+  end
+
+  defp move_discard_card_to_deck(state, player_id, card) do
+    with {:ok, player} <- fetch_player(state, player_id) do
+      moved = %{card | zone: :deck, lifecycle: :in_deck}
+
+      player = %{
+        player
+        | discard: reject_instance(player.discard, card.instance_id),
+          deck: [moved | player.deck]
+      }
+
+      {:ok, put_player(state, player)}
+    end
+  end
+
+  defp move_discard_cards_to_deck(state, _player_id, []), do: {:ok, state}
+
+  defp move_discard_cards_to_deck(state, player_id, [card | rest]) do
+    with {:ok, state} <- move_discard_card_to_deck(state, player_id, card) do
+      move_discard_cards_to_deck(state, player_id, rest)
     end
   end
 
@@ -1650,6 +1742,39 @@ defmodule Brock.Tcg.Sim.Engine do
   defp require_pokemon(%{supertype: :pokemon}), do: :ok
   defp require_pokemon(metadata), do: {:error, {:not_pokemon, metadata}}
 
+  defp require_non_rule_box_pokemon(%{supertype: :pokemon} = metadata) do
+    if Map.get(metadata, :rule_box?, false) do
+      {:error, {:pokemon_has_rule_box, metadata.id}}
+    else
+      :ok
+    end
+  end
+
+  defp require_non_rule_box_pokemon(metadata), do: {:error, {:not_pokemon, metadata}}
+
+  defp require_pokemon_stage(card, stage) do
+    with {:ok, %{supertype: :pokemon, stage: ^stage}} <- CardRegistry.fetch(card.card_id) do
+      :ok
+    else
+      {:ok, metadata} ->
+        {:error, {:wrong_pokemon_stage, metadata.id, Map.get(metadata, :stage), stage}}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp require_all_pokemon(cards) do
+    Enum.reduce_while(cards, :ok, fn card, :ok ->
+      with {:ok, metadata} <- CardRegistry.fetch(card.card_id),
+           :ok <- require_pokemon(metadata) do
+        {:cont, :ok}
+      else
+        {:error, reason} -> {:halt, {:error, reason}}
+      end
+    end)
+  end
+
   defp require_stage_2(%{supertype: :pokemon, stage: :stage_2}), do: :ok
   defp require_stage_2(metadata), do: {:error, {:not_stage_2_pokemon, metadata}}
 
@@ -1864,6 +1989,19 @@ defmodule Brock.Tcg.Sim.Engine do
   defp fetch_deck_cards(state, player_id, instance_ids) do
     Enum.reduce_while(instance_ids, {:ok, []}, fn instance_id, {:ok, cards} ->
       case find_in_player_zone(state, player_id, :deck, instance_id) do
+        {:ok, card} -> {:cont, {:ok, [card | cards]}}
+        {:error, reason} -> {:halt, {:error, reason}}
+      end
+    end)
+    |> case do
+      {:ok, cards} -> {:ok, Enum.reverse(cards)}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp fetch_discard_cards(state, player_id, instance_ids) do
+    Enum.reduce_while(instance_ids, {:ok, []}, fn instance_id, {:ok, cards} ->
+      case find_in_player_zone(state, player_id, :discard, instance_id) do
         {:ok, card} -> {:cont, {:ok, [card | cards]}}
         {:error, reason} -> {:halt, {:error, reason}}
       end
