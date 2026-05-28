@@ -390,6 +390,85 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
     assert :ok = Invariants.validate_card_accounting(state)
   end
 
+  test "Unfair Stamp requires a KO during the opponent's last turn" do
+    assert {:ok, state} = setup_game(active_player: :dragapult)
+    assert {:ok, state} = open_turn(state, :dragapult)
+    assert {:ok, state, stamp} = search_to_hand_by_card_id(state, :dragapult, "TWM-165")
+
+    assert {:error, :unfair_stamp_requires_ko_during_opponents_last_turn} =
+             Engine.apply_action(state, %Action{
+               type: :unfair_stamp,
+               player_id: :dragapult,
+               params: %{instance_id: stamp.instance_id}
+             })
+  end
+
+  test "Unfair Stamp shuffles both hands after a KO during opponent's last turn" do
+    assert {:ok, state} = setup_game(active_player: :dragapult)
+    assert {:ok, state} = open_turn(state, :dragapult)
+
+    budew = card_in_hand(state, :dragapult, "ASC-016")
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :play_basic_to_bench,
+               player_id: :dragapult,
+               params: %{instance_id: budew.instance_id}
+             })
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{type: :end_turn, player_id: :dragapult})
+
+    assert {:ok, state} = Engine.apply_action(state, %Action{type: :start_next_turn})
+    assert {:ok, state} = open_turn(state, :alakazam)
+
+    dreepy = state.players.dragapult.active
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{type: :declare_attack, player_id: :alakazam})
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :resolve_attack_damage,
+               player_id: :alakazam,
+               params: %{target_player_id: :dragapult, target_id: dreepy.instance_id, damage: 70}
+             })
+
+    assert state.players.dragapult.pokemon_knocked_out_during_opponents_last_turn?
+    assert state.game_lifecycle == :replacing_active
+
+    [replacement] = state.players.dragapult.bench
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :choose_replacement_active,
+               player_id: :dragapult,
+               params: %{instance_id: replacement.instance_id}
+             })
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{type: :finish_attack, player_id: :alakazam})
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{type: :end_turn, player_id: :alakazam})
+
+    assert {:ok, state} = Engine.apply_action(state, %Action{type: :start_next_turn})
+    assert {:ok, state} = open_turn(state, :dragapult)
+    assert {:ok, state, stamp} = search_to_hand_by_card_id(state, :dragapult, "TWM-165")
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :unfair_stamp,
+               player_id: :dragapult,
+               params: %{instance_id: stamp.instance_id}
+             })
+
+    assert length(state.players.dragapult.hand) == 5
+    assert length(state.players.alakazam.hand) == 2
+    assert Enum.any?(state.players.dragapult.discard, &(&1.instance_id == stamp.instance_id))
+    assert :ok = Invariants.validate_card_accounting(state)
+  end
+
   test "retreat pays Energy, switches with Bench, and is once per turn" do
     assert {:ok, state} = setup_game(active_player: :dragapult)
     assert {:ok, state} = open_turn(state, :dragapult)

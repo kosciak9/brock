@@ -539,6 +539,26 @@ defmodule Brock.Tcg.Sim.Engine do
   end
 
   defp reduce(state, %Action{
+         type: :unfair_stamp,
+         player_id: player_id,
+         params: %{instance_id: stamp_id}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, player} <- fetch_player(state, player_id),
+         :ok <- require_pokemon_knocked_out_during_opponents_last_turn(player),
+         {:ok, stamp} <- find_in_player_zone(state, player_id, :hand, stamp_id),
+         :ok <- require_card_id(stamp, "TWM-165"),
+         {:ok, opponent_id} <- opponent_id(state, player_id),
+         {:ok, state} <- discard_card_from_hand(state, player_id, stamp, %{}),
+         {:ok, state} <- shuffle_hand_into_deck(state, player_id),
+         {:ok, state} <- shuffle_hand_into_deck(state, opponent_id),
+         {:ok, state} <- draw_cards(state, player_id, 5) do
+      draw_cards(state, opponent_id, 2)
+    end
+  end
+
+  defp reduce(state, %Action{
          type: :use_ability,
          player_id: player_id,
          params: %{source_id: source_id, ability_id: :recon_directive, chosen_id: chosen_id}
@@ -767,9 +787,17 @@ defmodule Brock.Tcg.Sim.Engine do
 
   defp reduce(state, %Action{type: :end_turn, player_id: player_id}) do
     with :ok <- require_active_player(state, player_id),
-         {:ok, turn_lifecycle} <- end_turn_lifecycle(state.turn_lifecycle) do
+         {:ok, turn_lifecycle} <- end_turn_lifecycle(state.turn_lifecycle),
+         {:ok, player} <- fetch_player(state, player_id) do
+      player = %{player | pokemon_knocked_out_during_opponents_last_turn?: false}
+
       {:ok,
-       %{state | turn_lifecycle: turn_lifecycle, log: ["#{player_id} ended turn" | state.log]}}
+       state
+       |> put_player(player)
+       |> Map.merge(%{
+         turn_lifecycle: turn_lifecycle,
+         log: ["#{player_id} ended turn" | state.log]
+       })}
     end
   end
 
@@ -1176,6 +1204,7 @@ defmodule Brock.Tcg.Sim.Engine do
       if target.damage >= Map.fetch!(metadata, :hp) do
         state
         |> knock_out_pokemon(defending_player_id, target)
+        |> mark_knock_out_for_unfair_stamp(attacking_player_id, defending_player_id)
         |> award_prizes(attacking_player_id, Map.get(metadata, :prize_count, 1))
         |> resolve_post_knock_out_game_state(attacking_player_id, defending_player_id)
       else
@@ -1204,6 +1233,30 @@ defmodule Brock.Tcg.Sim.Engine do
         end
 
       {:ok, put_player(state, player)}
+    end
+  end
+
+  defp mark_knock_out_for_unfair_stamp(
+         {:error, reason},
+         _attacking_player_id,
+         _defending_player_id
+       ),
+       do: {:error, reason}
+
+  defp mark_knock_out_for_unfair_stamp({:ok, state}, same_player_id, same_player_id),
+    do: {:ok, state}
+
+  defp mark_knock_out_for_unfair_stamp({:ok, state}, attacking_player_id, defending_player_id) do
+    if state.active_player == attacking_player_id do
+      update_in(
+        state.players[defending_player_id].pokemon_knocked_out_during_opponents_last_turn?,
+        fn _ ->
+          true
+        end
+      )
+      |> then(&{:ok, &1})
+    else
+      {:ok, state}
     end
   end
 
@@ -1673,6 +1726,14 @@ defmodule Brock.Tcg.Sim.Engine do
     do: {:error, {:enhanced_hammer_requires_special_energy, metadata.id}}
 
   defp require_hammer_can_discard(%{card_id: "POR-071"}, _metadata), do: :ok
+
+  defp require_pokemon_knocked_out_during_opponents_last_turn(%{
+         pokemon_knocked_out_during_opponents_last_turn?: true
+       }),
+       do: :ok
+
+  defp require_pokemon_knocked_out_during_opponents_last_turn(_player),
+    do: {:error, :unfair_stamp_requires_ko_during_opponents_last_turn}
 
   defp require_different_energy_types(_hand_energy_metadata, nil), do: :ok
 
