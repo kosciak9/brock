@@ -1683,7 +1683,26 @@ defmodule Brock.Tcg.Sim.Engine do
     length(player.hand) * counters * 10
   end
 
+  defp attack_damage(state, %{
+         attack: %{damage: damage, effect: %{type: :bonus_damage_if_defender_pokemon_ex} = effect},
+         target_player_id: target_player_id,
+         target_id: target_id
+       }) do
+    with {:ok, target} <- find_in_play(state, target_player_id, target_id),
+         {:ok, target_metadata} <- CardRegistry.fetch(target.card_id) do
+      if pokemon_ex?(target_metadata), do: damage + effect.bonus_damage, else: damage
+    else
+      {:error, _reason} -> damage
+    end
+  end
+
   defp attack_damage(_state, %{attack: attack}), do: Map.fetch!(attack, :damage)
+
+  defp pokemon_ex?(%{supertype: :pokemon, name: name}) when is_binary(name) do
+    String.ends_with?(name, " ex")
+  end
+
+  defp pokemon_ex?(_metadata), do: false
 
   defp resolve_attack_effect(state, %{
          attack: %{effect: %{type: :switch_self_with_bench}},

@@ -1185,6 +1185,69 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
     assert :ok = Invariants.validate_card_accounting(state)
   end
 
+  test "Moltres Fighting Wings adds damage against Pokemon ex only" do
+    assert {:ok, state} = setup_custom_basic_game(:dragapult, "PFL-014", "ASC-142")
+    assert {:ok, state} = open_turn(state, :dragapult)
+
+    fire = card_in_hand(state, :dragapult, "MEE-002")
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :attach_energy,
+               player_id: :dragapult,
+               params: %{
+                 instance_id: fire.instance_id,
+                 target_id: state.players.dragapult.active.instance_id
+               }
+             })
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :declare_attack,
+               player_id: :dragapult,
+               params: %{attack_id: :fighting_wings}
+             })
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :resolve_declared_attack,
+               player_id: :dragapult
+             })
+
+    assert state.players.alakazam.active.damage == 110
+
+    assert {:ok, state} = setup_custom_basic_game(:dragapult, "PFL-014", "MEG-054")
+    assert {:ok, state} = open_turn(state, :dragapult)
+
+    fire = card_in_hand(state, :dragapult, "MEE-002")
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :attach_energy,
+               player_id: :dragapult,
+               params: %{
+                 instance_id: fire.instance_id,
+                 target_id: state.players.dragapult.active.instance_id
+               }
+             })
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :declare_attack,
+               player_id: :dragapult,
+               params: %{attack_id: :fighting_wings}
+             })
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :resolve_declared_attack,
+               player_id: :dragapult
+             })
+
+    assert state.players.alakazam.active.damage == 20
+    assert :ok = Invariants.validate_card_accounting(state)
+  end
+
   test "Dragapult ex Phantom Dive damages Active and places six bench counters" do
     assert {:ok, state} = setup_game(active_player: :dragapult, alakazam_bench?: true)
     assert {:ok, state} = open_turn(state, :dragapult)
@@ -1533,6 +1596,51 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
       player_id: player_id,
       params: %{instance_id: card.instance_id}
     })
+  end
+
+  defp setup_custom_basic_game(active_player, attacker_active_id, defender_active_id) do
+    attacker_opening = [
+      attacker_active_id,
+      "MEE-002",
+      "ASC-016",
+      "TWM-128",
+      "MEE-005",
+      "MEE-007",
+      "MEG-119"
+    ]
+
+    defender_deck_ids = deck_ids_for_active(defender_active_id)
+    defender_opening = opening_hand_for_active(defender_active_id, defender_deck_ids)
+
+    state =
+      Engine.new_game(
+        active_player: active_player,
+        players: [
+          dragapult: deck_with_prefix(attacker_opening, Dragapult27431.card_ids()),
+          alakazam: deck_with_prefix(defender_opening, defender_deck_ids)
+        ]
+      )
+
+    with {:ok, state} <- Engine.apply_action(state, %Action{type: :start_setup}),
+         {:ok, state} <- Engine.apply_action(state, %Action{type: :draw_opening_hand}),
+         {:ok, state} <- choose_active(state, :dragapult, attacker_active_id),
+         {:ok, state} <- choose_active(state, :alakazam, defender_active_id),
+         {:ok, state} <- Engine.apply_action(state, %Action{type: :place_prizes}) do
+      Engine.apply_action(state, %Action{type: :complete_setup})
+    end
+  end
+
+  defp deck_ids_for_active(card_id) do
+    if card_id in Alakazam27147.card_ids() do
+      Alakazam27147.card_ids()
+    else
+      Dragapult27431.card_ids()
+    end
+  end
+
+  defp opening_hand_for_active(card_id, deck_ids) do
+    filler = Enum.reject(deck_ids, &(&1 == card_id)) |> Enum.take(6)
+    [card_id | filler]
   end
 
   defp setup_game(opts) do

@@ -37,6 +37,7 @@
 - Added: Verified Handheld Fan attack-triggered Energy movement note
 - Added: Verified Rabsca Spherical Shield bench protection note
 - Added: Verified Budew Itchy Pollen next-turn Item lock note
+- Added: Verified Moltres Fighting Wings Pokémon ex damage bonus note
 - Updated: Engine index with full-game two-deck simulator implementation entry
 
 ## [2026-05-27] research | Card Engine Authoring Models

@@ -72,7 +72,22 @@ defmodule Brock.Tcg.Sim.CardRegistry do
         }
       }
     },
-    "PFL-014" => %{name: "Moltres", supertype: :pokemon, stage: :basic, hp: 120, prize_count: 1},
+    "PFL-014" => %{
+      name: "Moltres",
+      supertype: :pokemon,
+      stage: :basic,
+      hp: 120,
+      prize_count: 1,
+      retreat_cost: [:colorless],
+      attacks: %{
+        fighting_wings: %{
+          name: "Fighting Wings",
+          cost: [:fire],
+          damage: 20,
+          effect: %{type: :bonus_damage_if_defender_pokemon_ex, bonus_damage: 90}
+        }
+      }
+    },
     "ASC-142" => %{
       name: "Fezandipiti ex",
       supertype: :pokemon,
