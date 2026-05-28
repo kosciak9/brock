@@ -644,6 +644,38 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
     assert :ok = Invariants.validate_card_accounting(state)
   end
 
+  test "Air Balloon reduces retreat cost by two Colorless Energy" do
+    assert {:ok, state} = setup_game(active_player: :alakazam, alakazam_bench?: true)
+    assert {:ok, state} = open_turn(state, :alakazam)
+    assert {:ok, state, air_balloon} = search_to_hand_by_card_id(state, :alakazam, "ASC-181")
+
+    active = state.players.alakazam.active
+    [bench_target] = state.players.alakazam.bench
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :attach_tool,
+               player_id: :alakazam,
+               params: %{instance_id: air_balloon.instance_id, target_id: active.instance_id}
+             })
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :retreat,
+               player_id: :alakazam,
+               params: %{bench_id: bench_target.instance_id, attachment_ids: []}
+             })
+
+    assert state.players.alakazam.active.instance_id == bench_target.instance_id
+
+    benched_old_active =
+      Enum.find(state.players.alakazam.bench, &(&1.instance_id == active.instance_id))
+
+    assert benched_old_active.tool.instance_id == air_balloon.instance_id
+    assert state.players.alakazam.retreated?
+    assert :ok = Invariants.validate_card_accounting(state)
+  end
+
   test "retreat pays Energy, switches with Bench, and is once per turn" do
     assert {:ok, state} = setup_game(active_player: :dragapult)
     assert {:ok, state} = open_turn(state, :dragapult)

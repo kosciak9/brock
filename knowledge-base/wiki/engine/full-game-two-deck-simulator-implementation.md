@@ -38,6 +38,7 @@ The first reducer lives in `Brock.Tcg.Sim.Engine` and supports:
 - blocking Evolution on the first turn of the game and blocking Pokémon played/evolved that same turn from evolving again,
 - retreating by paying explicit attached Energy costs and enforcing once-per-turn retreat,
 - switching Active with a Benched Pokémon without spending retreat for turn,
+- applying verified Air Balloon retreat-cost reduction,
 - playing scripted Trainers to discard,
 - playing Stadiums with Stadium replacement/discard,
 - attaching Pokémon Tools,
@@ -121,7 +122,8 @@ The current exact-text slice was checked against Limitless card pages for:
 - `DRI-168` Sacred Ash,
 - `POR-076` Judge,
 - `WHT-084` Hilda,
-- `TWM-155` Lana's Aid.
+- `TWM-155` Lana's Aid,
+- `ASC-181` Air Balloon.
 
 ## Verification
 
@@ -137,6 +139,7 @@ Current tests cover:
 - first-turn Evolution rejection and same-turn Evolution rejection,
 - rejection of Evolution onto the wrong Pokémon,
 - retreat cost payment, discard, switch, and once-per-turn rejection,
+- Air Balloon retreat-cost reduction,
 - non-retreat switching,
 - scripted Trainer/Stadium/Tool/search/discard/recovery movement,
 - Rare Candy, Buddy-Buddy Poffin, Ultra Ball, Boss's Orders, Crushing Hammer, and Enhanced Hammer supported-scope behavior,
@@ -164,9 +167,9 @@ Focused validation command used:
 mix format && mix test test/brock/tcg/sim
 ```
 
-Result on 2026-05-28 after Judge/Hilda/Lana's Aid slice: 52 simulator tests, 0 failures.
+Result on 2026-05-28 after Air Balloon slice: 53 simulator tests, 0 failures.
 
-Full project validation also passed via `mix precommit`: 57 tests, 0 failures.
+Full project validation also passed via `mix precommit`: 58 tests, 0 failures.
 
 ## Next implementation questions
 

@@ -227,7 +227,7 @@ defmodule Brock.Tcg.Sim.Engine do
          {:ok, active_metadata} <- CardRegistry.fetch(player.active.card_id),
          {:ok, bench_card} <- find_in_player_zone(state, player_id, :bench, bench_id),
          {:ok, attachments} <- fetch_attachments(player.active, attachment_ids),
-         :ok <- require_retreat_cost(active_metadata, attachments),
+         :ok <- require_retreat_cost(player.active, active_metadata, attachments),
          {:ok, state} <- discard_attached_cards(state, player_id, player.active, attachments) do
       switch_own_bench_to_active(state, player_id, bench_card, retreated?: true)
     end
@@ -1978,7 +1978,8 @@ defmodule Brock.Tcg.Sim.Engine do
   defp require_not_retreated_this_turn(%{retreated?: false}), do: :ok
   defp require_not_retreated_this_turn(_player), do: {:error, :already_retreated_this_turn}
 
-  defp require_retreat_cost(%{retreat_cost: cost}, attachments) do
+  defp require_retreat_cost(pokemon, %{retreat_cost: cost}, attachments) do
+    cost = effective_retreat_cost(cost, pokemon.tool)
     provided_types = Enum.flat_map(attachments, &attachment_provided_types/1)
 
     if length(attachments) == length(cost) and can_pay_cost?(cost, provided_types) do
@@ -1988,8 +1989,23 @@ defmodule Brock.Tcg.Sim.Engine do
     end
   end
 
-  defp require_retreat_cost(metadata, _attachments),
+  defp require_retreat_cost(_pokemon, metadata, _attachments),
     do: {:error, {:missing_retreat_cost, metadata.id}}
+
+  defp effective_retreat_cost(cost, %{card_id: "ASC-181"}), do: drop_colorless_cost(cost, 2)
+  defp effective_retreat_cost(cost, _tool), do: cost
+
+  defp drop_colorless_cost(cost, 0), do: cost
+
+  defp drop_colorless_cost(cost, count) do
+    case Enum.split_while(cost, &(&1 != :colorless)) do
+      {_before_match, []} ->
+        cost
+
+      {before_match, [_colorless | after_match]} ->
+        drop_colorless_cost(before_match ++ after_match, count - 1)
+    end
+  end
 
   defp require_ability(source, ability_id) do
     with {:ok, %{abilities: abilities}} <- CardRegistry.fetch(source.card_id),

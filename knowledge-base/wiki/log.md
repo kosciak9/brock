@@ -29,6 +29,7 @@
 - Added: Verified Unfair Stamp KO-last-turn eligibility and shuffle/draw notes
 - Added: Verified Poké Pad, Dawn, and Sacred Ash Trainer effect notes
 - Added: Verified Judge, Hilda, and Lana's Aid Supporter effect notes
+- Added: Verified Air Balloon retreat-cost reduction note
 - Updated: Engine index with full-game two-deck simulator implementation entry
 
 ## [2026-05-27] research | Card Engine Authoring Models
