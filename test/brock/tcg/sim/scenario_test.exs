@@ -1010,6 +1010,38 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
     assert :ok = Invariants.validate_card_accounting(state)
   end
 
+  test "Risky Ruins places damage counters on Basic non-Dark Pokemon benched during turn" do
+    assert {:ok, state} = setup_game(active_player: :dragapult)
+    assert {:ok, state} = open_turn(state, :dragapult)
+    assert {:ok, state, risky_ruins} = search_to_hand_by_card_id(state, :dragapult, "MEG-127")
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :play_stadium,
+               player_id: :dragapult,
+               params: %{instance_id: risky_ruins.instance_id}
+             })
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{type: :end_turn, player_id: :dragapult})
+
+    assert {:ok, state} = Engine.apply_action(state, %Action{type: :start_next_turn})
+    assert {:ok, state} = open_turn(state, :alakazam)
+
+    abra = card_in_hand(state, :alakazam, "MEG-054")
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :play_basic_to_bench,
+               player_id: :alakazam,
+               params: %{instance_id: abra.instance_id}
+             })
+
+    damaged_abra = Enum.find(state.players.alakazam.bench, &(&1.instance_id == abra.instance_id))
+    assert damaged_abra.damage == 20
+    assert :ok = Invariants.validate_card_accounting(state)
+  end
+
   test "Dragapult ex Phantom Dive damages Active and places six bench counters" do
     assert {:ok, state} = setup_game(active_player: :dragapult, alakazam_bench?: true)
     assert {:ok, state} = open_turn(state, :dragapult)

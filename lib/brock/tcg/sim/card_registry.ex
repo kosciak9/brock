@@ -116,6 +116,7 @@ defmodule Brock.Tcg.Sim.CardRegistry do
     "MEG-054" => %{
       name: "Abra",
       supertype: :pokemon,
+      type: :psychic,
       stage: :basic,
       hp: 50,
       prize_count: 1,

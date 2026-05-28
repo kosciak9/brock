@@ -1035,9 +1035,29 @@ defmodule Brock.Tcg.Sim.Engine do
           bench: [moved | player.bench]
       }
 
-      {:ok, put_player(state, player)}
+      state
+      |> put_player(player)
+      |> apply_risky_ruins_if_needed(player_id, moved)
     end
   end
+
+  defp apply_risky_ruins_if_needed(
+         %{game_lifecycle: :in_progress, active_player: player_id, stadium: %{card_id: "MEG-127"}} =
+           state,
+         player_id,
+         pokemon
+       ) do
+    with {:ok, metadata} <- CardRegistry.fetch(pokemon.card_id) do
+      if metadata[:supertype] == :pokemon && metadata[:stage] == :basic &&
+           metadata[:type] != :darkness do
+        damage_pokemon(state, player_id, pokemon.instance_id, 20)
+      else
+        {:ok, state}
+      end
+    end
+  end
+
+  defp apply_risky_ruins_if_needed(state, _player_id, _pokemon), do: {:ok, state}
 
   defp attach_to_pokemon(state, player_id, energy, target) do
     with {:ok, player} <- fetch_player(state, player_id) do
@@ -1237,7 +1257,9 @@ defmodule Brock.Tcg.Sim.Engine do
           bench: [moved | player.bench]
       }
 
-      {:ok, put_player(state, player)}
+      state
+      |> put_player(player)
+      |> apply_risky_ruins_if_needed(player_id, moved)
     end
   end
 

@@ -55,6 +55,7 @@ The first reducer lives in `Brock.Tcg.Sim.Engine` and supports:
 - verified Judge both-player shuffle/draw, Hilda Evolution-plus-Energy search, and Lana's Aid discard recovery slices,
 - verified Team Rocket's Watchtower Colorless Pokémon Ability lock slice,
 - verified Forest of Vitality same-turn Grass Evolution exception slice,
+- verified Risky Ruins Basic non-Dark Bench damage-counter slice,
 - verified Drakloak Recon Directive, Kadabra/Alakazam Psychic Draw, and Dudunsparce Run Away Draw ability slices,
 - declaring scripted attacks and metadata-backed real attacks,
 - validating attack costs against attached Energy,
@@ -129,6 +130,7 @@ The current exact-text slice was checked against Limitless card pages for:
 - `ASC-181` Air Balloon,
 - `DRI-180` Team Rocket's Watchtower,
 - `MEG-117` Forest of Vitality,
+- `MEG-127` Risky Ruins,
 - `TEF-023` Rellor,
 - `TEF-024` Rabsca.
 
@@ -156,6 +158,7 @@ Current tests cover:
 - Judge, Hilda, and Lana's Aid supported-scope behavior,
 - Team Rocket's Watchtower blocking Dudunsparce Run Away Draw,
 - Forest of Vitality allowing Rellor to evolve into Rabsca on the same turn after the first turn,
+- Risky Ruins placing damage counters on Basic non-Dark Pokémon Benched during a turn,
 - Rellor Slight Intrusion opponent damage and self-damage,
 - Drakloak Recon Directive, Alakazam Psychic Draw, Dudunsparce Run Away Draw,
 - turn handoff to the opponent,
@@ -177,9 +180,9 @@ Focused validation command used:
 mix format && mix test test/brock/tcg/sim
 ```
 
-Result on 2026-05-28 after Rellor Slight Intrusion slice: 56 simulator tests, 0 failures.
+Result on 2026-05-28 after Risky Ruins slice: 57 simulator tests, 0 failures.
 
-Full project validation also passed via `mix precommit`: 61 tests, 0 failures.
+Full project validation also passed via `mix precommit`: 62 tests, 0 failures.
 
 ## Next implementation questions
 
