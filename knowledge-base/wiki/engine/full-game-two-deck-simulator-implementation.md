@@ -53,6 +53,7 @@ The first reducer lives in `Brock.Tcg.Sim.Engine` and supports:
 - verified Unfair Stamp KO-last-turn eligibility plus both-player shuffle/draw slice,
 - verified Poké Pad non-Rule Box Pokémon search, Dawn staged Pokémon search, and Sacred Ash discard-to-deck recovery slices,
 - verified Judge both-player shuffle/draw, Hilda Evolution-plus-Energy search, and Lana's Aid discard recovery slices,
+- verified Team Rocket's Watchtower Colorless Pokémon Ability lock slice,
 - verified Drakloak Recon Directive, Kadabra/Alakazam Psychic Draw, and Dudunsparce Run Away Draw ability slices,
 - declaring scripted attacks and metadata-backed real attacks,
 - validating attack costs against attached Energy,
@@ -123,7 +124,8 @@ The current exact-text slice was checked against Limitless card pages for:
 - `POR-076` Judge,
 - `WHT-084` Hilda,
 - `TWM-155` Lana's Aid,
-- `ASC-181` Air Balloon.
+- `ASC-181` Air Balloon,
+- `DRI-180` Team Rocket's Watchtower.
 
 ## Verification
 
@@ -147,6 +149,7 @@ Current tests cover:
 - Unfair Stamp KO-last-turn eligibility rejection and successful shuffle/draw behavior,
 - Poké Pad, Dawn, and Sacred Ash supported-scope behavior,
 - Judge, Hilda, and Lana's Aid supported-scope behavior,
+- Team Rocket's Watchtower blocking Dudunsparce Run Away Draw,
 - Drakloak Recon Directive, Alakazam Psychic Draw, Dudunsparce Run Away Draw,
 - turn handoff to the opponent,
 - scripted attack declaration and damage resolution,
@@ -167,9 +170,9 @@ Focused validation command used:
 mix format && mix test test/brock/tcg/sim
 ```
 
-Result on 2026-05-28 after Air Balloon slice: 53 simulator tests, 0 failures.
+Result on 2026-05-28 after Team Rocket's Watchtower slice: 54 simulator tests, 0 failures.
 
-Full project validation also passed via `mix precommit`: 58 tests, 0 failures.
+Full project validation also passed via `mix precommit`: 59 tests, 0 failures.
 
 ## Next implementation questions
 

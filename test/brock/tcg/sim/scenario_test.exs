@@ -882,6 +882,45 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
     assert :ok = Invariants.validate_card_accounting(state)
   end
 
+  test "Team Rocket's Watchtower blocks Colorless Pokemon Abilities" do
+    assert {:ok, state} = setup_game(active_player: :dragapult, alakazam_bench?: true)
+    assert {:ok, state} = open_turn(state, :dragapult)
+    assert {:ok, state, watchtower} = search_to_hand_by_card_id(state, :dragapult, "DRI-180")
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :play_stadium,
+               player_id: :dragapult,
+               params: %{instance_id: watchtower.instance_id}
+             })
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{type: :end_turn, player_id: :dragapult})
+
+    assert {:ok, state} = Engine.apply_action(state, %Action{type: :start_next_turn})
+    assert {:ok, state} = open_turn(state, :alakazam)
+    assert {:ok, state, dudunsparce} = search_to_hand_by_card_id(state, :alakazam, "TEF-129")
+    dunsparce = hd(state.players.alakazam.bench)
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :evolve_from_hand,
+               player_id: :alakazam,
+               params: %{instance_id: dudunsparce.instance_id, target_id: dunsparce.instance_id}
+             })
+
+    evolved = hd(state.players.alakazam.bench)
+
+    assert {:error, {:ability_blocked_by_stadium, "DRI-180", "TEF-129"}} =
+             Engine.apply_action(state, %Action{
+               type: :use_ability,
+               player_id: :alakazam,
+               params: %{source_id: evolved.instance_id, ability_id: :run_away_draw}
+             })
+
+    assert :ok = Invariants.validate_card_accounting(state)
+  end
+
   test "Dragapult ex Phantom Dive damages Active and places six bench counters" do
     assert {:ok, state} = setup_game(active_player: :dragapult, alakazam_bench?: true)
     assert {:ok, state} = open_turn(state, :dragapult)

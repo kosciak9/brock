@@ -167,6 +167,7 @@ defmodule Brock.Tcg.Sim.CardRegistry do
     "JTG-120" => %{
       name: "Dunsparce",
       supertype: :pokemon,
+      type: :colorless,
       stage: :basic,
       hp: 70,
       prize_count: 1,
@@ -184,6 +185,7 @@ defmodule Brock.Tcg.Sim.CardRegistry do
     "TEF-129" => %{
       name: "Dudunsparce",
       supertype: :pokemon,
+      type: :colorless,
       stage: :stage_1,
       evolves_from: "JTG-120",
       hp: 140,

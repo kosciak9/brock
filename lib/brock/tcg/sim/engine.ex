@@ -689,7 +689,7 @@ defmodule Brock.Tcg.Sim.Engine do
     with :ok <- require_active_player(state, player_id),
          :ok <- require_turn_lifecycle(state, :action_window),
          {:ok, source} <- find_in_play(state, player_id, source_id),
-         {:ok, _ability} <- require_ability(source, :recon_directive),
+         {:ok, _ability} <- require_ability(state, source, :recon_directive),
          {:ok, player} <- fetch_player(state, player_id),
          :ok <- require_marker_available(player, {:ability_used, source_id, :recon_directive}),
          {:ok, chosen, other} <- require_top_two_choice(player, chosen_id) do
@@ -715,7 +715,7 @@ defmodule Brock.Tcg.Sim.Engine do
     with :ok <- require_active_player(state, player_id),
          :ok <- require_turn_lifecycle(state, :action_window),
          {:ok, source} <- find_in_play(state, player_id, source_id),
-         {:ok, ability} <- require_ability(source, :psychic_draw),
+         {:ok, ability} <- require_ability(state, source, :psychic_draw),
          :ok <- require_evolved_this_turn(state, source),
          {:ok, player} <- fetch_player(state, player_id),
          :ok <- require_marker_available(player, {:ability_used, source_id, :psychic_draw}) do
@@ -739,7 +739,7 @@ defmodule Brock.Tcg.Sim.Engine do
     with :ok <- require_active_player(state, player_id),
          :ok <- require_turn_lifecycle(state, :action_window),
          {:ok, source} <- find_in_play(state, player_id, source_id),
-         {:ok, ability} <- require_ability(source, :run_away_draw),
+         {:ok, ability} <- require_ability(state, source, :run_away_draw),
          {:ok, player} <- fetch_player(state, player_id),
          :ok <- require_marker_available(player, {:ability_used, source_id, :run_away_draw}),
          {:ok, state} <- draw_cards(state, player_id, ability.effect.count),
@@ -2007,14 +2007,13 @@ defmodule Brock.Tcg.Sim.Engine do
     end
   end
 
-  defp require_ability(source, ability_id) do
-    with {:ok, %{abilities: abilities}} <- CardRegistry.fetch(source.card_id),
+  defp require_ability(state, source, ability_id) do
+    with {:ok, metadata} <- CardRegistry.fetch(source.card_id),
+         :ok <- require_ability_not_blocked_by_stadium(state, metadata),
+         {:ok, abilities} <- Map.fetch(metadata, :abilities),
          {:ok, ability} <- Map.fetch(abilities, ability_id) do
       {:ok, Map.put(ability, :id, ability_id)}
     else
-      {:ok, _card_without_abilities} ->
-        {:error, {:unsupported_ability, source.card_id, ability_id}}
-
       :error ->
         {:error, {:unsupported_ability, source.card_id, ability_id}}
 
@@ -2022,6 +2021,15 @@ defmodule Brock.Tcg.Sim.Engine do
         {:error, reason}
     end
   end
+
+  defp require_ability_not_blocked_by_stadium(%{stadium: %{card_id: "DRI-180"}}, %{
+         supertype: :pokemon,
+         type: :colorless,
+         id: card_id
+       }),
+       do: {:error, {:ability_blocked_by_stadium, "DRI-180", card_id}}
+
+  defp require_ability_not_blocked_by_stadium(_state, _metadata), do: :ok
 
   defp require_marker_available(player, marker) do
     if MapSet.member?(player.markers, marker),
