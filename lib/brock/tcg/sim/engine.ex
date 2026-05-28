@@ -179,7 +179,7 @@ defmodule Brock.Tcg.Sim.Engine do
   defp reduce(state, %Action{
          type: :attach_energy,
          player_id: player_id,
-         params: %{instance_id: instance_id, target_id: target_id}
+         params: %{instance_id: instance_id, target_id: target_id} = params
        }) do
     with :ok <- require_active_player(state, player_id),
          :ok <- require_turn_lifecycle(state, :action_window),
@@ -189,9 +189,12 @@ defmodule Brock.Tcg.Sim.Engine do
          {:ok, metadata} <- CardRegistry.fetch(card.card_id),
          :ok <- require_energy(metadata),
          {:ok, target} <- find_in_play(state, player_id, target_id),
+         {:ok, target_metadata} <- CardRegistry.fetch(target.card_id),
+         :ok <-
+           require_attachment_effect_params(metadata, params, state, player_id, target_metadata),
          {:ok, :attached} <- ZoneMovement.transition(:hand, :attached),
          {:ok, :attached} <- CardLifecycle.transition(card.lifecycle, :attach) do
-      attach_to_pokemon(state, player_id, card, target)
+      attach_to_pokemon(state, player_id, card, target, params)
     end
   end
 
@@ -258,6 +261,7 @@ defmodule Brock.Tcg.Sim.Engine do
          {:ok, metadata} <- CardRegistry.fetch(card.card_id),
          :ok <- require_trainer(metadata),
          :ok <- require_item_cards_playable_if_item(metadata, state, player_id),
+         :ok <- require_ace_spec_cards_playable_if_ace_spec(metadata, state, player_id),
          :ok <- require_supporter_available_if_supporter(metadata, state, player_id),
          {:ok, :discard} <- ZoneMovement.transition(:hand, :discard),
          {:ok, :discarded} <- CardLifecycle.transition(card.lifecycle, :discard) do
@@ -680,6 +684,7 @@ defmodule Brock.Tcg.Sim.Engine do
          :ok <- require_pokemon_knocked_out_during_opponents_last_turn(player),
          {:ok, stamp} <- find_in_player_zone(state, player_id, :hand, stamp_id),
          :ok <- require_item_cards_playable(state, player_id),
+         :ok <- require_ace_spec_cards_playable(state, player_id),
          :ok <- require_card_id(stamp, "TWM-165"),
          {:ok, opponent_id} <- opponent_id(state, player_id),
          {:ok, state} <- discard_card_from_hand(state, player_id, stamp, %{}),
@@ -820,6 +825,28 @@ defmodule Brock.Tcg.Sim.Engine do
          {:ok, state} <- draw_cards(state, player_id, ability.effect.count),
          {:ok, player} <- fetch_player(state, player_id) do
       player = %{player | markers: MapSet.put(player.markers, {:ability_used, :flip_the_script})}
+      {:ok, put_player(state, player)}
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :use_ability,
+         player_id: player_id,
+         params: %{source_id: source_id, ability_id: :last_ditch_catch, target_id: target_id}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, source} <- find_in_player_zone(state, player_id, :bench, source_id),
+         {:ok, _ability} <- require_ability(state, source, :last_ditch_catch),
+         :ok <- require_played_this_turn(state, source),
+         {:ok, player} <- fetch_player(state, player_id),
+         :ok <- require_marker_available(player, {:ability_used, :last_ditch}),
+         {:ok, target} <- find_in_player_zone(state, player_id, :deck, target_id),
+         {:ok, target_metadata} <- CardRegistry.fetch(target.card_id),
+         :ok <- require_supporter(target_metadata),
+         {:ok, state} <- move_deck_card_to_hand(state, player_id, target),
+         {:ok, player} <- fetch_player(state, player_id) do
+      player = %{player | markers: MapSet.put(player.markers, {:ability_used, :last_ditch})}
       {:ok, put_player(state, player)}
     end
   end
@@ -1131,7 +1158,7 @@ defmodule Brock.Tcg.Sim.Engine do
 
   defp apply_risky_ruins_if_needed(state, _player_id, _pokemon), do: {:ok, state}
 
-  defp attach_to_pokemon(state, player_id, energy, target) do
+  defp attach_to_pokemon(state, player_id, energy, target, params) do
     with {:ok, player} <- fetch_player(state, player_id) do
       moved_energy = %{energy | zone: :attached, lifecycle: :attached}
       updated_target = %{target | attachments: [moved_energy | target.attachments]}
@@ -1142,7 +1169,8 @@ defmodule Brock.Tcg.Sim.Engine do
         |> Map.update!(:hand, &reject_instance(&1, energy.instance_id))
         |> Map.put(:energy_attached?, true)
 
-      {:ok, put_player(state, player)}
+      state = put_player(state, player)
+      apply_attachment_effect(state, player_id, moved_energy, updated_target, params)
     end
   end
 
@@ -1335,6 +1363,34 @@ defmodule Brock.Tcg.Sim.Engine do
     end
   end
 
+  defp apply_attachment_effect(
+         state,
+         player_id,
+         %{card_id: "POR-088"},
+         target,
+         %{target_ids: target_ids}
+       ) do
+    with {:ok, %{type: :psychic}} <- CardRegistry.fetch(target.card_id),
+         {:ok, targets} <- fetch_deck_cards(state, player_id, target_ids),
+         :ok <- require_basic_psychic_pokemon_targets(targets) do
+      Enum.reduce_while(targets, {:ok, state}, fn target, {:ok, state} ->
+        case move_deck_card_to_bench(state, player_id, target) do
+          {:ok, state} -> {:cont, {:ok, state}}
+          {:error, reason} -> {:halt, {:error, reason}}
+        end
+      end)
+    else
+      {:ok, _non_psychic_target} -> {:ok, state}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp apply_attachment_effect(state, player_id, %{card_id: "SSP-191"}, _target, _params) do
+    draw_cards(state, player_id, 4)
+  end
+
+  defp apply_attachment_effect(state, _player_id, _energy, _target, _params), do: {:ok, state}
+
   defp discard_hand_cards(state, _player_id, []), do: {:ok, state}
 
   defp discard_hand_cards(state, player_id, [card | rest]) do
@@ -1506,6 +1562,41 @@ defmodule Brock.Tcg.Sim.Engine do
     |> Kernel.++(Enum.flat_map(card.attachments, &reset_tree_for_deck/1))
     |> Kernel.++(reset_tree_for_deck(card.tool))
     |> Kernel.++(Enum.flat_map(card.evolved_from, &reset_tree_for_deck/1))
+  end
+
+  defp reset_tree_for_hand(nil), do: []
+
+  defp reset_tree_for_hand(card) do
+    reset = %{
+      card
+      | zone: :hand,
+        lifecycle: :in_hand,
+        damage: 0,
+        status: nil,
+        tool: nil,
+        attachments: [],
+        evolved_from: [],
+        turn_entered_play: nil
+    }
+
+    [reset]
+    |> Kernel.++(Enum.flat_map(card.attachments, &reset_tree_for_hand/1))
+    |> Kernel.++(reset_tree_for_hand(card.tool))
+    |> Kernel.++(Enum.flat_map(card.evolved_from, &reset_tree_for_hand/1))
+  end
+
+  defp return_in_play_tree_to_hand(state, player_id, instance_id) do
+    with {:ok, source} <- find_in_play(state, player_id, instance_id),
+         {:ok, player} <- fetch_player(state, player_id) do
+      returned_cards = reset_tree_for_hand(source)
+
+      player =
+        player
+        |> remove_in_play(instance_id)
+        |> Map.update!(:hand, &(returned_cards ++ &1))
+
+      {:ok, put_player(state, player)}
+    end
   end
 
   defp damage_pokemon(state, player_id, instance_id, damage) do
@@ -1859,6 +1950,26 @@ defmodule Brock.Tcg.Sim.Engine do
     end
   end
 
+  defp resolve_attack_effect(state, %{
+         attack: %{effect: %{type: :recover_trainer_from_discard_to_hand}},
+         player_id: player_id,
+         params: %{target_id: target_id}
+       }) do
+    with {:ok, target} <- find_in_player_zone(state, player_id, :discard, target_id),
+         {:ok, target_metadata} <- CardRegistry.fetch(target.card_id),
+         :ok <- require_trainer(target_metadata) do
+      move_discard_card_to_hand(state, player_id, target)
+    end
+  end
+
+  defp resolve_attack_effect(state, %{
+         attack: %{effect: %{type: :return_attacker_and_attached_to_hand}},
+         player_id: player_id,
+         attacker_id: attacker_id
+       }) do
+    return_in_play_tree_to_hand(state, player_id, attacker_id)
+  end
+
   defp resolve_attack_effect(state, _pending_attack), do: {:ok, state}
 
   defp bench_protected_from_attack_effects?(state, player_id) do
@@ -1872,6 +1983,27 @@ defmodule Brock.Tcg.Sim.Engine do
         false
     end
   end
+
+  defp ace_nullifier_active?(state, player_id) do
+    case fetch_player(state, player_id) do
+      {:ok, player} ->
+        player
+        |> in_play_cards()
+        |> Enum.any?(fn pokemon -> pokemon.card_id == "SFA-040" && not is_nil(pokemon.tool) end)
+
+      {:error, _reason} ->
+        false
+    end
+  end
+
+  defp damp_active?(state) do
+    state.players
+    |> Map.values()
+    |> Enum.flat_map(&in_play_cards/1)
+    |> Enum.any?(&(&1.card_id == "ASC-039"))
+  end
+
+  defp in_play_cards(player), do: [player.active | player.bench] |> Enum.reject(&is_nil/1)
 
   defp require_attack_effect_params(
          %{effect: %{type: :switch_self_with_bench}},
@@ -1933,6 +2065,16 @@ defmodule Brock.Tcg.Sim.Engine do
       true ->
         {:error, :damage_target_not_found}
     end
+  end
+
+  defp require_attack_effect_params(
+         %{effect: %{type: :recover_trainer_from_discard_to_hand}},
+         params,
+         _defender
+       ) do
+    if Map.has_key?(params, :target_id),
+      do: :ok,
+      else: {:error, :missing_discard_trainer_target_for_attack}
   end
 
   defp require_attack_effect_params(_attack, _params, _defender), do: :ok
@@ -2160,6 +2302,9 @@ defmodule Brock.Tcg.Sim.Engine do
   defp require_trainer(%{supertype: :trainer}), do: :ok
   defp require_trainer(metadata), do: {:error, {:not_trainer, metadata}}
 
+  defp require_supporter(%{supertype: :trainer, trainer_type: :supporter}), do: :ok
+  defp require_supporter(metadata), do: {:error, {:not_supporter, metadata}}
+
   defp require_stadium(%{supertype: :trainer, trainer_type: :stadium}), do: :ok
   defp require_stadium(metadata), do: {:error, {:not_stadium, metadata}}
 
@@ -2192,6 +2337,20 @@ defmodule Brock.Tcg.Sim.Engine do
   defp require_item_cards_playable(state, player_id) do
     with {:ok, player} <- fetch_player(state, player_id) do
       if player.item_cards_locked?, do: {:error, :item_cards_locked_this_turn}, else: :ok
+    end
+  end
+
+  defp require_ace_spec_cards_playable_if_ace_spec(%{ace_spec?: true}, state, player_id) do
+    require_ace_spec_cards_playable(state, player_id)
+  end
+
+  defp require_ace_spec_cards_playable_if_ace_spec(_metadata, _state, _player_id), do: :ok
+
+  defp require_ace_spec_cards_playable(state, player_id) do
+    with {:ok, opponent_id} <- opponent_id(state, player_id) do
+      if ace_nullifier_active?(state, opponent_id),
+        do: {:error, :ace_spec_cards_blocked_by_ace_nullifier},
+        else: :ok
     end
   end
 
@@ -2232,6 +2391,47 @@ defmodule Brock.Tcg.Sim.Engine do
       end
     end)
   end
+
+  defp require_basic_psychic_pokemon_targets(targets) do
+    Enum.reduce_while(targets, :ok, fn target, :ok ->
+      with {:ok, metadata} <- CardRegistry.fetch(target.card_id),
+           :ok <- require_basic_pokemon(metadata),
+           :ok <- require_psychic_pokemon(metadata) do
+        {:cont, :ok}
+      else
+        {:error, reason} -> {:halt, {:error, reason}}
+      end
+    end)
+  end
+
+  defp require_psychic_pokemon(%{supertype: :pokemon, type: :psychic}), do: :ok
+  defp require_psychic_pokemon(metadata), do: {:error, {:not_psychic_pokemon, metadata}}
+
+  defp require_attachment_effect_params(
+         %{id: "POR-088", effect: %{max_targets: max_targets}},
+         params,
+         state,
+         player_id,
+         %{type: :psychic}
+       ) do
+    target_ids = Map.get(params, :target_ids, [])
+
+    cond do
+      not is_list(target_ids) ->
+        {:error, :telepathic_psychic_energy_targets_must_be_list}
+
+      length(target_ids) > max_targets ->
+        {:error, {:too_many_telepathic_psychic_energy_targets, length(target_ids), max_targets}}
+
+      true ->
+        with {:ok, targets} <- fetch_deck_cards(state, player_id, target_ids) do
+          require_basic_psychic_pokemon_targets(targets)
+        end
+    end
+  end
+
+  defp require_attachment_effect_params(_metadata, _params, _state, _player_id, _target_metadata),
+    do: :ok
 
   defp require_hammer_item(%{card_id: card_id}) when card_id in ["POR-071", "TWM-148"], do: :ok
   defp require_hammer_item(card), do: {:error, {:not_hammer_item, card.card_id}}
@@ -2300,6 +2500,7 @@ defmodule Brock.Tcg.Sim.Engine do
   defp require_ability(state, source, ability_id) do
     with {:ok, metadata} <- CardRegistry.fetch(source.card_id),
          :ok <- require_ability_not_blocked_by_stadium(state, metadata),
+         :ok <- require_ability_not_blocked_by_damp(state, metadata, ability_id),
          {:ok, abilities} <- Map.fetch(metadata, :abilities),
          {:ok, ability} <- Map.fetch(abilities, ability_id) do
       {:ok, Map.put(ability, :id, ability_id)}
@@ -2320,6 +2521,33 @@ defmodule Brock.Tcg.Sim.Engine do
        do: {:error, {:ability_blocked_by_stadium, "DRI-180", card_id}}
 
   defp require_ability_not_blocked_by_stadium(_state, _metadata), do: :ok
+
+  defp require_ability_not_blocked_by_damp(state, metadata, ability_id) do
+    case Map.fetch(metadata, :abilities) do
+      {:ok, abilities} ->
+        case Map.fetch(abilities, ability_id) do
+          {:ok, %{effect: %{requires_self_knock_out?: true}}} ->
+            if damp_active?(state),
+              do: {:error, {:ability_blocked_by_damp, metadata.id, ability_id}},
+              else: :ok
+
+          {:ok, _ability} ->
+            :ok
+
+          :error ->
+            :ok
+        end
+
+      :error ->
+        :ok
+    end
+  end
+
+  defp require_played_this_turn(%{turn_number: turn_number}, %{turn_entered_play: turn_number}),
+    do: :ok
+
+  defp require_played_this_turn(_state, source),
+    do: {:error, {:pokemon_was_not_played_this_turn, source.instance_id}}
 
   defp require_marker_available(player, marker) do
     if MapSet.member?(player.markers, marker),

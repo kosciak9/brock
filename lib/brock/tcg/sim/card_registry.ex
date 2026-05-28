@@ -139,10 +139,26 @@ defmodule Brock.Tcg.Sim.CardRegistry do
     "POR-062" => %{
       name: "Meowth ex",
       supertype: :pokemon,
+      type: :colorless,
       stage: :basic,
       rule_box?: true,
       hp: 170,
-      prize_count: 2
+      prize_count: 2,
+      retreat_cost: [:colorless],
+      abilities: %{
+        last_ditch_catch: %{
+          name: "Last-Ditch Catch",
+          effect: %{type: :search_supporter_when_benched_from_hand, last_ditch?: true}
+        }
+      },
+      attacks: %{
+        tuck_tail: %{
+          name: "Tuck Tail",
+          cost: [:colorless, :colorless, :colorless],
+          damage: 60,
+          effect: %{type: :return_attacker_and_attached_to_hand}
+        }
+      }
     },
     "MEG-119" => %{name: "Lillie's Determination", supertype: :trainer, trainer_type: :supporter},
     "SCR-133" => %{name: "Crispin", supertype: :trainer, trainer_type: :supporter},
@@ -154,7 +170,12 @@ defmodule Brock.Tcg.Sim.CardRegistry do
     "POR-081" => %{name: "Poké Pad", supertype: :trainer, trainer_type: :item},
     "MEG-131" => %{name: "Ultra Ball", supertype: :trainer, trainer_type: :item},
     "ASC-196" => %{name: "Night Stretcher", supertype: :trainer, trainer_type: :item},
-    "TWM-165" => %{name: "Unfair Stamp", supertype: :trainer, trainer_type: :item},
+    "TWM-165" => %{
+      name: "Unfair Stamp",
+      supertype: :trainer,
+      trainer_type: :item,
+      ace_spec?: true
+    },
     "MEG-127" => %{name: "Risky Ruins", supertype: :trainer, trainer_type: :stadium},
     "DRI-180" => %{name: "Team Rocket's Watchtower", supertype: :trainer, trainer_type: :stadium},
     "MEE-002" => %{
@@ -295,9 +316,64 @@ defmodule Brock.Tcg.Sim.CardRegistry do
         }
       }
     },
-    "SFA-040" => %{name: "Genesect", supertype: :pokemon, stage: :basic, hp: 110, prize_count: 1},
-    "ASC-039" => %{name: "Psyduck", supertype: :pokemon, stage: :basic, hp: 70, prize_count: 1},
-    "SSP-087" => %{name: "Dedenne", supertype: :pokemon, stage: :basic, hp: 70, prize_count: 1},
+    "SFA-040" => %{
+      name: "Genesect",
+      supertype: :pokemon,
+      type: :metal,
+      stage: :basic,
+      hp: 110,
+      prize_count: 1,
+      retreat_cost: [:colorless],
+      abilities: %{
+        ace_nullifier: %{
+          name: "ACE Nullifier",
+          effect: %{type: :opponent_cannot_play_ace_spec_if_tool_attached}
+        }
+      },
+      attacks: %{
+        magnetic_blast: %{
+          name: "Magnetic Blast",
+          cost: [:metal, :colorless, :colorless],
+          damage: 100
+        }
+      }
+    },
+    "ASC-039" => %{
+      name: "Psyduck",
+      supertype: :pokemon,
+      type: :water,
+      stage: :basic,
+      hp: 70,
+      prize_count: 1,
+      retreat_cost: [:colorless],
+      abilities: %{
+        damp: %{
+          name: "Damp",
+          effect: %{type: :pokemon_lose_self_knock_out_abilities}
+        }
+      },
+      attacks: %{
+        ram: %{name: "Ram", cost: [:colorless, :colorless], damage: 20}
+      }
+    },
+    "SSP-087" => %{
+      name: "Dedenne",
+      supertype: :pokemon,
+      type: :psychic,
+      stage: :basic,
+      hp: 70,
+      prize_count: 1,
+      retreat_cost: [:colorless],
+      attacks: %{
+        electromagnetic_sonar: %{
+          name: "Electromagnetic Sonar",
+          cost: [:colorless],
+          damage: 0,
+          effect: %{type: :recover_trainer_from_discard_to_hand}
+        },
+        gnaw: %{name: "Gnaw", cost: [:psychic], damage: 30}
+      }
+    },
     "WHT-084" => %{name: "Hilda", supertype: :trainer, trainer_type: :supporter},
     "TWM-155" => %{name: "Lana's Aid", supertype: :trainer, trainer_type: :supporter},
     "MEG-125" => %{name: "Rare Candy", supertype: :trainer, trainer_type: :item},
@@ -310,13 +386,15 @@ defmodule Brock.Tcg.Sim.CardRegistry do
       name: "Telepathic Psychic Energy",
       supertype: :energy,
       energy_type: :special,
-      provides: [:psychic]
+      provides: [:psychic],
+      effect: %{type: :bench_basic_psychic_from_deck_when_attached_to_psychic, max_targets: 2}
     },
     "SSP-191" => %{
       name: "Enriching Energy",
       supertype: :energy,
       energy_type: :special,
-      provides: [:colorless]
+      provides: [:colorless],
+      effect: %{type: :draw_when_attached_from_hand, count: 4}
     }
   }
 
