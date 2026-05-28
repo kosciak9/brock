@@ -12,6 +12,21 @@
 - Added: Engine synthesis for React/R3F, React Native, Godot 3D, and Godot 2D client options
 - Updated: Engine index with TCG client renderer options entry
 
+## [2026-05-28] implementation | Full-Game Two-Deck Simulator Implementation
+- Added: State-machine-first simulator implementation note
+- Added: Undo/redo snapshot requirement and current implementation shape
+- Added: Setup Bench selection, Prize placement, and card accounting invariant notes
+- Added: Turn handoff, attack damage, KO, Prize, and winner flow notes
+- Added: Scripted playthrough milestone covering replacement Active, final Prize, deck-out, no-Pokémon, and concession win paths
+- Added: Attack metadata, attack-cost validation, and pending attack resolution notes
+- Added: Normal Evolution from hand, evolution-stack accounting, and evolution undo notes
+- Added: Scripted Trainer/Stadium/Tool/search/discard movement and multi-scenario end-to-end coverage notes
+- Added: Card-specific Rare Candy, Buddy-Buddy Poffin, Ultra Ball, Boss's Orders, Crushing Hammer, and Enhanced Hammer notes
+- Added: Retreat, switch, first-turn Evolution lock, and same-turn Evolution restriction notes
+- Added: Verified Drakloak, Kadabra, Alakazam, Dudunsparce ability slice notes
+- Added: Verified Abra, Dunsparce, Alakazam, and Dragapult ex attack/effect notes
+- Updated: Engine index with full-game two-deck simulator implementation entry
+
 ## [2026-05-27] research | Card Engine Authoring Models
 - Added: Engine section to index
 - Added: Card Engine Authoring Models

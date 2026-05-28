@@ -1,0 +1,1738 @@
+defmodule Brock.Tcg.Sim.Engine do
+  @moduledoc """
+  First reducer for the ExUnit-first Pokémon TCG simulator.
+
+  This slice is deliberately state-machine-first. Card behavior will be added on
+  top of these transitions after lifecycle semantics are stable.
+  """
+
+  alias Brock.Tcg.Sim.Action
+  alias Brock.Tcg.Sim.CardInstance
+  alias Brock.Tcg.Sim.CardRegistry
+  alias Brock.Tcg.Sim.GameState
+  alias Brock.Tcg.Sim.History
+  alias Brock.Tcg.Sim.PlayerState
+  alias Brock.Tcg.Sim.StateMachines.CardLifecycle
+  alias Brock.Tcg.Sim.StateMachines.GameLifecycle
+  alias Brock.Tcg.Sim.StateMachines.TurnLifecycle
+  alias Brock.Tcg.Sim.StateMachines.ZoneMovement
+
+  @type result :: {:ok, GameState.t()} | {:error, term()}
+
+  def new_game(opts) do
+    players = Keyword.fetch!(opts, :players)
+    active_player = Keyword.fetch!(opts, :active_player)
+
+    state_players =
+      Map.new(players, fn {player_id, deck_ids} ->
+        {player_id,
+         %PlayerState{
+           id: player_id,
+           deck: instantiate_deck(player_id, deck_ids),
+           expected_card_count: length(deck_ids)
+         }}
+      end)
+
+    %GameState{players: state_players, active_player: active_player}
+  end
+
+  def apply_action(%GameState{} = state, %Action{} = action) do
+    with {:ok, next_state} <- reduce(state, action) do
+      {:ok, History.record(state, action, next_state)}
+    end
+  end
+
+  def undo(%GameState{} = state), do: History.undo(state)
+  def redo(%GameState{} = state), do: History.redo(state)
+
+  defp reduce(state, %Action{type: :start_setup}) do
+    with {:ok, game_lifecycle} <- GameLifecycle.transition(state.game_lifecycle, :start_setup) do
+      {:ok, %{state | game_lifecycle: game_lifecycle, log: ["setup started" | state.log]}}
+    end
+  end
+
+  defp reduce(state, %Action{type: :draw_opening_hand}) do
+    with :ok <- require_game_lifecycle(state, :setup) do
+      Enum.reduce_while(Map.keys(state.players), {:ok, state}, fn player_id, {:ok, state} ->
+        case draw_cards(state, player_id, 7) do
+          {:ok, state} -> {:cont, {:ok, state}}
+          {:error, reason} -> {:halt, {:error, reason}}
+        end
+      end)
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :choose_active_from_hand,
+         player_id: player_id,
+         params: %{instance_id: instance_id}
+       }) do
+    with :ok <- require_game_lifecycle(state, :setup),
+         {:ok, player} <- fetch_player(state, player_id),
+         true <- is_nil(player.active) || {:error, {:active_already_chosen, player_id}},
+         {:ok, card} <- find_in_player_zone(state, player_id, :hand, instance_id),
+         {:ok, metadata} <- CardRegistry.fetch(card.card_id),
+         :ok <- require_basic_pokemon(metadata),
+         {:ok, :active} <- ZoneMovement.transition(:hand, :active),
+         {:ok, :in_play_basic} <- CardLifecycle.transition(card.lifecycle, :play_basic) do
+      choose_active(state, player_id, card)
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :choose_setup_bench_from_hand,
+         player_id: player_id,
+         params: %{instance_id: instance_id}
+       }) do
+    with :ok <- require_game_lifecycle(state, :setup),
+         {:ok, card} <- find_in_player_zone(state, player_id, :hand, instance_id),
+         {:ok, metadata} <- CardRegistry.fetch(card.card_id),
+         :ok <- require_basic_pokemon(metadata),
+         {:ok, :bench} <- ZoneMovement.transition(:hand, :bench),
+         {:ok, :in_play_basic} <- CardLifecycle.transition(card.lifecycle, :play_basic) do
+      move_hand_card_to_bench(state, player_id, card)
+    end
+  end
+
+  defp reduce(state, %Action{type: :place_prizes}) do
+    with :ok <- require_game_lifecycle(state, :setup),
+         :ok <- require_all_players_have_active(state),
+         :ok <- require_no_player_has_prizes(state) do
+      Enum.reduce_while(Map.keys(state.players), {:ok, state}, fn player_id, {:ok, state} ->
+        case place_prizes(state, player_id, 6) do
+          {:ok, state} -> {:cont, {:ok, state}}
+          {:error, reason} -> {:halt, {:error, reason}}
+        end
+      end)
+    end
+  end
+
+  defp reduce(state, %Action{type: :complete_setup}) do
+    with {:ok, game_lifecycle} <- GameLifecycle.transition(state.game_lifecycle, :complete_setup),
+         :ok <- require_all_players_have_active(state),
+         :ok <- require_all_players_have_prizes(state, 6),
+         {:ok, turn_lifecycle} <- TurnLifecycle.transition(state.turn_lifecycle, :start_turn) do
+      {:ok,
+       %{
+         state
+         | game_lifecycle: game_lifecycle,
+           turn_lifecycle: turn_lifecycle,
+           turn_number: state.turn_number + 1,
+           log: ["setup completed" | state.log]
+       }}
+    end
+  end
+
+  defp reduce(state, %Action{type: :draw_for_turn, player_id: player_id}) do
+    with :ok <- require_active_player(state, player_id),
+         {:ok, turn_lifecycle} <- TurnLifecycle.transition(state.turn_lifecycle, :draw_for_turn) do
+      case draw_card(state, player_id) do
+        {:ok, state} ->
+          {:ok,
+           %{
+             state
+             | turn_lifecycle: turn_lifecycle,
+               log: ["#{player_id} drew for turn" | state.log]
+           }}
+
+        {:error, :cannot_draw_from_empty_deck} ->
+          with {:ok, winner} <- opponent_id(state, player_id) do
+            {:ok,
+             %{
+               state
+               | winner: winner,
+                 game_lifecycle: :finished,
+                 turn_lifecycle: turn_lifecycle,
+                 log: ["#{player_id} lost by deck-out" | state.log]
+             }}
+          end
+
+        {:error, reason} ->
+          {:error, reason}
+      end
+    end
+  end
+
+  defp reduce(state, %Action{type: :open_action_window}) do
+    with {:ok, turn_lifecycle} <-
+           TurnLifecycle.transition(state.turn_lifecycle, :open_action_window) do
+      {:ok, %{state | turn_lifecycle: turn_lifecycle}}
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :play_basic_to_bench,
+         player_id: player_id,
+         params: %{instance_id: instance_id}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, card} <- find_in_player_zone(state, player_id, :hand, instance_id),
+         {:ok, metadata} <- CardRegistry.fetch(card.card_id),
+         :ok <- require_basic_pokemon(metadata),
+         {:ok, :bench} <- ZoneMovement.transition(:hand, :bench),
+         {:ok, :in_play_basic} <- CardLifecycle.transition(card.lifecycle, :play_basic) do
+      move_hand_card_to_bench(state, player_id, card)
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :attach_energy,
+         player_id: player_id,
+         params: %{instance_id: instance_id, target_id: target_id}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, player} <- fetch_player(state, player_id),
+         :ok <- require_energy_attachment_available(player),
+         {:ok, card} <- find_in_player_zone(state, player_id, :hand, instance_id),
+         {:ok, metadata} <- CardRegistry.fetch(card.card_id),
+         :ok <- require_energy(metadata),
+         {:ok, target} <- find_in_play(state, player_id, target_id),
+         {:ok, :attached} <- ZoneMovement.transition(:hand, :attached),
+         {:ok, :attached} <- CardLifecycle.transition(card.lifecycle, :attach) do
+      attach_to_pokemon(state, player_id, card, target)
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :evolve_from_hand,
+         player_id: player_id,
+         params: %{instance_id: instance_id, target_id: target_id}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, evolution_card} <- find_in_player_zone(state, player_id, :hand, instance_id),
+         {:ok, evolution_metadata} <- CardRegistry.fetch(evolution_card.card_id),
+         {:ok, target} <- find_in_play(state, player_id, target_id),
+         :ok <- require_evolves_from(evolution_metadata, target),
+         :ok <- require_first_turn_evolution_allowed(state),
+         :ok <- require_can_evolve_this_turn(state, target),
+         {:ok, :in_play_evolved} <- CardLifecycle.transition(evolution_card.lifecycle, :evolve) do
+      evolve_pokemon(state, player_id, evolution_card, target)
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :retreat,
+         player_id: player_id,
+         params: %{bench_id: bench_id, attachment_ids: attachment_ids}
+       })
+       when is_list(attachment_ids) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, player} <- fetch_player(state, player_id),
+         :ok <- require_active_pokemon(player_id, player),
+         :ok <- require_not_retreated_this_turn(player),
+         {:ok, active_metadata} <- CardRegistry.fetch(player.active.card_id),
+         {:ok, bench_card} <- find_in_player_zone(state, player_id, :bench, bench_id),
+         {:ok, attachments} <- fetch_attachments(player.active, attachment_ids),
+         :ok <- require_retreat_cost(active_metadata, attachments),
+         {:ok, state} <- discard_attached_cards(state, player_id, player.active, attachments) do
+      switch_own_bench_to_active(state, player_id, bench_card, retreated?: true)
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :switch_active_with_bench,
+         player_id: player_id,
+         params: %{bench_id: bench_id}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, player} <- fetch_player(state, player_id),
+         :ok <- require_active_pokemon(player_id, player),
+         {:ok, bench_card} <- find_in_player_zone(state, player_id, :bench, bench_id) do
+      switch_own_bench_to_active(state, player_id, bench_card, retreated?: false)
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :play_trainer_to_discard,
+         player_id: player_id,
+         params: %{instance_id: instance_id}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, card} <- find_in_player_zone(state, player_id, :hand, instance_id),
+         {:ok, metadata} <- CardRegistry.fetch(card.card_id),
+         :ok <- require_trainer(metadata),
+         :ok <- require_supporter_available_if_supporter(metadata, state, player_id),
+         {:ok, :discard} <- ZoneMovement.transition(:hand, :discard),
+         {:ok, :discarded} <- CardLifecycle.transition(card.lifecycle, :discard) do
+      discard_card_from_hand(state, player_id, card, metadata)
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :play_stadium,
+         player_id: player_id,
+         params: %{instance_id: instance_id}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, card} <- find_in_player_zone(state, player_id, :hand, instance_id),
+         {:ok, metadata} <- CardRegistry.fetch(card.card_id),
+         :ok <- require_stadium(metadata),
+         {:ok, :stadium} <- ZoneMovement.transition(:hand, :stadium),
+         {:ok, :in_stadium} <- CardLifecycle.transition(card.lifecycle, :play_stadium) do
+      play_stadium_card(state, player_id, card)
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :attach_tool,
+         player_id: player_id,
+         params: %{instance_id: instance_id, target_id: target_id}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, card} <- find_in_player_zone(state, player_id, :hand, instance_id),
+         {:ok, metadata} <- CardRegistry.fetch(card.card_id),
+         :ok <- require_tool(metadata),
+         {:ok, target} <- find_in_play(state, player_id, target_id),
+         :ok <- require_no_tool_attached(target),
+         {:ok, :attached} <- ZoneMovement.transition(:hand, :attached),
+         {:ok, :attached} <- CardLifecycle.transition(card.lifecycle, :attach) do
+      attach_tool_to_pokemon(state, player_id, card, target)
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :search_deck_to_hand,
+         player_id: player_id,
+         params: %{instance_id: instance_id}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, card} <- find_in_player_zone(state, player_id, :deck, instance_id),
+         {:ok, :hand} <- ZoneMovement.transition(:deck, :hand),
+         {:ok, :in_hand} <- CardLifecycle.transition(card.lifecycle, :search_to_hand) do
+      move_deck_card_to_hand(state, player_id, card)
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :put_basic_from_deck_to_bench,
+         player_id: player_id,
+         params: %{instance_id: instance_id}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, card} <- find_in_player_zone(state, player_id, :deck, instance_id),
+         {:ok, metadata} <- CardRegistry.fetch(card.card_id),
+         :ok <- require_basic_pokemon(metadata),
+         {:ok, :bench} <- ZoneMovement.transition(:deck, :bench),
+         {:ok, :in_play_basic} <- CardLifecycle.transition(card.lifecycle, :put_in_play) do
+      move_deck_card_to_bench(state, player_id, card)
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :discard_from_hand,
+         player_id: player_id,
+         params: %{instance_id: instance_id}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, card} <- find_in_player_zone(state, player_id, :hand, instance_id),
+         {:ok, :discard} <- ZoneMovement.transition(:hand, :discard),
+         {:ok, :discarded} <- CardLifecycle.transition(card.lifecycle, :discard) do
+      discard_card_from_hand(state, player_id, card, %{})
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :recover_discard_to_hand,
+         player_id: player_id,
+         params: %{instance_id: instance_id}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, card} <- find_in_player_zone(state, player_id, :discard, instance_id),
+         {:ok, :hand} <- ZoneMovement.transition(:discard, :hand),
+         {:ok, :in_hand} <- CardLifecycle.transition(card.lifecycle, :recover_to_hand) do
+      move_discard_card_to_hand(state, player_id, card)
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :rare_candy,
+         player_id: player_id,
+         params: %{instance_id: candy_id, evolution_id: evolution_id, target_id: target_id}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, candy} <- find_in_player_zone(state, player_id, :hand, candy_id),
+         :ok <- require_card_id(candy, "MEG-125"),
+         {:ok, evolution_card} <- find_in_player_zone(state, player_id, :hand, evolution_id),
+         {:ok, evolution_metadata} <- CardRegistry.fetch(evolution_card.card_id),
+         :ok <- require_stage_2(evolution_metadata),
+         {:ok, target} <- find_in_play(state, player_id, target_id),
+         :ok <- require_rare_candy_evolves_from(evolution_metadata, target),
+         :ok <- require_first_turn_evolution_allowed(state),
+         :ok <- require_can_evolve_this_turn(state, target),
+         {:ok, :discard} <- ZoneMovement.transition(:hand, :discard),
+         {:ok, :discarded} <- CardLifecycle.transition(candy.lifecycle, :discard),
+         {:ok, :in_play_evolved} <- CardLifecycle.transition(evolution_card.lifecycle, :evolve),
+         {:ok, state} <- discard_card_from_hand(state, player_id, candy, %{}) do
+      evolve_pokemon(state, player_id, evolution_card, target)
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :buddy_buddy_poffin,
+         player_id: player_id,
+         params: %{instance_id: poffin_id, target_ids: target_ids}
+       })
+       when is_list(target_ids) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         true <-
+           length(target_ids) <= 2 || {:error, {:too_many_poffin_targets, length(target_ids)}},
+         {:ok, poffin} <- find_in_player_zone(state, player_id, :hand, poffin_id),
+         :ok <- require_card_id(poffin, "TEF-144"),
+         {:ok, targets} <- fetch_deck_cards(state, player_id, target_ids),
+         :ok <- require_poffin_targets(targets),
+         {:ok, state} <- discard_card_from_hand(state, player_id, poffin, %{}) do
+      Enum.reduce_while(targets, {:ok, state}, fn target, {:ok, state} ->
+        case move_deck_card_to_bench(state, player_id, target) do
+          {:ok, state} -> {:cont, {:ok, state}}
+          {:error, reason} -> {:halt, {:error, reason}}
+        end
+      end)
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :ultra_ball,
+         player_id: player_id,
+         params: %{instance_id: ultra_ball_id, discard_ids: discard_ids, target_id: target_id}
+       })
+       when is_list(discard_ids) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         true <-
+           length(discard_ids) == 2 ||
+             {:error, {:wrong_ultra_ball_discard_count, length(discard_ids)}},
+         {:ok, ultra_ball} <- find_in_player_zone(state, player_id, :hand, ultra_ball_id),
+         :ok <- require_card_id(ultra_ball, "MEG-131"),
+         {:ok, discard_cards} <- fetch_hand_cards(state, player_id, discard_ids),
+         {:ok, target} <- find_in_player_zone(state, player_id, :deck, target_id),
+         {:ok, target_metadata} <- CardRegistry.fetch(target.card_id),
+         :ok <- require_pokemon(target_metadata),
+         {:ok, state} <- discard_card_from_hand(state, player_id, ultra_ball, %{}),
+         {:ok, state} <- discard_hand_cards(state, player_id, discard_cards) do
+      move_deck_card_to_hand(state, player_id, target)
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :boss_orders,
+         player_id: player_id,
+         params: %{instance_id: boss_id, target_id: target_id}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, boss} <- find_in_player_zone(state, player_id, :hand, boss_id),
+         {:ok, boss_metadata} <- CardRegistry.fetch(boss.card_id),
+         :ok <- require_card_id(boss, "MEG-114"),
+         :ok <- require_supporter_available_if_supporter(boss_metadata, state, player_id),
+         {:ok, opponent_id} <- opponent_id(state, player_id),
+         {:ok, target} <- find_in_player_zone(state, opponent_id, :bench, target_id),
+         {:ok, state} <- discard_card_from_hand(state, player_id, boss, boss_metadata) do
+      switch_opponent_bench_to_active(state, opponent_id, target)
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :discard_attached_energy_with_item,
+         player_id: player_id,
+         params: %{
+           instance_id: item_id,
+           target_player_id: target_player_id,
+           target_id: target_id,
+           attachment_id: attachment_id
+         }
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, item} <- find_in_player_zone(state, player_id, :hand, item_id),
+         :ok <- require_hammer_item(item),
+         {:ok, target} <- find_in_play(state, target_player_id, target_id),
+         {:ok, attachment} <- find_attachment(target, attachment_id),
+         {:ok, attachment_metadata} <- CardRegistry.fetch(attachment.card_id),
+         :ok <- require_energy(attachment_metadata),
+         :ok <- require_hammer_can_discard(item, attachment_metadata),
+         {:ok, state} <- discard_card_from_hand(state, player_id, item, %{}) do
+      discard_attached_card(state, target_player_id, target, attachment)
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :use_ability,
+         player_id: player_id,
+         params: %{source_id: source_id, ability_id: :recon_directive, chosen_id: chosen_id}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, source} <- find_in_play(state, player_id, source_id),
+         {:ok, _ability} <- require_ability(source, :recon_directive),
+         {:ok, player} <- fetch_player(state, player_id),
+         :ok <- require_marker_available(player, {:ability_used, source_id, :recon_directive}),
+         {:ok, chosen, other} <- require_top_two_choice(player, chosen_id) do
+      chosen = %{chosen | zone: :hand, lifecycle: :in_hand}
+      other = %{other | zone: :deck, lifecycle: :in_deck}
+
+      player = %{
+        player
+        | deck: Enum.drop(player.deck, 2) ++ [other],
+          hand: [chosen | player.hand],
+          markers: MapSet.put(player.markers, {:ability_used, source_id, :recon_directive})
+      }
+
+      {:ok, put_player(state, player)}
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :use_ability,
+         player_id: player_id,
+         params: %{source_id: source_id, ability_id: :psychic_draw}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, source} <- find_in_play(state, player_id, source_id),
+         {:ok, ability} <- require_ability(source, :psychic_draw),
+         :ok <- require_evolved_this_turn(state, source),
+         {:ok, player} <- fetch_player(state, player_id),
+         :ok <- require_marker_available(player, {:ability_used, source_id, :psychic_draw}) do
+      with {:ok, state} <- draw_cards(state, player_id, ability.effect.count),
+           {:ok, player} <- fetch_player(state, player_id) do
+        player = %{
+          player
+          | markers: MapSet.put(player.markers, {:ability_used, source_id, :psychic_draw})
+        }
+
+        {:ok, put_player(state, player)}
+      end
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :use_ability,
+         player_id: player_id,
+         params: %{source_id: source_id, ability_id: :run_away_draw}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, source} <- find_in_play(state, player_id, source_id),
+         {:ok, ability} <- require_ability(source, :run_away_draw),
+         {:ok, player} <- fetch_player(state, player_id),
+         :ok <- require_marker_available(player, {:ability_used, source_id, :run_away_draw}),
+         {:ok, state} <- draw_cards(state, player_id, ability.effect.count),
+         {:ok, player} <- fetch_player(state, player_id),
+         {:ok, source} <- find_in_play(state, player_id, source_id) do
+      shuffled_cards = reset_tree_for_deck(source)
+
+      player =
+        player
+        |> remove_in_play(source.instance_id)
+        |> Map.update!(:deck, &(shuffled_cards ++ &1))
+        |> Map.update!(:markers, &MapSet.put(&1, {:ability_used, source_id, :run_away_draw}))
+
+      {:ok, put_player(state, player)}
+    end
+  end
+
+  defp reduce(state, %Action{type: :draw_cards, player_id: player_id, params: %{count: count}})
+       when is_integer(count) and count >= 0 do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window) do
+      draw_cards(state, player_id, count)
+    end
+  end
+
+  defp reduce(state, %Action{type: :declare_attack, player_id: player_id, params: params})
+       when params == %{} do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_game_lifecycle(state, :in_progress),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, player} <- fetch_player(state, player_id),
+         :ok <- require_active_pokemon(player_id, player),
+         {:ok, game_lifecycle} <- GameLifecycle.transition(state.game_lifecycle, :declare_attack),
+         {:ok, turn_lifecycle} <- TurnLifecycle.transition(state.turn_lifecycle, :declare_attack) do
+      {:ok,
+       %{
+         state
+         | game_lifecycle: game_lifecycle,
+           turn_lifecycle: turn_lifecycle,
+           log: ["#{player_id} declared an attack" | state.log]
+       }}
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :declare_attack,
+         player_id: player_id,
+         params: %{attack_id: attack_id} = params
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_game_lifecycle(state, :in_progress),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, player} <- fetch_player(state, player_id),
+         :ok <- require_active_pokemon(player_id, player),
+         {:ok, attack} <- CardRegistry.fetch_attack(player.active.card_id, attack_id),
+         :ok <- require_attack_cost(player.active, attack),
+         {:ok, defender_id} <- opponent_id(state, player_id),
+         {:ok, defender} <- fetch_player(state, defender_id),
+         :ok <- require_active_pokemon(defender_id, defender),
+         :ok <- require_attack_effect_params(attack, params, defender),
+         {:ok, game_lifecycle} <- GameLifecycle.transition(state.game_lifecycle, :declare_attack),
+         {:ok, turn_lifecycle} <- TurnLifecycle.transition(state.turn_lifecycle, :declare_attack) do
+      pending_attack = %{
+        player_id: player_id,
+        attacker_id: player.active.instance_id,
+        attack_id: attack_id,
+        attack: attack,
+        params: Map.drop(params, [:attack_id]),
+        target_player_id: defender_id,
+        target_id: defender.active.instance_id
+      }
+
+      {:ok,
+       %{
+         state
+         | game_lifecycle: game_lifecycle,
+           turn_lifecycle: turn_lifecycle,
+           pending_attack: pending_attack,
+           log: ["#{player_id} declared #{attack.name}" | state.log]
+       }}
+    end
+  end
+
+  defp reduce(state, %Action{type: :resolve_declared_attack, player_id: player_id}) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_game_lifecycle(state, :resolving_attack),
+         {:ok, pending_attack} <- fetch_pending_attack(state, player_id),
+         {:ok, turn_lifecycle} <- TurnLifecycle.transition(state.turn_lifecycle, :resolve_attack),
+         {:ok, state} <-
+           damage_pokemon(
+             state,
+             pending_attack.target_player_id,
+             pending_attack.target_id,
+             attack_damage(state, pending_attack)
+           ),
+         {:ok, state} <-
+           resolve_knock_outs_after_damage(
+             state,
+             player_id,
+             pending_attack.target_player_id,
+             pending_attack.target_id
+           ),
+         {:ok, state} <- resolve_attack_effect(state, pending_attack) do
+      {:ok, %{state | turn_lifecycle: turn_lifecycle, pending_attack: nil}}
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :resolve_attack_damage,
+         player_id: player_id,
+         params: %{target_player_id: target_player_id, target_id: target_id, damage: damage}
+       })
+       when is_integer(damage) and damage >= 0 do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_game_lifecycle(state, :resolving_attack),
+         {:ok, turn_lifecycle} <- TurnLifecycle.transition(state.turn_lifecycle, :resolve_attack),
+         {:ok, state} <- damage_pokemon(state, target_player_id, target_id, damage),
+         {:ok, state} <-
+           resolve_knock_outs_after_damage(state, player_id, target_player_id, target_id) do
+      {:ok, %{state | turn_lifecycle: turn_lifecycle}}
+    end
+  end
+
+  defp reduce(state, %Action{type: :finish_attack, player_id: player_id}) do
+    with :ok <- require_active_player(state, player_id),
+         {:ok, turn_lifecycle} <- TurnLifecycle.transition(state.turn_lifecycle, :finish_attack),
+         {:ok, game_lifecycle} <- finish_attack_game_lifecycle(state.game_lifecycle) do
+      {:ok,
+       %{
+         state
+         | game_lifecycle: game_lifecycle,
+           turn_lifecycle: turn_lifecycle,
+           pending_attack: nil
+       }}
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :choose_replacement_active,
+         player_id: player_id,
+         params: %{instance_id: instance_id}
+       }) do
+    with :ok <- require_game_lifecycle(state, :replacing_active),
+         {:ok, player} <- fetch_player(state, player_id),
+         true <- is_nil(player.active) || {:error, {:active_already_present, player_id}},
+         {:ok, card} <- find_in_player_zone(state, player_id, :bench, instance_id),
+         {:ok, :active} <- ZoneMovement.transition(:bench, :active),
+         {:ok, game_lifecycle} <-
+           GameLifecycle.transition(state.game_lifecycle, :replacement_chosen) do
+      moved = %{card | zone: :active}
+      player = %{player | active: moved, bench: reject_instance(player.bench, instance_id)}
+      {:ok, %{put_player(state, player) | game_lifecycle: game_lifecycle}}
+    end
+  end
+
+  defp reduce(state, %Action{type: :concede, player_id: player_id}) do
+    with :ok <- require_not_finished(state),
+         {:ok, winner} <- opponent_id(state, player_id) do
+      {:ok,
+       %{
+         state
+         | winner: winner,
+           game_lifecycle: :finished,
+           log: ["#{player_id} conceded" | state.log]
+       }}
+    end
+  end
+
+  defp reduce(state, %Action{type: :end_turn, player_id: player_id}) do
+    with :ok <- require_active_player(state, player_id),
+         {:ok, turn_lifecycle} <- end_turn_lifecycle(state.turn_lifecycle) do
+      {:ok,
+       %{state | turn_lifecycle: turn_lifecycle, log: ["#{player_id} ended turn" | state.log]}}
+    end
+  end
+
+  defp reduce(state, %Action{type: :start_next_turn}) do
+    with :ok <- require_turn_lifecycle(state, :not_in_turn),
+         :ok <- require_game_lifecycle(state, :in_progress),
+         {:ok, next_player_id} <- opponent_id(state, state.active_player),
+         {:ok, turn_lifecycle} <- TurnLifecycle.transition(state.turn_lifecycle, :start_turn),
+         {:ok, next_player} <- fetch_player(state, next_player_id) do
+      next_player = reset_turn_flags(next_player)
+
+      {:ok,
+       state
+       |> put_player(next_player)
+       |> Map.merge(%{
+         active_player: next_player_id,
+         turn_lifecycle: turn_lifecycle,
+         turn_number: state.turn_number + 1,
+         log: ["#{next_player_id} started turn" | state.log]
+       })}
+    end
+  end
+
+  defp reduce(_state, %Action{type: type}), do: {:error, {:unsupported_action, type}}
+
+  defp instantiate_deck(player_id, deck_ids) do
+    deck_ids
+    |> Enum.with_index(1)
+    |> Enum.map(fn {card_id, index} ->
+      CardRegistry.fetch!(card_id)
+      %CardInstance{instance_id: "#{player_id}-#{index}", card_id: card_id, owner: player_id}
+    end)
+  end
+
+  defp draw_card(state, player_id) do
+    with {:ok, player} <- fetch_player(state, player_id) do
+      case player.deck do
+        [] ->
+          {:error, :cannot_draw_from_empty_deck}
+
+        [card | deck] ->
+          with {:ok, :hand} <- ZoneMovement.transition(:deck, :hand),
+               {:ok, :in_hand} <- CardLifecycle.transition(card.lifecycle, :draw) do
+            card = %{card | zone: :hand, lifecycle: :in_hand}
+            player = %{player | deck: deck, hand: [card | player.hand]}
+            {:ok, put_player(state, player)}
+          end
+      end
+    end
+  end
+
+  defp draw_cards(state, _player_id, 0), do: {:ok, state}
+
+  defp draw_cards(state, player_id, count) when count > 0 do
+    with {:ok, state} <- draw_card(state, player_id) do
+      draw_cards(state, player_id, count - 1)
+    end
+  end
+
+  defp place_prizes(state, _player_id, 0), do: {:ok, state}
+
+  defp place_prizes(state, player_id, count) when count > 0 do
+    with {:ok, state} <- move_top_deck_card_to_prizes(state, player_id) do
+      place_prizes(state, player_id, count - 1)
+    end
+  end
+
+  defp move_top_deck_card_to_prizes(state, player_id) do
+    with {:ok, player} <- fetch_player(state, player_id) do
+      case player.deck do
+        [] ->
+          {:error, :cannot_prize_from_empty_deck}
+
+        [card | deck] ->
+          with {:ok, :prizes} <- ZoneMovement.transition(:deck, :prizes),
+               {:ok, :prized} <- CardLifecycle.transition(card.lifecycle, :prize) do
+            card = %{card | zone: :prizes, lifecycle: :prized}
+            player = %{player | deck: deck, prizes: [card | player.prizes]}
+            {:ok, put_player(state, player)}
+          end
+      end
+    end
+  end
+
+  defp choose_active(state, player_id, card) do
+    with {:ok, player} <- fetch_player(state, player_id) do
+      moved = %{
+        card
+        | zone: :active,
+          lifecycle: :in_play_basic,
+          turn_entered_play: state.turn_number
+      }
+
+      player = %{player | hand: reject_instance(player.hand, card.instance_id), active: moved}
+      {:ok, put_player(state, player)}
+    end
+  end
+
+  defp move_hand_card_to_bench(state, player_id, card) do
+    with {:ok, player} <- fetch_player(state, player_id),
+         :ok <- require_bench_space(player) do
+      moved = %{
+        card
+        | zone: :bench,
+          lifecycle: :in_play_basic,
+          turn_entered_play: state.turn_number
+      }
+
+      player = %{
+        player
+        | hand: reject_instance(player.hand, card.instance_id),
+          bench: [moved | player.bench]
+      }
+
+      {:ok, put_player(state, player)}
+    end
+  end
+
+  defp attach_to_pokemon(state, player_id, energy, target) do
+    with {:ok, player} <- fetch_player(state, player_id) do
+      moved_energy = %{energy | zone: :attached, lifecycle: :attached}
+      updated_target = %{target | attachments: [moved_energy | target.attachments]}
+
+      player =
+        player
+        |> replace_in_play(updated_target)
+        |> Map.update!(:hand, &reject_instance(&1, energy.instance_id))
+        |> Map.put(:energy_attached?, true)
+
+      {:ok, put_player(state, player)}
+    end
+  end
+
+  defp evolve_pokemon(state, player_id, evolution_card, target) do
+    with {:ok, player} <- fetch_player(state, player_id) do
+      evolved = %{
+        evolution_card
+        | zone: target.zone,
+          lifecycle: :in_play_evolved,
+          attachments: target.attachments,
+          damage: target.damage,
+          status: target.status,
+          tool: target.tool,
+          evolved_from: [
+            %{target | attachments: [], tool: nil, evolved_from: []} | target.evolved_from
+          ],
+          turn_entered_play: state.turn_number
+      }
+
+      player =
+        player
+        |> replace_in_play(target, evolved)
+        |> Map.update!(:hand, &reject_instance(&1, evolution_card.instance_id))
+
+      {:ok, put_player(state, player)}
+    end
+  end
+
+  defp discard_card_from_hand(state, player_id, card, metadata) do
+    with {:ok, player} <- fetch_player(state, player_id) do
+      discarded = %{card | zone: :discard, lifecycle: :discarded}
+
+      player = %{
+        player
+        | hand: reject_instance(player.hand, card.instance_id),
+          discard: [discarded | player.discard],
+          supporter_played?:
+            player.supporter_played? || Map.get(metadata, :trainer_type) == :supporter
+      }
+
+      {:ok, put_player(state, player)}
+    end
+  end
+
+  defp play_stadium_card(state, player_id, card) do
+    with {:ok, player} <- fetch_player(state, player_id) do
+      stadium = %{card | zone: :stadium, lifecycle: :in_stadium}
+      player = %{player | hand: reject_instance(player.hand, card.instance_id)}
+      state = put_player(state, player)
+
+      state =
+        case state.stadium do
+          nil -> state
+          old_stadium -> discard_stadium(state, old_stadium)
+        end
+
+      {:ok, %{state | stadium: stadium}}
+    end
+  end
+
+  defp discard_stadium(state, stadium) do
+    discarded = %{stadium | zone: :discard, lifecycle: :discarded}
+
+    update_in(state.players[stadium.owner].discard, fn discard ->
+      [discarded | discard]
+    end)
+  end
+
+  defp attach_tool_to_pokemon(state, player_id, tool, target) do
+    with {:ok, player} <- fetch_player(state, player_id) do
+      moved_tool = %{tool | zone: :attached, lifecycle: :attached}
+      updated_target = %{target | tool: moved_tool}
+
+      player =
+        player
+        |> replace_in_play(updated_target)
+        |> Map.update!(:hand, &reject_instance(&1, tool.instance_id))
+
+      {:ok, put_player(state, player)}
+    end
+  end
+
+  defp move_deck_card_to_hand(state, player_id, card) do
+    with {:ok, player} <- fetch_player(state, player_id) do
+      moved = %{card | zone: :hand, lifecycle: :in_hand}
+
+      player = %{
+        player
+        | deck: reject_instance(player.deck, card.instance_id),
+          hand: [moved | player.hand]
+      }
+
+      {:ok, put_player(state, player)}
+    end
+  end
+
+  defp move_discard_card_to_hand(state, player_id, card) do
+    with {:ok, player} <- fetch_player(state, player_id) do
+      moved = %{card | zone: :hand, lifecycle: :in_hand}
+
+      player = %{
+        player
+        | discard: reject_instance(player.discard, card.instance_id),
+          hand: [moved | player.hand]
+      }
+
+      {:ok, put_player(state, player)}
+    end
+  end
+
+  defp move_deck_card_to_bench(state, player_id, card) do
+    with {:ok, player} <- fetch_player(state, player_id),
+         :ok <- require_bench_space(player) do
+      moved = %{
+        card
+        | zone: :bench,
+          lifecycle: :in_play_basic,
+          turn_entered_play: state.turn_number
+      }
+
+      player = %{
+        player
+        | deck: reject_instance(player.deck, card.instance_id),
+          bench: [moved | player.bench]
+      }
+
+      {:ok, put_player(state, player)}
+    end
+  end
+
+  defp discard_hand_cards(state, _player_id, []), do: {:ok, state}
+
+  defp discard_hand_cards(state, player_id, [card | rest]) do
+    with {:ok, state} <- discard_card_from_hand(state, player_id, card, %{}) do
+      discard_hand_cards(state, player_id, rest)
+    end
+  end
+
+  defp switch_opponent_bench_to_active(state, opponent_id, target) do
+    with {:ok, opponent} <- fetch_player(state, opponent_id),
+         active when not is_nil(active) <- opponent.active do
+      moved_active = %{active | zone: :bench}
+      moved_target = %{target | zone: :active}
+
+      opponent = %{
+        opponent
+        | active: moved_target,
+          bench: [moved_active | reject_instance(opponent.bench, target.instance_id)]
+      }
+
+      {:ok, put_player(state, opponent)}
+    else
+      nil -> {:error, {:missing_active_pokemon, opponent_id}}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp switch_own_bench_to_active(state, player_id, target, opts) do
+    with {:ok, player} <- fetch_player(state, player_id),
+         active when not is_nil(active) <- player.active do
+      moved_active = %{active | zone: :bench}
+      moved_target = %{target | zone: :active}
+
+      player = %{
+        player
+        | active: moved_target,
+          bench: [moved_active | reject_instance(player.bench, target.instance_id)],
+          retreated?: opts[:retreated?] || player.retreated?
+      }
+
+      {:ok, put_player(state, player)}
+    else
+      nil -> {:error, {:missing_active_pokemon, player_id}}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp discard_attached_card(state, player_id, target, attachment) do
+    with {:ok, player} <- fetch_player(state, player_id),
+         {:ok, :discard} <- ZoneMovement.transition(:attached, :discard),
+         {:ok, :discarded} <- CardLifecycle.transition(attachment.lifecycle, :discard) do
+      discarded = %{attachment | zone: :discard, lifecycle: :discarded}
+
+      updated_target = %{
+        target
+        | attachments: reject_instance(target.attachments, attachment.instance_id)
+      }
+
+      player =
+        player
+        |> replace_in_play(updated_target)
+        |> Map.update!(:discard, &[discarded | &1])
+
+      {:ok, put_player(state, player)}
+    end
+  end
+
+  defp discard_attached_cards(state, _player_id, _target, []), do: {:ok, state}
+
+  defp discard_attached_cards(state, player_id, target, [attachment | rest]) do
+    with {:ok, state} <- discard_attached_card(state, player_id, target, attachment),
+         {:ok, updated_target} <- find_in_play(state, player_id, target.instance_id) do
+      discard_attached_cards(state, player_id, updated_target, rest)
+    end
+  end
+
+  defp remove_in_play(player, instance_id) do
+    cond do
+      player.active && player.active.instance_id == instance_id ->
+        %{player | active: nil}
+
+      Enum.any?(player.bench, &(&1.instance_id == instance_id)) ->
+        %{player | bench: reject_instance(player.bench, instance_id)}
+
+      true ->
+        player
+    end
+  end
+
+  defp reset_tree_for_deck(nil), do: []
+
+  defp reset_tree_for_deck(card) do
+    reset = %{
+      card
+      | zone: :deck,
+        lifecycle: :in_deck,
+        damage: 0,
+        status: nil,
+        tool: nil,
+        attachments: [],
+        evolved_from: [],
+        turn_entered_play: nil
+    }
+
+    [reset]
+    |> Kernel.++(Enum.flat_map(card.attachments, &reset_tree_for_deck/1))
+    |> Kernel.++(reset_tree_for_deck(card.tool))
+    |> Kernel.++(Enum.flat_map(card.evolved_from, &reset_tree_for_deck/1))
+  end
+
+  defp damage_pokemon(state, player_id, instance_id, damage) do
+    with {:ok, target} <- find_in_play(state, player_id, instance_id),
+         {:ok, player} <- fetch_player(state, player_id) do
+      damaged = %{target | damage: target.damage + damage}
+      {:ok, put_player(state, replace_in_play(player, damaged))}
+    end
+  end
+
+  defp resolve_knock_outs_after_damage(state, attacking_player_id, defending_player_id, target_id) do
+    with {:ok, target} <- find_in_play(state, defending_player_id, target_id),
+         {:ok, metadata} <- CardRegistry.fetch(target.card_id) do
+      if target.damage >= Map.fetch!(metadata, :hp) do
+        state
+        |> knock_out_pokemon(defending_player_id, target)
+        |> award_prizes(attacking_player_id, Map.get(metadata, :prize_count, 1))
+        |> resolve_post_knock_out_game_state(attacking_player_id, defending_player_id)
+      else
+        {:ok, state}
+      end
+    end
+  end
+
+  defp knock_out_pokemon(state, player_id, target) do
+    with {:ok, player} <- fetch_player(state, player_id),
+         {:ok, :discard} <- ZoneMovement.transition(target.zone, :discard),
+         {:ok, :discarded} <- CardLifecycle.transition(target.lifecycle, :knock_out) do
+      discarded_cards = discard_tree(target)
+
+      player =
+        cond do
+          player.active && player.active.instance_id == target.instance_id ->
+            %{player | active: nil, discard: discarded_cards ++ player.discard}
+
+          Enum.any?(player.bench, &(&1.instance_id == target.instance_id)) ->
+            %{
+              player
+              | bench: reject_instance(player.bench, target.instance_id),
+                discard: discarded_cards ++ player.discard
+            }
+        end
+
+      {:ok, put_player(state, player)}
+    end
+  end
+
+  defp discard_tree(nil), do: []
+
+  defp discard_tree(card) do
+    discarded = %{
+      card
+      | zone: :discard,
+        lifecycle: :discarded,
+        damage: 0,
+        tool: nil,
+        attachments: [],
+        evolved_from: []
+    }
+
+    [discarded]
+    |> Kernel.++(Enum.flat_map(card.attachments, &discard_tree/1))
+    |> Kernel.++(discard_tree(card.tool))
+    |> Kernel.++(Enum.flat_map(card.evolved_from, &discard_tree/1))
+  end
+
+  defp award_prizes({:ok, state}, player_id, count), do: award_prizes(state, player_id, count)
+  defp award_prizes({:error, reason}, _player_id, _count), do: {:error, reason}
+  defp award_prizes(state, _player_id, 0), do: {:ok, state}
+
+  defp award_prizes(state, player_id, count) when count > 0 do
+    with {:ok, state} <- take_prize(state, player_id) do
+      award_prizes(state, player_id, count - 1)
+    end
+  end
+
+  defp take_prize(state, player_id) do
+    with {:ok, player} <- fetch_player(state, player_id) do
+      case player.prizes do
+        [] ->
+          {:ok, %{state | winner: player_id, game_lifecycle: :finished}}
+
+        [card | prizes] ->
+          with {:ok, :hand} <- ZoneMovement.transition(:prizes, :hand),
+               {:ok, :in_hand} <- CardLifecycle.transition(card.lifecycle, :take_prize) do
+            card = %{card | zone: :hand, lifecycle: :in_hand}
+            player = %{player | prizes: prizes, hand: [card | player.hand]}
+            state = put_player(state, player)
+
+            if prizes == [] do
+              {:ok, %{state | winner: player_id, game_lifecycle: :finished}}
+            else
+              {:ok, state}
+            end
+          end
+      end
+    end
+  end
+
+  defp resolve_post_knock_out_game_state(
+         {:error, reason},
+         _attacking_player_id,
+         _defending_player_id
+       ),
+       do: {:error, reason}
+
+  defp resolve_post_knock_out_game_state(
+         {:ok, %{winner: winner} = state},
+         _attacking_player_id,
+         _defending_player_id
+       )
+       when not is_nil(winner),
+       do: {:ok, state}
+
+  defp resolve_post_knock_out_game_state({:ok, state}, attacking_player_id, defending_player_id) do
+    with {:ok, defending_player} <- fetch_player(state, defending_player_id) do
+      cond do
+        defending_player.active ->
+          finish_prize_resolution(state)
+
+        defending_player.bench == [] ->
+          {:ok, %{state | winner: attacking_player_id, game_lifecycle: :finished}}
+
+        true ->
+          with {:ok, game_lifecycle} <-
+                 GameLifecycle.transition(state.game_lifecycle, :replace_active) do
+            {:ok, %{state | game_lifecycle: game_lifecycle}}
+          end
+      end
+    end
+  end
+
+  defp finish_prize_resolution(%{game_lifecycle: :resolving_attack} = state) do
+    with {:ok, game_lifecycle} <- GameLifecycle.transition(:resolving_attack, :choose_prizes),
+         {:ok, game_lifecycle} <- GameLifecycle.transition(game_lifecycle, :finish_prizes) do
+      {:ok, %{state | game_lifecycle: game_lifecycle}}
+    end
+  end
+
+  defp finish_prize_resolution(state), do: {:ok, state}
+
+  defp replace_in_play(player, card) do
+    cond do
+      player.active && player.active.instance_id == card.instance_id ->
+        %{player | active: card}
+
+      Enum.any?(player.bench, &(&1.instance_id == card.instance_id)) ->
+        %{
+          player
+          | bench:
+              Enum.map(player.bench, fn bench_card ->
+                if bench_card.instance_id == card.instance_id, do: card, else: bench_card
+              end)
+        }
+
+      true ->
+        player
+    end
+  end
+
+  defp replace_in_play(player, old_card, new_card) do
+    cond do
+      player.active && player.active.instance_id == old_card.instance_id ->
+        %{player | active: new_card}
+
+      Enum.any?(player.bench, &(&1.instance_id == old_card.instance_id)) ->
+        %{
+          player
+          | bench:
+              Enum.map(player.bench, fn bench_card ->
+                if bench_card.instance_id == old_card.instance_id, do: new_card, else: bench_card
+              end)
+        }
+
+      true ->
+        player
+    end
+  end
+
+  defp reset_turn_flags(player) do
+    %{
+      player
+      | supporter_played?: false,
+        energy_attached?: false,
+        retreated?: false,
+        markers: MapSet.new()
+    }
+  end
+
+  defp fetch_pending_attack(
+         %{pending_attack: %{player_id: player_id} = pending_attack},
+         player_id
+       ),
+       do: {:ok, pending_attack}
+
+  defp fetch_pending_attack(%{pending_attack: nil}, _player_id), do: {:error, :no_pending_attack}
+
+  defp fetch_pending_attack(%{pending_attack: pending_attack}, player_id),
+    do: {:error, {:pending_attack_belongs_to_other_player, pending_attack.player_id, player_id}}
+
+  defp attack_damage(state, %{
+         attack: %{
+           effect: %{type: :active_damage_counters_per_hand_card, counters_per_card: counters}
+         },
+         player_id: player_id
+       }) do
+    player = Map.fetch!(state.players, player_id)
+    length(player.hand) * counters * 10
+  end
+
+  defp attack_damage(_state, %{attack: attack}), do: Map.fetch!(attack, :damage)
+
+  defp resolve_attack_effect(state, %{
+         attack: %{effect: %{type: :switch_self_with_bench}},
+         player_id: player_id,
+         params: %{switch_id: switch_id}
+       }) do
+    with {:ok, target} <- find_in_player_zone(state, player_id, :bench, switch_id) do
+      switch_own_bench_to_active(state, player_id, target, retreated?: false)
+    end
+  end
+
+  defp resolve_attack_effect(state, %{
+         attack: %{effect: %{type: :opponent_bench_damage_counters}},
+         player_id: player_id,
+         target_player_id: target_player_id,
+         params: %{bench_damage: bench_damage}
+       }) do
+    Enum.reduce_while(bench_damage, {:ok, state}, fn {target_id, counters}, {:ok, state} ->
+      result =
+        with {:ok, state} <- damage_pokemon(state, target_player_id, target_id, counters * 10) do
+          resolve_knock_outs_after_damage(state, player_id, target_player_id, target_id)
+        end
+
+      case result do
+        {:ok, state} -> {:cont, {:ok, state}}
+        {:error, reason} -> {:halt, {:error, reason}}
+      end
+    end)
+  end
+
+  defp resolve_attack_effect(state, _pending_attack), do: {:ok, state}
+
+  defp require_attack_effect_params(
+         %{effect: %{type: :switch_self_with_bench}},
+         params,
+         _defender
+       ) do
+    if Map.has_key?(params, :switch_id),
+      do: :ok,
+      else: {:error, :missing_switch_target_for_attack}
+  end
+
+  defp require_attack_effect_params(
+         %{effect: %{type: :opponent_bench_damage_counters, total_counters: total_counters}},
+         params,
+         defender
+       ) do
+    bench_damage = Map.get(params, :bench_damage, %{})
+
+    cond do
+      not is_map(bench_damage) ->
+        {:error, :bench_damage_must_be_map}
+
+      Enum.any?(bench_damage, fn {_target_id, counters} ->
+        not is_integer(counters) or counters < 0
+      end) ->
+        {:error, :invalid_bench_damage_counters}
+
+      Enum.sum(Map.values(bench_damage)) != total_counters ->
+        {:error,
+         {:wrong_bench_damage_counter_total, Enum.sum(Map.values(bench_damage)), total_counters}}
+
+      Enum.any?(Map.keys(bench_damage), fn target_id ->
+        not Enum.any?(defender.bench, &(&1.instance_id == target_id))
+      end) ->
+        {:error, :bench_damage_target_not_found}
+
+      true ->
+        :ok
+    end
+  end
+
+  defp require_attack_effect_params(_attack, _params, _defender), do: :ok
+
+  defp require_attack_cost(attacker, attack) do
+    provided_types =
+      attacker.attachments
+      |> Enum.flat_map(fn attachment ->
+        attachment.card_id
+        |> CardRegistry.fetch!()
+        |> Map.get(:provides, [])
+      end)
+
+    if can_pay_cost?(attack.cost, provided_types) do
+      :ok
+    else
+      {:error, {:cannot_pay_attack_cost, attack.id, attack.cost, provided_types}}
+    end
+  end
+
+  defp can_pay_cost?(cost, provided_types) do
+    {typed_cost, colorless_cost} = Enum.split_with(cost, &(&1 != :colorless))
+
+    with {:ok, remaining_types} <- consume_typed_cost(typed_cost, provided_types) do
+      length(remaining_types) >= length(colorless_cost)
+    else
+      :error -> false
+    end
+  end
+
+  defp consume_typed_cost([], provided_types), do: {:ok, provided_types}
+
+  defp consume_typed_cost([type | rest], provided_types) do
+    if type in provided_types do
+      consume_typed_cost(rest, remove_one_type(provided_types, type))
+    else
+      :error
+    end
+  end
+
+  defp remove_one_type(types, type) do
+    {before_match, [_match | after_match]} = Enum.split_while(types, &(&1 != type))
+    before_match ++ after_match
+  end
+
+  defp finish_attack_game_lifecycle(:resolving_attack),
+    do: GameLifecycle.transition(:resolving_attack, :finish_attack)
+
+  defp finish_attack_game_lifecycle(:in_progress), do: {:ok, :in_progress}
+  defp finish_attack_game_lifecycle(:finished), do: {:ok, :finished}
+
+  defp finish_attack_game_lifecycle(other),
+    do: {:error, {:cannot_finish_attack_from_game_lifecycle, other}}
+
+  defp end_turn_lifecycle(:end_turn), do: TurnLifecycle.transition(:end_turn, :between_turns)
+
+  defp end_turn_lifecycle(turn_lifecycle) do
+    with {:ok, turn_lifecycle} <- TurnLifecycle.transition(turn_lifecycle, :end_turn) do
+      TurnLifecycle.transition(turn_lifecycle, :between_turns)
+    end
+  end
+
+  defp fetch_player(state, player_id) do
+    case Map.fetch(state.players, player_id) do
+      {:ok, player} -> {:ok, player}
+      :error -> {:error, {:unknown_player, player_id}}
+    end
+  end
+
+  defp put_player(state, player),
+    do: %{state | players: Map.put(state.players, player.id, player)}
+
+  defp require_active_player(%{active_player: player_id}, player_id), do: :ok
+
+  defp require_active_player(%{active_player: active_player}, player_id),
+    do: {:error, {:not_active_player, player_id, active_player}}
+
+  defp opponent_id(state, player_id) do
+    state.players
+    |> Map.keys()
+    |> Enum.reject(&(&1 == player_id))
+    |> case do
+      [opponent_id] -> {:ok, opponent_id}
+      opponents -> {:error, {:expected_one_opponent, opponents}}
+    end
+  end
+
+  defp require_turn_lifecycle(%{turn_lifecycle: expected}, expected), do: :ok
+
+  defp require_turn_lifecycle(%{turn_lifecycle: actual}, expected),
+    do: {:error, {:wrong_turn_lifecycle, actual, expected}}
+
+  defp require_game_lifecycle(%{game_lifecycle: expected}, expected), do: :ok
+
+  defp require_game_lifecycle(%{game_lifecycle: actual}, expected),
+    do: {:error, {:wrong_game_lifecycle, actual, expected}}
+
+  defp require_not_finished(%{game_lifecycle: :finished}), do: {:error, :game_already_finished}
+  defp require_not_finished(_state), do: :ok
+
+  defp require_all_players_have_active(state) do
+    state.players
+    |> Enum.find(fn {_player_id, player} -> is_nil(player.active) end)
+    |> case do
+      nil -> :ok
+      {player_id, _player} -> {:error, {:missing_active_pokemon, player_id}}
+    end
+  end
+
+  defp require_no_player_has_prizes(state) do
+    state.players
+    |> Enum.find(fn {_player_id, player} -> player.prizes != [] end)
+    |> case do
+      nil -> :ok
+      {player_id, _player} -> {:error, {:prizes_already_placed, player_id}}
+    end
+  end
+
+  defp require_all_players_have_prizes(state, count) do
+    state.players
+    |> Enum.find(fn {_player_id, player} -> length(player.prizes) != count end)
+    |> case do
+      nil ->
+        :ok
+
+      {player_id, player} ->
+        {:error, {:wrong_prize_count, player_id, length(player.prizes), count}}
+    end
+  end
+
+  defp require_active_pokemon(player_id, %{active: nil}),
+    do: {:error, {:missing_active_pokemon, player_id}}
+
+  defp require_active_pokemon(_player_id, _player), do: :ok
+
+  defp require_basic_pokemon(%{supertype: :pokemon, stage: :basic}), do: :ok
+  defp require_basic_pokemon(metadata), do: {:error, {:not_basic_pokemon, metadata}}
+
+  defp require_energy(%{supertype: :energy}), do: :ok
+  defp require_energy(metadata), do: {:error, {:not_energy, metadata}}
+
+  defp require_pokemon(%{supertype: :pokemon}), do: :ok
+  defp require_pokemon(metadata), do: {:error, {:not_pokemon, metadata}}
+
+  defp require_stage_2(%{supertype: :pokemon, stage: :stage_2}), do: :ok
+  defp require_stage_2(metadata), do: {:error, {:not_stage_2_pokemon, metadata}}
+
+  defp require_trainer(%{supertype: :trainer}), do: :ok
+  defp require_trainer(metadata), do: {:error, {:not_trainer, metadata}}
+
+  defp require_stadium(%{supertype: :trainer, trainer_type: :stadium}), do: :ok
+  defp require_stadium(metadata), do: {:error, {:not_stadium, metadata}}
+
+  defp require_tool(%{supertype: :trainer, trainer_type: :tool}), do: :ok
+  defp require_tool(metadata), do: {:error, {:not_tool, metadata}}
+
+  defp require_no_tool_attached(%{tool: nil}), do: :ok
+
+  defp require_no_tool_attached(target),
+    do: {:error, {:tool_already_attached, target.instance_id}}
+
+  defp require_supporter_available_if_supporter(%{trainer_type: :supporter}, state, player_id) do
+    with {:ok, player} <- fetch_player(state, player_id) do
+      if player.supporter_played? do
+        {:error, :supporter_already_played_this_turn}
+      else
+        :ok
+      end
+    end
+  end
+
+  defp require_supporter_available_if_supporter(_metadata, _state, _player_id), do: :ok
+
+  defp require_card_id(%{card_id: card_id}, card_id), do: :ok
+
+  defp require_card_id(card, expected),
+    do: {:error, {:wrong_card_for_action, expected, card.card_id}}
+
+  defp require_rare_candy_evolves_from(%{evolves_from: stage_1_id} = metadata, target) do
+    with {:ok, stage_1_metadata} <- CardRegistry.fetch(stage_1_id),
+         :ok <- require_basic_pokemon_target(target) do
+      if stage_1_metadata.evolves_from == target.card_id do
+        :ok
+      else
+        {:error,
+         {:cannot_rare_candy, metadata.id, :expected_basic, stage_1_metadata.evolves_from, :got,
+          target.card_id}}
+      end
+    end
+  end
+
+  defp require_basic_pokemon_target(%{card_id: card_id}) do
+    with {:ok, metadata} <- CardRegistry.fetch(card_id) do
+      require_basic_pokemon(metadata)
+    end
+  end
+
+  defp require_poffin_targets(targets) do
+    Enum.reduce_while(targets, :ok, fn target, :ok ->
+      with {:ok, metadata} <- CardRegistry.fetch(target.card_id),
+           :ok <- require_basic_pokemon(metadata),
+           true <-
+             metadata.hp <= 70 ||
+               {:error, {:poffin_target_hp_too_high, target.card_id, metadata.hp}} do
+        {:cont, :ok}
+      else
+        {:error, reason} -> {:halt, {:error, reason}}
+      end
+    end)
+  end
+
+  defp require_hammer_item(%{card_id: card_id}) when card_id in ["POR-071", "TWM-148"], do: :ok
+  defp require_hammer_item(card), do: {:error, {:not_hammer_item, card.card_id}}
+
+  defp require_hammer_can_discard(%{card_id: "TWM-148"}, %{energy_type: :special}), do: :ok
+
+  defp require_hammer_can_discard(%{card_id: "TWM-148"}, metadata),
+    do: {:error, {:enhanced_hammer_requires_special_energy, metadata.id}}
+
+  defp require_hammer_can_discard(%{card_id: "POR-071"}, _metadata), do: :ok
+
+  defp require_not_retreated_this_turn(%{retreated?: false}), do: :ok
+  defp require_not_retreated_this_turn(_player), do: {:error, :already_retreated_this_turn}
+
+  defp require_retreat_cost(%{retreat_cost: cost}, attachments) do
+    provided_types = Enum.flat_map(attachments, &attachment_provided_types/1)
+
+    if length(attachments) == length(cost) and can_pay_cost?(cost, provided_types) do
+      :ok
+    else
+      {:error, {:cannot_pay_retreat_cost, cost, provided_types}}
+    end
+  end
+
+  defp require_retreat_cost(metadata, _attachments),
+    do: {:error, {:missing_retreat_cost, metadata.id}}
+
+  defp require_ability(source, ability_id) do
+    with {:ok, %{abilities: abilities}} <- CardRegistry.fetch(source.card_id),
+         {:ok, ability} <- Map.fetch(abilities, ability_id) do
+      {:ok, Map.put(ability, :id, ability_id)}
+    else
+      {:ok, _card_without_abilities} ->
+        {:error, {:unsupported_ability, source.card_id, ability_id}}
+
+      :error ->
+        {:error, {:unsupported_ability, source.card_id, ability_id}}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp require_marker_available(player, marker) do
+    if MapSet.member?(player.markers, marker),
+      do: {:error, {:marker_already_used, marker}},
+      else: :ok
+  end
+
+  defp require_top_two_choice(%{deck: [chosen, other | _deck]}, chosen_id)
+       when chosen.instance_id == chosen_id,
+       do: {:ok, chosen, other}
+
+  defp require_top_two_choice(%{deck: [other, chosen | _deck]}, chosen_id)
+       when chosen.instance_id == chosen_id,
+       do: {:ok, chosen, other}
+
+  defp require_top_two_choice(%{deck: deck}, _chosen_id) when length(deck) < 2,
+    do: {:error, :not_enough_cards_for_recon_directive}
+
+  defp require_top_two_choice(_player, chosen_id),
+    do: {:error, {:chosen_card_not_in_top_two, chosen_id}}
+
+  defp require_evolved_this_turn(%{turn_number: turn_number}, %{turn_entered_play: turn_number}),
+    do: :ok
+
+  defp require_evolved_this_turn(_state, source),
+    do: {:error, {:pokemon_did_not_evolve_this_turn, source.instance_id}}
+
+  defp require_evolves_from(%{evolves_from: card_id}, %{card_id: card_id}), do: :ok
+
+  defp require_evolves_from(%{id: evolution_card_id, evolves_from: expected}, target),
+    do: {:error, {:cannot_evolve, evolution_card_id, :expected, expected, :got, target.card_id}}
+
+  defp require_evolves_from(%{id: evolution_card_id}, _target),
+    do: {:error, {:card_is_not_evolution, evolution_card_id}}
+
+  defp require_first_turn_evolution_allowed(%{turn_number: 1}),
+    do: {:error, :cannot_evolve_on_first_turn_of_game}
+
+  defp require_first_turn_evolution_allowed(_state), do: :ok
+
+  defp require_can_evolve_this_turn(%{turn_number: turn_number}, %{turn_entered_play: turn_number}),
+       do: {:error, :cannot_evolve_pokemon_played_this_turn}
+
+  defp require_can_evolve_this_turn(_state, _target), do: :ok
+
+  defp require_energy_attachment_available(%{energy_attached?: false}), do: :ok
+
+  defp require_energy_attachment_available(_player),
+    do: {:error, :energy_already_attached_this_turn}
+
+  defp require_bench_space(%{bench: bench}) when length(bench) < 5, do: :ok
+  defp require_bench_space(_player), do: {:error, :bench_full}
+
+  defp find_in_player_zone(state, player_id, zone, instance_id) do
+    with {:ok, player} <- fetch_player(state, player_id) do
+      player
+      |> Map.fetch!(zone)
+      |> Enum.find(&(&1.instance_id == instance_id))
+      |> case do
+        nil -> {:error, {:card_not_found, player_id, zone, instance_id}}
+        card -> {:ok, card}
+      end
+    end
+  end
+
+  defp fetch_deck_cards(state, player_id, instance_ids) do
+    Enum.reduce_while(instance_ids, {:ok, []}, fn instance_id, {:ok, cards} ->
+      case find_in_player_zone(state, player_id, :deck, instance_id) do
+        {:ok, card} -> {:cont, {:ok, [card | cards]}}
+        {:error, reason} -> {:halt, {:error, reason}}
+      end
+    end)
+    |> case do
+      {:ok, cards} -> {:ok, Enum.reverse(cards)}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp fetch_hand_cards(state, player_id, instance_ids) do
+    Enum.reduce_while(instance_ids, {:ok, []}, fn instance_id, {:ok, cards} ->
+      case find_in_player_zone(state, player_id, :hand, instance_id) do
+        {:ok, card} -> {:cont, {:ok, [card | cards]}}
+        {:error, reason} -> {:halt, {:error, reason}}
+      end
+    end)
+    |> case do
+      {:ok, cards} -> {:ok, Enum.reverse(cards)}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp find_in_play(state, player_id, instance_id) do
+    with {:ok, player} <- fetch_player(state, player_id) do
+      ([player.active] ++ player.bench)
+      |> Enum.reject(&is_nil/1)
+      |> Enum.find(&(&1.instance_id == instance_id))
+      |> case do
+        nil -> {:error, {:pokemon_not_in_play, player_id, instance_id}}
+        card -> {:ok, card}
+      end
+    end
+  end
+
+  defp find_attachment(target, attachment_id) do
+    target.attachments
+    |> Enum.find(&(&1.instance_id == attachment_id))
+    |> case do
+      nil -> {:error, {:attachment_not_found, target.instance_id, attachment_id}}
+      attachment -> {:ok, attachment}
+    end
+  end
+
+  defp fetch_attachments(target, attachment_ids) do
+    Enum.reduce_while(attachment_ids, {:ok, []}, fn attachment_id, {:ok, attachments} ->
+      case find_attachment(target, attachment_id) do
+        {:ok, attachment} -> {:cont, {:ok, [attachment | attachments]}}
+        {:error, reason} -> {:halt, {:error, reason}}
+      end
+    end)
+    |> case do
+      {:ok, attachments} -> {:ok, Enum.reverse(attachments)}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp attachment_provided_types(attachment) do
+    attachment.card_id
+    |> CardRegistry.fetch!()
+    |> Map.get(:provides, [])
+  end
+
+  defp reject_instance(cards, instance_id),
+    do: Enum.reject(cards, &(&1.instance_id == instance_id))
+end
