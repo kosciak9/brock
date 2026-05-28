@@ -1600,6 +1600,82 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
     assert :ok = Invariants.validate_card_accounting(state)
   end
 
+  test "Dragapult ex Phantom Dive accumulates prizes for simultaneous Active and Bench KOs" do
+    assert {:ok, state} =
+             setup_custom_basic_game(:dragapult, "TWM-128", "MEG-054", bench_id: "TEF-023")
+
+    assert {:ok, state} = open_turn(state, :dragapult)
+
+    state = attach_from_hand_without_turn_limit(state, :dragapult, ["MEE-005", "MEE-002"])
+
+    assert {:ok, state, drakloak} =
+             ensure_card_in_hand_from_any_zone(state, :dragapult, "TWM-129")
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :evolve_from_hand,
+               player_id: :dragapult,
+               params: %{
+                 instance_id: drakloak.instance_id,
+                 target_id: state.players.dragapult.active.instance_id
+               }
+             })
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{type: :end_turn, player_id: :dragapult})
+
+    assert {:ok, state} = Engine.apply_action(state, %Action{type: :start_next_turn})
+    assert {:ok, state} = pass_turn(state, :alakazam)
+    assert {:ok, state} = open_turn(state, :dragapult)
+    assert {:ok, state, dragapult_ex} = search_to_hand_by_card_id(state, :dragapult, "TWM-130")
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :evolve_from_hand,
+               player_id: :dragapult,
+               params: %{
+                 instance_id: dragapult_ex.instance_id,
+                 target_id: state.players.dragapult.active.instance_id
+               }
+             })
+
+    bench_target = hd(state.players.alakazam.bench)
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :declare_attack,
+               player_id: :dragapult,
+               params: %{
+                 attack_id: :phantom_dive,
+                 bench_damage: %{bench_target.instance_id => 6}
+               }
+             })
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :resolve_declared_attack,
+               player_id: :dragapult
+             })
+
+    assert state.game_lifecycle == :choosing_prizes
+    assert state.pending_prizes.remaining == 2
+    assert state.players.alakazam.active == nil
+    refute Enum.any?(state.players.alakazam.bench, &(&1.instance_id == bench_target.instance_id))
+
+    prize_count = length(state.players.dragapult.prizes)
+
+    assert {:ok, state} = choose_first_prize(state, :dragapult)
+    assert state.game_lifecycle == :choosing_prizes
+    assert state.pending_prizes.remaining == 1
+    assert length(state.players.dragapult.prizes) == prize_count - 1
+
+    assert {:ok, state} = choose_first_prize(state, :dragapult)
+    assert state.game_lifecycle in [:replacing_active, :finished]
+    assert state.pending_prizes == nil
+    assert length(state.players.dragapult.prizes) == prize_count - 2
+    assert :ok = Invariants.validate_card_accounting(state)
+  end
+
   test "Rabsca Spherical Shield prevents Phantom Dive bench counters" do
     assert {:ok, state} = setup_game(active_player: :dragapult, alakazam_bench?: true)
     assert {:ok, state} = open_turn(state, :dragapult)
@@ -1759,6 +1835,30 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
       true ->
         {:skip, state}
     end
+  end
+
+  defp ensure_card_in_hand_from_any_zone(state, player_id, card_id) do
+    case ensure_card_in_hand(state, player_id, card_id) do
+      {:ok, state, card} ->
+        {:ok, state, card}
+
+      {:skip, state} ->
+        move_prize_to_hand_for_test(state, player_id, card_id)
+    end
+  end
+
+  defp move_prize_to_hand_for_test(state, player_id, card_id) do
+    player = state.players[player_id]
+    card = Enum.find(player.prizes, &(&1.card_id == card_id))
+    moved = %{card | zone: :hand, lifecycle: :in_hand}
+
+    player = %{
+      player
+      | prizes: Enum.reject(player.prizes, &(&1.instance_id == card.instance_id)),
+        hand: [moved | player.hand]
+    }
+
+    {:ok, put_in(state.players[player_id], player), moved}
   end
 
   defp exercise_card_from_hand(state, player_id, card) do

@@ -1850,6 +1850,22 @@ defmodule Brock.Tcg.Sim.Engine do
 
   defp award_prizes(state, _player_id, _defending_player_id, 0), do: {:ok, state}
 
+  defp award_prizes(
+         %{game_lifecycle: :choosing_prizes} = state,
+         player_id,
+         _defending_player_id,
+         count
+       )
+       when count > 0 do
+    with {:ok, pending_prizes} <- fetch_pending_prizes(state, player_id) do
+      {:ok,
+       %{
+         state
+         | pending_prizes: %{pending_prizes | remaining: pending_prizes.remaining + count}
+       }}
+    end
+  end
+
   defp award_prizes(state, player_id, defending_player_id, count) when count > 0 do
     with {:ok, game_lifecycle} <- GameLifecycle.transition(state.game_lifecycle, :choose_prizes) do
       {:ok,
