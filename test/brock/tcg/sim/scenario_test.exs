@@ -992,6 +992,78 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
     assert :ok = Invariants.validate_card_accounting(state)
   end
 
+  test "Dedenne Electromagnetic Sonar recovers a Trainer from discard" do
+    assert {:ok, state} = setup_custom_basic_game(:alakazam, "TWM-128", "SSP-087")
+    assert {:ok, state} = open_turn(state, :alakazam)
+    assert {:ok, state, energy} = search_to_hand_by_card_id(state, :alakazam, "POR-088")
+    assert {:ok, state, trainer} = search_to_hand_by_card_id(state, :alakazam, "MEG-125")
+
+    assert {:ok, state} = discard_from_hand(state, :alakazam, trainer)
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :attach_energy,
+               player_id: :alakazam,
+               params: %{
+                 instance_id: energy.instance_id,
+                 target_id: state.players.alakazam.active.instance_id
+               }
+             })
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :declare_attack,
+               player_id: :alakazam,
+               params: %{attack_id: :electromagnetic_sonar, target_id: trainer.instance_id}
+             })
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :resolve_declared_attack,
+               player_id: :alakazam
+             })
+
+    assert Enum.any?(state.players.alakazam.hand, &(&1.instance_id == trainer.instance_id))
+    refute Enum.any?(state.players.alakazam.discard, &(&1.instance_id == trainer.instance_id))
+    assert :ok = Invariants.validate_card_accounting(state)
+  end
+
+  test "Abra Teleportation Attack switches itself with a Benched Pokemon" do
+    assert {:ok, state} =
+             setup_custom_basic_game(:alakazam, "TWM-128", "MEG-054", bench_id: "JTG-120")
+
+    assert {:ok, state} = open_turn(state, :alakazam)
+    assert {:ok, state, energy} = search_to_hand_by_card_id(state, :alakazam, "POR-088")
+
+    abra_id = state.players.alakazam.active.instance_id
+    switch_id = hd(state.players.alakazam.bench).instance_id
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :attach_energy,
+               player_id: :alakazam,
+               params: %{instance_id: energy.instance_id, target_id: abra_id}
+             })
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :declare_attack,
+               player_id: :alakazam,
+               params: %{attack_id: :teleportation_attack, switch_id: switch_id}
+             })
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :resolve_declared_attack,
+               player_id: :alakazam
+             })
+
+    assert state.players.alakazam.active.instance_id == switch_id
+    assert Enum.any?(state.players.alakazam.bench, &(&1.instance_id == abra_id))
+    assert state.players.dragapult.active.damage == 10
+    assert :ok = Invariants.validate_card_accounting(state)
+  end
+
   test "Dudunsparce Run Away Draw draws then shuffles itself and stack into deck" do
     assert {:ok, state} = setup_game(active_player: :dragapult, alakazam_bench?: true)
     assert {:ok, state} = pass_turn(state, :dragapult)
