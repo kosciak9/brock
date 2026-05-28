@@ -34,6 +34,7 @@
 - Added: Verified Forest of Vitality same-turn Grass Evolution note
 - Added: Verified Rellor Slight Intrusion self-damage attack note
 - Added: Verified Risky Ruins Basic non-Dark Bench damage note
+- Added: Verified Handheld Fan attack-triggered Energy movement note
 - Updated: Engine index with full-game two-deck simulator implementation entry
 
 ## [2026-05-27] research | Card Engine Authoring Models

@@ -1042,6 +1042,68 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
     assert :ok = Invariants.validate_card_accounting(state)
   end
 
+  test "Handheld Fan moves Energy from attacker when attached Active is damaged" do
+    assert {:ok, state} = setup_game(active_player: :dragapult, alakazam_bench?: true)
+    assert {:ok, state} = pass_turn(state, :dragapult)
+    assert {:ok, state} = open_turn(state, :alakazam)
+    assert {:ok, state, fan} = search_to_hand_by_card_id(state, :alakazam, "TWM-150")
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :attach_tool,
+               player_id: :alakazam,
+               params: %{
+                 instance_id: fan.instance_id,
+                 target_id: state.players.alakazam.active.instance_id
+               }
+             })
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{type: :end_turn, player_id: :alakazam})
+
+    assert {:ok, state} = Engine.apply_action(state, %Action{type: :start_next_turn})
+    assert {:ok, state} = open_turn(state, :dragapult)
+
+    energy = card_in_hand(state, :dragapult, "MEE-005")
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :attach_energy,
+               player_id: :dragapult,
+               params: %{
+                 instance_id: energy.instance_id,
+                 target_id: state.players.dragapult.active.instance_id
+               }
+             })
+
+    attached = hd(state.players.dragapult.active.attachments)
+    [fan_target] = state.players.alakazam.bench
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :declare_attack,
+               player_id: :dragapult,
+               params: %{
+                 attack_id: :petty_grudge,
+                 handheld_fan_attachment_id: attached.instance_id,
+                 handheld_fan_target_id: fan_target.instance_id
+               }
+             })
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :resolve_declared_attack,
+               player_id: :dragapult
+             })
+
+    assert state.players.alakazam.active.damage == 10
+    assert state.players.dragapult.active.attachments == []
+
+    updated_fan_target = hd(state.players.alakazam.bench)
+    assert Enum.any?(updated_fan_target.attachments, &(&1.instance_id == attached.instance_id))
+    assert :ok = Invariants.validate_card_accounting(state)
+  end
+
   test "Dragapult ex Phantom Dive damages Active and places six bench counters" do
     assert {:ok, state} = setup_game(active_player: :dragapult, alakazam_bench?: true)
     assert {:ok, state} = open_turn(state, :dragapult)

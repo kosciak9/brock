@@ -39,6 +39,7 @@ The first reducer lives in `Brock.Tcg.Sim.Engine` and supports:
 - retreating by paying explicit attached Energy costs and enforcing once-per-turn retreat,
 - switching Active with a Benched Pokémon without spending retreat for turn,
 - applying verified Air Balloon retreat-cost reduction,
+- resolving verified Handheld Fan attack-triggered Energy movement,
 - playing scripted Trainers to discard,
 - playing Stadiums with Stadium replacement/discard,
 - attaching Pokémon Tools,
@@ -131,6 +132,7 @@ The current exact-text slice was checked against Limitless card pages for:
 - `DRI-180` Team Rocket's Watchtower,
 - `MEG-117` Forest of Vitality,
 - `MEG-127` Risky Ruins,
+- `TWM-150` Handheld Fan,
 - `TEF-023` Rellor,
 - `TEF-024` Rabsca.
 
@@ -149,6 +151,7 @@ Current tests cover:
 - rejection of Evolution onto the wrong Pokémon,
 - retreat cost payment, discard, switch, and once-per-turn rejection,
 - Air Balloon retreat-cost reduction,
+- Handheld Fan moving Energy from the attacker to the Tool holder's Bench when the Active holder is damaged,
 - non-retreat switching,
 - scripted Trainer/Stadium/Tool/search/discard/recovery movement,
 - Rare Candy, Buddy-Buddy Poffin, Ultra Ball, Boss's Orders, Crushing Hammer, and Enhanced Hammer supported-scope behavior,
@@ -180,9 +183,9 @@ Focused validation command used:
 mix format && mix test test/brock/tcg/sim
 ```
 
-Result on 2026-05-28 after Risky Ruins slice: 57 simulator tests, 0 failures.
+Result on 2026-05-28 after Handheld Fan slice: 58 simulator tests, 0 failures.
 
-Full project validation also passed via `mix precommit`: 62 tests, 0 failures.
+Full project validation also passed via `mix precommit`: 63 tests, 0 failures.
 
 ## Next implementation questions
 
