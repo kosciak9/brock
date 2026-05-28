@@ -38,6 +38,8 @@
 - Added: Verified Rabsca Spherical Shield bench protection note
 - Added: Verified Budew Itchy Pollen next-turn Item lock note
 - Added: Verified Moltres Fighting Wings Pokémon ex damage bonus note
+- Added: Verified Munkidori Adrena-Brain and Mind Bend notes
+- Added: Verified Fezandipiti ex Flip the Script and Cruel Arrow notes
 - Updated: Engine index with full-game two-deck simulator implementation entry
 
 ## [2026-05-27] research | Card Engine Authoring Models

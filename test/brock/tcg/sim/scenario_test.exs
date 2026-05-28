@@ -1248,6 +1248,127 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
     assert :ok = Invariants.validate_card_accounting(state)
   end
 
+  test "Munkidori Adrena-Brain moves up to three damage counters with Darkness Energy" do
+    assert {:ok, state} = setup_custom_basic_game(:dragapult, "TWM-095", "ASC-142")
+    assert {:ok, state} = open_turn(state, :dragapult)
+
+    darkness = card_in_hand(state, :dragapult, "MEE-007")
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :attach_energy,
+               player_id: :dragapult,
+               params: %{
+                 instance_id: darkness.instance_id,
+                 target_id: state.players.dragapult.active.instance_id
+               }
+             })
+
+    state = put_in(state.players.dragapult.active.damage, 40)
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :use_ability,
+               player_id: :dragapult,
+               params: %{
+                 source_id: state.players.dragapult.active.instance_id,
+                 ability_id: :adrena_brain,
+                 from_id: state.players.dragapult.active.instance_id,
+                 target_player_id: :alakazam,
+                 target_id: state.players.alakazam.active.instance_id,
+                 counters: 3
+               }
+             })
+
+    assert state.players.dragapult.active.damage == 10
+    assert state.players.alakazam.active.damage == 30
+
+    assert {:error, {:marker_already_used, {:ability_used, _, :adrena_brain}}} =
+             Engine.apply_action(state, %Action{
+               type: :use_ability,
+               player_id: :dragapult,
+               params: %{
+                 source_id: state.players.dragapult.active.instance_id,
+                 ability_id: :adrena_brain,
+                 from_id: state.players.dragapult.active.instance_id,
+                 target_player_id: :alakazam,
+                 target_id: state.players.alakazam.active.instance_id,
+                 counters: 1
+               }
+             })
+
+    assert :ok = Invariants.validate_card_accounting(state)
+  end
+
+  test "Munkidori Mind Bend damages and Confuses the opponent Active" do
+    assert {:ok, state} = setup_custom_basic_game(:dragapult, "TWM-095", "ASC-142")
+    assert {:ok, state} = open_turn(state, :dragapult)
+
+    state = attach_from_hand_without_turn_limit(state, :dragapult, ["MEE-005", "MEE-002"])
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :declare_attack,
+               player_id: :dragapult,
+               params: %{attack_id: :mind_bend}
+             })
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :resolve_declared_attack,
+               player_id: :dragapult
+             })
+
+    assert state.players.alakazam.active.damage == 60
+    assert state.players.alakazam.active.status == :confused
+    assert :ok = Invariants.validate_card_accounting(state)
+  end
+
+  test "Fezandipiti ex Flip the Script and Cruel Arrow use verified text" do
+    assert {:ok, state} =
+             setup_custom_basic_game(:dragapult, "ASC-142", "ASC-016", bench_id: "PFL-014")
+
+    assert {:ok, state} = open_turn(state, :dragapult)
+
+    state = put_in(state.players.dragapult.pokemon_knocked_out_during_opponents_last_turn?, true)
+    hand_count = length(state.players.dragapult.hand)
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :use_ability,
+               player_id: :dragapult,
+               params: %{
+                 source_id: state.players.dragapult.active.instance_id,
+                 ability_id: :flip_the_script
+               }
+             })
+
+    assert length(state.players.dragapult.hand) == hand_count + 3
+
+    state =
+      attach_from_hand_without_turn_limit(state, :dragapult, ["MEE-002", "MEE-005", "MEE-007"])
+
+    bench_target = hd(state.players.alakazam.bench)
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :declare_attack,
+               player_id: :dragapult,
+               params: %{attack_id: :cruel_arrow, target_id: bench_target.instance_id}
+             })
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :resolve_declared_attack,
+               player_id: :dragapult
+             })
+
+    damaged_bench = hd(state.players.alakazam.bench)
+    assert state.players.alakazam.active.damage == 0
+    assert damaged_bench.damage == 100
+    assert :ok = Invariants.validate_card_accounting(state)
+  end
+
   test "Dragapult ex Phantom Dive damages Active and places six bench counters" do
     assert {:ok, state} = setup_game(active_player: :dragapult, alakazam_bench?: true)
     assert {:ok, state} = open_turn(state, :dragapult)
@@ -1598,7 +1719,9 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
     })
   end
 
-  defp setup_custom_basic_game(active_player, attacker_active_id, defender_active_id) do
+  defp setup_custom_basic_game(active_player, attacker_active_id, defender_active_id, opts \\ []) do
+    defender_bench_id = Keyword.get(opts, :bench_id)
+
     attacker_opening = [
       attacker_active_id,
       "MEE-002",
@@ -1610,7 +1733,9 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
     ]
 
     defender_deck_ids = deck_ids_for_active(defender_active_id)
-    defender_opening = opening_hand_for_active(defender_active_id, defender_deck_ids)
+
+    defender_opening =
+      opening_hand_for_active(defender_active_id, defender_deck_ids, defender_bench_id)
 
     state =
       Engine.new_game(
@@ -1625,10 +1750,16 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
          {:ok, state} <- Engine.apply_action(state, %Action{type: :draw_opening_hand}),
          {:ok, state} <- choose_active(state, :dragapult, attacker_active_id),
          {:ok, state} <- choose_active(state, :alakazam, defender_active_id),
+         {:ok, state} <- maybe_choose_custom_setup_bench(state, defender_bench_id),
          {:ok, state} <- Engine.apply_action(state, %Action{type: :place_prizes}) do
       Engine.apply_action(state, %Action{type: :complete_setup})
     end
   end
+
+  defp maybe_choose_custom_setup_bench(state, nil), do: {:ok, state}
+
+  defp maybe_choose_custom_setup_bench(state, bench_id),
+    do: choose_setup_bench(state, :alakazam, bench_id)
 
   defp deck_ids_for_active(card_id) do
     if card_id in Alakazam27147.card_ids() do
@@ -1638,9 +1769,31 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
     end
   end
 
-  defp opening_hand_for_active(card_id, deck_ids) do
+  defp opening_hand_for_active(card_id, deck_ids, nil) do
     filler = Enum.reject(deck_ids, &(&1 == card_id)) |> Enum.take(6)
     [card_id | filler]
+  end
+
+  defp opening_hand_for_active(card_id, deck_ids, bench_id) do
+    filler = Enum.reject(deck_ids, &(&1 in [card_id, bench_id])) |> Enum.take(5)
+    [card_id, bench_id | filler]
+  end
+
+  defp attach_from_hand_without_turn_limit(state, player_id, card_ids) do
+    Enum.reduce(card_ids, state, fn card_id, state ->
+      card = card_in_hand(state, player_id, card_id)
+      player = state.players[player_id]
+      attached = %{card | zone: :attached, lifecycle: :attached}
+      active = %{player.active | attachments: [attached | player.active.attachments]}
+
+      player = %{
+        player
+        | active: active,
+          hand: Enum.reject(player.hand, &(&1.instance_id == card.instance_id))
+      }
+
+      put_in(state.players[player_id], player)
+    end)
   end
 
   defp setup_game(opts) do

@@ -766,6 +766,64 @@ defmodule Brock.Tcg.Sim.Engine do
     end
   end
 
+  defp reduce(state, %Action{
+         type: :use_ability,
+         player_id: player_id,
+         params: %{
+           source_id: source_id,
+           ability_id: :adrena_brain,
+           from_id: from_id,
+           target_player_id: target_player_id,
+           target_id: target_id,
+           counters: counters
+         }
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, source} <- find_in_play(state, player_id, source_id),
+         {:ok, ability} <- require_ability(state, source, :adrena_brain),
+         :ok <- require_attached_energy_type(source, ability.effect.requires_attached_type),
+         {:ok, player} <- fetch_player(state, player_id),
+         :ok <- require_marker_available(player, {:ability_used, source_id, :adrena_brain}),
+         :ok <- require_counter_count(counters, ability.effect.max_counters),
+         {:ok, damaged_from} <- find_in_play(state, player_id, from_id),
+         :ok <- require_available_damage_counters(damaged_from, counters),
+         {:ok, _target} <- find_in_play(state, target_player_id, target_id),
+         {:ok, opponent_id} <- opponent_id(state, player_id),
+         :ok <- require_same_player(target_player_id, opponent_id),
+         {:ok, state} <-
+           move_damage_counters(state, player_id, from_id, target_player_id, target_id, counters),
+         {:ok, player} <- fetch_player(state, player_id),
+         {:ok, state} <-
+           resolve_knock_outs_after_damage(state, player_id, target_player_id, target_id) do
+      player = %{
+        player
+        | markers: MapSet.put(player.markers, {:ability_used, source_id, :adrena_brain})
+      }
+
+      {:ok, put_player(state, player)}
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :use_ability,
+         player_id: player_id,
+         params: %{source_id: source_id, ability_id: :flip_the_script}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, source} <- find_in_play(state, player_id, source_id),
+         {:ok, ability} <- require_ability(state, source, :flip_the_script),
+         {:ok, player} <- fetch_player(state, player_id),
+         :ok <- require_pokemon_knocked_out_during_opponents_last_turn(player),
+         :ok <- require_marker_available(player, {:ability_used, :flip_the_script}),
+         {:ok, state} <- draw_cards(state, player_id, ability.effect.count),
+         {:ok, player} <- fetch_player(state, player_id) do
+      player = %{player | markers: MapSet.put(player.markers, {:ability_used, :flip_the_script})}
+      {:ok, put_player(state, player)}
+    end
+  end
+
   defp reduce(state, %Action{type: :draw_cards, player_id: player_id, params: %{count: count}})
        when is_integer(count) and count >= 0 do
     with :ok <- require_active_player(state, player_id),
@@ -1458,6 +1516,28 @@ defmodule Brock.Tcg.Sim.Engine do
     end
   end
 
+  defp heal_pokemon_damage(state, player_id, instance_id, damage) do
+    with {:ok, target} <- find_in_play(state, player_id, instance_id),
+         {:ok, player} <- fetch_player(state, player_id) do
+      healed = %{target | damage: max(target.damage - damage, 0)}
+      {:ok, put_player(state, replace_in_play(player, healed))}
+    end
+  end
+
+  defp move_damage_counters(state, from_player_id, from_id, target_player_id, target_id, counters) do
+    damage = counters * 10
+
+    with {:ok, state} <- heal_pokemon_damage(state, from_player_id, from_id, damage) do
+      damage_pokemon(state, target_player_id, target_id, damage)
+    end
+  end
+
+  defp set_pokemon_status(state, player_id, target, status) do
+    with {:ok, player} <- fetch_player(state, player_id) do
+      {:ok, put_player(state, replace_in_play(player, %{target | status: status}))}
+    end
+  end
+
   defp resolve_knock_outs_after_damage(state, attacking_player_id, defending_player_id, target_id) do
     with {:ok, target} <- find_in_play(state, defending_player_id, target_id),
          {:ok, metadata} <- CardRegistry.fetch(target.card_id) do
@@ -1757,6 +1837,28 @@ defmodule Brock.Tcg.Sim.Engine do
     end
   end
 
+  defp resolve_attack_effect(state, %{
+         attack: %{effect: %{type: :confuse_defender_active}},
+         target_player_id: target_player_id,
+         target_id: target_id
+       }) do
+    case find_in_play(state, target_player_id, target_id) do
+      {:ok, target} -> set_pokemon_status(state, target_player_id, target, :confused)
+      {:error, _reason} -> {:ok, state}
+    end
+  end
+
+  defp resolve_attack_effect(state, %{
+         attack: %{effect: %{type: :damage_one_opponent_pokemon, damage: damage}},
+         player_id: player_id,
+         target_player_id: target_player_id,
+         params: %{target_id: target_id}
+       }) do
+    with {:ok, state} <- damage_pokemon(state, target_player_id, target_id, damage) do
+      resolve_knock_outs_after_damage(state, player_id, target_player_id, target_id)
+    end
+  end
+
   defp resolve_attack_effect(state, _pending_attack), do: {:ok, state}
 
   defp bench_protected_from_attack_effects?(state, player_id) do
@@ -1808,6 +1910,28 @@ defmodule Brock.Tcg.Sim.Engine do
 
       true ->
         :ok
+    end
+  end
+
+  defp require_attack_effect_params(
+         %{effect: %{type: :damage_one_opponent_pokemon}},
+         params,
+         defender
+       ) do
+    target_id = Map.get(params, :target_id)
+
+    cond do
+      is_nil(target_id) ->
+        {:error, :missing_damage_target_for_attack}
+
+      defender.active && defender.active.instance_id == target_id ->
+        :ok
+
+      Enum.any?(defender.bench, &(&1.instance_id == target_id)) ->
+        :ok
+
+      true ->
+        {:error, :damage_target_not_found}
     end
   end
 
@@ -2202,6 +2326,45 @@ defmodule Brock.Tcg.Sim.Engine do
       do: {:error, {:marker_already_used, marker}},
       else: :ok
   end
+
+  defp require_attached_energy_type(pokemon, type) do
+    if attached_energy_type?(pokemon, type) do
+      :ok
+    else
+      {:error, {:missing_attached_energy_type, pokemon.instance_id, type}}
+    end
+  end
+
+  defp attached_energy_type?(pokemon, type) do
+    Enum.any?(pokemon.attachments, fn attachment ->
+      attachment.card_id
+      |> CardRegistry.fetch!()
+      |> Map.get(:provides, [])
+      |> Enum.member?(type)
+    end)
+  end
+
+  defp require_counter_count(counters, max_counters)
+       when is_integer(counters) and counters >= 0 and counters <= max_counters,
+       do: :ok
+
+  defp require_counter_count(counters, max_counters),
+    do: {:error, {:invalid_damage_counter_count, counters, max_counters}}
+
+  defp require_available_damage_counters(pokemon, counters) do
+    available = div(pokemon.damage, 10)
+
+    if counters <= available do
+      :ok
+    else
+      {:error, {:not_enough_damage_counters, pokemon.instance_id, counters, available}}
+    end
+  end
+
+  defp require_same_player(player_id, player_id), do: :ok
+
+  defp require_same_player(player_id, expected),
+    do: {:error, {:wrong_player, :expected, expected, :got, player_id}}
 
   defp require_top_two_choice(%{deck: [chosen, other | _deck]}, chosen_id)
        when chosen.instance_id == chosen_id,

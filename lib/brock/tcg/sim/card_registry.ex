@@ -56,7 +56,32 @@ defmodule Brock.Tcg.Sim.CardRegistry do
         }
       }
     },
-    "TWM-095" => %{name: "Munkidori", supertype: :pokemon, stage: :basic, hp: 110, prize_count: 1},
+    "TWM-095" => %{
+      name: "Munkidori",
+      supertype: :pokemon,
+      stage: :basic,
+      hp: 110,
+      prize_count: 1,
+      retreat_cost: [:colorless],
+      abilities: %{
+        adrena_brain: %{
+          name: "Adrena-Brain",
+          effect: %{
+            type: :move_damage_counters,
+            max_counters: 3,
+            requires_attached_type: :darkness
+          }
+        }
+      },
+      attacks: %{
+        mind_bend: %{
+          name: "Mind Bend",
+          cost: [:psychic, :colorless],
+          damage: 60,
+          effect: %{type: :confuse_defender_active}
+        }
+      }
+    },
     "ASC-016" => %{
       name: "Budew",
       supertype: :pokemon,
@@ -94,7 +119,22 @@ defmodule Brock.Tcg.Sim.CardRegistry do
       stage: :basic,
       rule_box?: true,
       hp: 210,
-      prize_count: 2
+      prize_count: 2,
+      retreat_cost: [:colorless],
+      abilities: %{
+        flip_the_script: %{
+          name: "Flip the Script",
+          effect: %{type: :draw_if_own_pokemon_knocked_out_last_turn, count: 3}
+        }
+      },
+      attacks: %{
+        cruel_arrow: %{
+          name: "Cruel Arrow",
+          cost: [:colorless, :colorless, :colorless],
+          damage: 0,
+          effect: %{type: :damage_one_opponent_pokemon, damage: 100}
+        }
+      }
     },
     "POR-062" => %{
       name: "Meowth ex",

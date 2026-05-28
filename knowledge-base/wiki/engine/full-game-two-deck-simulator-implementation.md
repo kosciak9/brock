@@ -60,6 +60,8 @@ The first reducer lives in `Brock.Tcg.Sim.Engine` and supports:
 - verified Rabsca Spherical Shield prevention for attack effects/damage to Benched Pokémon,
 - verified Budew Itchy Pollen next-turn Item lock slice,
 - verified Moltres Fighting Wings Pokémon ex damage bonus slice,
+- verified Munkidori Adrena-Brain damage-counter movement and Mind Bend Confusion slices,
+- verified Fezandipiti ex Flip the Script draw and Cruel Arrow targeted-damage slices,
 - verified Drakloak Recon Directive, Kadabra/Alakazam Psychic Draw, and Dudunsparce Run Away Draw ability slices,
 - declaring scripted attacks and metadata-backed real attacks,
 - validating attack costs against attached Energy,
@@ -139,7 +141,9 @@ The current exact-text slice was checked against Limitless card pages for:
 - `TEF-023` Rellor,
 - `TEF-024` Rabsca,
 - `ASC-016` Budew,
-- `PFL-014` Moltres.
+- `PFL-014` Moltres,
+- `TWM-095` Munkidori,
+- `ASC-142` Fezandipiti ex.
 
 ## Verification
 
@@ -171,6 +175,8 @@ Current tests cover:
 - Rabsca Spherical Shield preventing Phantom Dive Benched damage counters,
 - Budew Itchy Pollen preventing opponent Item cards during their next turn while allowing Supporters and clearing afterward,
 - Moltres Fighting Wings adding damage against Pokémon ex but not non-ex Pokémon,
+- Munkidori Adrena-Brain moving damage counters with Darkness Energy attached and Mind Bend applying Confusion,
+- Fezandipiti ex Flip the Script drawing after a KO last turn and Cruel Arrow targeting a Benched Pokémon,
 - Drakloak Recon Directive, Alakazam Psychic Draw, Dudunsparce Run Away Draw,
 - turn handoff to the opponent,
 - scripted attack declaration and damage resolution,
@@ -191,9 +197,9 @@ Focused validation command used:
 mix format && mix test test/brock/tcg/sim
 ```
 
-Result on 2026-05-28 after Moltres Fighting Wings slice: 61 simulator tests, 0 failures.
+Result on 2026-05-28 after Munkidori/Fezandipiti ex batch: 64 simulator tests, 0 failures.
 
-Full project validation also passed via `mix precommit`: 66 tests, 0 failures.
+Full project validation also passed via `mix precommit`: 69 tests, 0 failures.
 
 ## Next implementation questions
 
