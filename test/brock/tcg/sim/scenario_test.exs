@@ -294,6 +294,102 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
              })
   end
 
+  test "Night Stretcher recovers a Pokemon or Basic Energy from discard" do
+    assert {:ok, state} = setup_game(active_player: :dragapult)
+    assert {:ok, state} = open_turn(state, :dragapult)
+
+    assert {:ok, state, stretcher} = search_to_hand_by_card_id(state, :dragapult, "ASC-196")
+    energy = card_in_hand(state, :dragapult, "MEE-002")
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :discard_from_hand,
+               player_id: :dragapult,
+               params: %{instance_id: energy.instance_id}
+             })
+
+    discarded_energy =
+      Enum.find(state.players.dragapult.discard, &(&1.instance_id == energy.instance_id))
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :night_stretcher,
+               player_id: :dragapult,
+               params: %{
+                 instance_id: stretcher.instance_id,
+                 target_id: discarded_energy.instance_id
+               }
+             })
+
+    assert Enum.any?(state.players.dragapult.hand, &(&1.instance_id == energy.instance_id))
+    assert Enum.any?(state.players.dragapult.discard, &(&1.instance_id == stretcher.instance_id))
+    refute Enum.any?(state.players.dragapult.discard, &(&1.instance_id == energy.instance_id))
+    assert :ok = Invariants.validate_card_accounting(state)
+  end
+
+  test "Crispin searches different Basic Energy types and attaches one" do
+    assert {:ok, state} = setup_game(active_player: :dragapult)
+    assert {:ok, state} = open_turn(state, :dragapult)
+
+    assert {:ok, state, crispin} = search_to_hand_by_card_id(state, :dragapult, "SCR-133")
+    fire = card_in_deck(state, :dragapult, "MEE-002")
+    psychic = card_in_deck(state, :dragapult, "MEE-005")
+    target = state.players.dragapult.active
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :crispin,
+               player_id: :dragapult,
+               params: %{
+                 instance_id: crispin.instance_id,
+                 hand_energy_id: fire.instance_id,
+                 attach_energy_id: psychic.instance_id,
+                 target_id: target.instance_id
+               }
+             })
+
+    assert Enum.any?(state.players.dragapult.hand, &(&1.instance_id == fire.instance_id))
+
+    assert Enum.any?(
+             state.players.dragapult.active.attachments,
+             &(&1.instance_id == psychic.instance_id)
+           )
+
+    assert Enum.any?(state.players.dragapult.discard, &(&1.instance_id == crispin.instance_id))
+    assert state.players.dragapult.supporter_played?
+    assert :ok = Invariants.validate_card_accounting(state)
+  end
+
+  test "Lillie's Determination shuffles hand then draws 8 with six Prizes remaining" do
+    assert {:ok, state} = setup_game(active_player: :dragapult)
+    assert {:ok, state} = open_turn(state, :dragapult)
+
+    lillie = card_in_hand(state, :dragapult, "MEG-119")
+
+    hand_without_lillie =
+      Enum.reject(state.players.dragapult.hand, &(&1.instance_id == lillie.instance_id))
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :lillies_determination,
+               player_id: :dragapult,
+               params: %{instance_id: lillie.instance_id}
+             })
+
+    assert length(state.players.dragapult.hand) == 8
+    assert Enum.any?(state.players.dragapult.discard, &(&1.instance_id == lillie.instance_id))
+    assert state.players.dragapult.supporter_played?
+
+    for shuffled_card <- hand_without_lillie do
+      refute Enum.any?(
+               state.players.dragapult.hand,
+               &(&1.instance_id == shuffled_card.instance_id)
+             )
+    end
+
+    assert :ok = Invariants.validate_card_accounting(state)
+  end
+
   test "retreat pays Energy, switches with Bench, and is once per turn" do
     assert {:ok, state} = setup_game(active_player: :dragapult)
     assert {:ok, state} = open_turn(state, :dragapult)

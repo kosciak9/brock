@@ -48,6 +48,7 @@ The first reducer lives in `Brock.Tcg.Sim.Engine` and supports:
 - card-specific Ultra Ball discard-two search,
 - card-specific Boss's Orders gust/switch,
 - card-specific Crushing Hammer / Enhanced Hammer attached-Energy discard checks,
+- verified Lillie's Determination shuffle-hand/draw, Crispin Basic Energy search/attach, and Night Stretcher discard recovery slices,
 - verified Drakloak Recon Directive, Kadabra/Alakazam Psychic Draw, and Dudunsparce Run Away Draw ability slices,
 - declaring scripted attacks and metadata-backed real attacks,
 - validating attack costs against attached Energy,
@@ -107,7 +108,10 @@ The current exact-text slice was checked against Limitless card pages for:
 - `MEG-055` Kadabra,
 - `MEG-056` Alakazam,
 - `JTG-120` Dunsparce,
-- `TEF-129` Dudunsparce.
+- `TEF-129` Dudunsparce,
+- `MEG-119` Lillie's Determination,
+- `SCR-133` Crispin,
+- `ASC-196` Night Stretcher.
 
 ## Verification
 
@@ -126,6 +130,7 @@ Current tests cover:
 - non-retreat switching,
 - scripted Trainer/Stadium/Tool/search/discard/recovery movement,
 - Rare Candy, Buddy-Buddy Poffin, Ultra Ball, Boss's Orders, Crushing Hammer, and Enhanced Hammer supported-scope behavior,
+- Lillie's Determination, Crispin, and Night Stretcher supported-scope behavior,
 - Drakloak Recon Directive, Alakazam Psychic Draw, Dudunsparce Run Away Draw,
 - turn handoff to the opponent,
 - scripted attack declaration and damage resolution,
@@ -146,15 +151,15 @@ Focused validation command used:
 mix format && mix test test/brock/tcg/sim
 ```
 
-Result on 2026-05-28 after retreat/evolution/ability/attack slice: 41 simulator tests, 0 failures.
+Result on 2026-05-28 after Supporter/Item effect slice: 44 simulator tests, 0 failures.
 
-Full project validation also passed via `mix precommit`: 46 tests, 0 failures.
+Full project validation also passed via `mix precommit`: 49 tests, 0 failures.
 
 ## Next implementation questions
 
 - Model mulligans as first-class setup state-machine steps.
 - Continue expanding real attack metadata and behavior for the rest of the fixed decklists.
 - Add ability timing/prompt structure instead of direct optional ability actions.
-- Replace scripted draw/recovery effects with card-specific Supporter/Item implementations.
+- Continue replacing scripted draw/recovery effects with card-specific Supporter/Item implementations.
 - Add replacement Active prompt handling rather than direct action-only replacement.
 - Decide when repeated hard-coded card behavior should be extracted into macros or a DSL.

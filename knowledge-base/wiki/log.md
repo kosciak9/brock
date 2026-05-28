@@ -25,6 +25,7 @@
 - Added: Retreat, switch, first-turn Evolution lock, and same-turn Evolution restriction notes
 - Added: Verified Drakloak, Kadabra, Alakazam, Dudunsparce ability slice notes
 - Added: Verified Abra, Dunsparce, Alakazam, and Dragapult ex attack/effect notes
+- Added: Verified Lillie's Determination, Crispin, and Night Stretcher Supporter/Item effect notes
 - Updated: Engine index with full-game two-deck simulator implementation entry
 
 ## [2026-05-27] research | Card Engine Authoring Models

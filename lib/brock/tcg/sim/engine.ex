@@ -470,6 +470,75 @@ defmodule Brock.Tcg.Sim.Engine do
   end
 
   defp reduce(state, %Action{
+         type: :night_stretcher,
+         player_id: player_id,
+         params: %{instance_id: stretcher_id, target_id: target_id}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, stretcher} <- find_in_player_zone(state, player_id, :hand, stretcher_id),
+         :ok <- require_card_id(stretcher, "ASC-196"),
+         {:ok, target} <- find_in_player_zone(state, player_id, :discard, target_id),
+         {:ok, target_metadata} <- CardRegistry.fetch(target.card_id),
+         :ok <- require_night_stretcher_target(target_metadata),
+         {:ok, state} <- discard_card_from_hand(state, player_id, stretcher, %{}) do
+      move_discard_card_to_hand(state, player_id, target)
+    end
+  end
+
+  defp reduce(
+         state,
+         %Action{
+           type: :crispin,
+           player_id: player_id,
+           params: %{instance_id: crispin_id, hand_energy_id: hand_energy_id}
+         } = action
+       ) do
+    attach_energy_id = Map.get(action.params, :attach_energy_id)
+    target_id = Map.get(action.params, :target_id)
+
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, crispin} <- find_in_player_zone(state, player_id, :hand, crispin_id),
+         {:ok, crispin_metadata} <- CardRegistry.fetch(crispin.card_id),
+         :ok <- require_card_id(crispin, "SCR-133"),
+         :ok <- require_supporter_available_if_supporter(crispin_metadata, state, player_id),
+         {:ok, hand_energy} <- find_in_player_zone(state, player_id, :deck, hand_energy_id),
+         {:ok, hand_energy_metadata} <- CardRegistry.fetch(hand_energy.card_id),
+         :ok <- require_basic_energy(hand_energy_metadata),
+         {:ok, attach_energy} <- optional_deck_card(state, player_id, attach_energy_id),
+         {:ok, attach_energy_metadata} <- optional_card_metadata(attach_energy),
+         :ok <- require_optional_basic_energy(attach_energy_metadata),
+         :ok <- require_different_energy_types(hand_energy_metadata, attach_energy_metadata),
+         {:ok, target} <- optional_in_play_target(state, player_id, target_id, attach_energy),
+         {:ok, state} <- discard_card_from_hand(state, player_id, crispin, crispin_metadata),
+         {:ok, state} <- move_deck_card_to_hand(state, player_id, hand_energy) do
+      case attach_energy do
+        nil -> {:ok, state}
+        attach_energy -> attach_deck_energy_to_pokemon(state, player_id, attach_energy, target)
+      end
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :lillies_determination,
+         player_id: player_id,
+         params: %{instance_id: lillie_id}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, lillie} <- find_in_player_zone(state, player_id, :hand, lillie_id),
+         {:ok, lillie_metadata} <- CardRegistry.fetch(lillie.card_id),
+         :ok <- require_card_id(lillie, "MEG-119"),
+         :ok <- require_supporter_available_if_supporter(lillie_metadata, state, player_id),
+         {:ok, state} <- discard_card_from_hand(state, player_id, lillie, lillie_metadata),
+         {:ok, state} <- shuffle_hand_into_deck(state, player_id) do
+      draw_count = if length(state.players[player_id].prizes) == 6, do: 8, else: 6
+      draw_cards(state, player_id, draw_count)
+    end
+  end
+
+  defp reduce(state, %Action{
          type: :use_ability,
          player_id: player_id,
          params: %{source_id: source_id, ability_id: :recon_directive, chosen_id: chosen_id}
@@ -834,6 +903,20 @@ defmodule Brock.Tcg.Sim.Engine do
     end
   end
 
+  defp attach_deck_energy_to_pokemon(state, player_id, energy, target) do
+    with {:ok, player} <- fetch_player(state, player_id) do
+      moved_energy = %{energy | zone: :attached, lifecycle: :attached}
+      updated_target = %{target | attachments: [moved_energy | target.attachments]}
+
+      player =
+        player
+        |> replace_in_play(updated_target)
+        |> Map.update!(:deck, &reject_instance(&1, energy.instance_id))
+
+      {:ok, put_player(state, player)}
+    end
+  end
+
   defp evolve_pokemon(state, player_id, evolution_card, target) do
     with {:ok, player} <- fetch_player(state, player_id) do
       evolved = %{
@@ -937,6 +1020,14 @@ defmodule Brock.Tcg.Sim.Engine do
           hand: [moved | player.hand]
       }
 
+      {:ok, put_player(state, player)}
+    end
+  end
+
+  defp shuffle_hand_into_deck(state, player_id) do
+    with {:ok, player} <- fetch_player(state, player_id) do
+      moved_hand = Enum.map(player.hand, &%{&1 | zone: :deck, lifecycle: :in_deck})
+      player = %{player | hand: [], deck: player.deck ++ moved_hand}
       {:ok, put_player(state, player)}
     end
   end
@@ -1491,6 +1582,18 @@ defmodule Brock.Tcg.Sim.Engine do
   defp require_energy(%{supertype: :energy}), do: :ok
   defp require_energy(metadata), do: {:error, {:not_energy, metadata}}
 
+  defp require_basic_energy(%{supertype: :energy, energy_type: :basic}), do: :ok
+  defp require_basic_energy(metadata), do: {:error, {:not_basic_energy, metadata}}
+
+  defp require_optional_basic_energy(nil), do: :ok
+  defp require_optional_basic_energy(metadata), do: require_basic_energy(metadata)
+
+  defp require_night_stretcher_target(%{supertype: :pokemon}), do: :ok
+  defp require_night_stretcher_target(%{supertype: :energy, energy_type: :basic}), do: :ok
+
+  defp require_night_stretcher_target(metadata),
+    do: {:error, {:invalid_night_stretcher_target, metadata.id}}
+
   defp require_pokemon(%{supertype: :pokemon}), do: :ok
   defp require_pokemon(metadata), do: {:error, {:not_pokemon, metadata}}
 
@@ -1570,6 +1673,20 @@ defmodule Brock.Tcg.Sim.Engine do
     do: {:error, {:enhanced_hammer_requires_special_energy, metadata.id}}
 
   defp require_hammer_can_discard(%{card_id: "POR-071"}, _metadata), do: :ok
+
+  defp require_different_energy_types(_hand_energy_metadata, nil), do: :ok
+
+  defp require_different_energy_types(hand_energy_metadata, attach_energy_metadata) do
+    hand_types = Map.get(hand_energy_metadata, :provides, [])
+    attach_types = Map.get(attach_energy_metadata, :provides, [])
+
+    if MapSet.disjoint?(MapSet.new(hand_types), MapSet.new(attach_types)) do
+      :ok
+    else
+      {:error,
+       {:crispin_energy_types_must_differ, hand_energy_metadata.id, attach_energy_metadata.id}}
+    end
+  end
 
   defp require_not_retreated_this_turn(%{retreated?: false}), do: :ok
   defp require_not_retreated_this_turn(_player), do: {:error, :already_retreated_this_turn}
@@ -1666,6 +1783,22 @@ defmodule Brock.Tcg.Sim.Engine do
       end
     end
   end
+
+  defp optional_deck_card(_state, _player_id, nil), do: {:ok, nil}
+
+  defp optional_deck_card(state, player_id, instance_id),
+    do: find_in_player_zone(state, player_id, :deck, instance_id)
+
+  defp optional_card_metadata(nil), do: {:ok, nil}
+  defp optional_card_metadata(card), do: CardRegistry.fetch(card.card_id)
+
+  defp optional_in_play_target(_state, _player_id, nil, nil), do: {:ok, nil}
+
+  defp optional_in_play_target(_state, _player_id, nil, _card),
+    do: {:error, :missing_attach_target}
+
+  defp optional_in_play_target(state, player_id, target_id, _card),
+    do: find_in_play(state, player_id, target_id)
 
   defp fetch_deck_cards(state, player_id, instance_ids) do
     Enum.reduce_while(instance_ids, {:ok, []}, fn instance_id, {:ok, cards} ->
