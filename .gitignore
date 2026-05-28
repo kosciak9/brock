@@ -38,3 +38,6 @@ npm-debug.log
 .env
 .env.local
 .server.port
+
+# mcp
+.playwright-mcp
