@@ -13,6 +13,7 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
     target = state.players.alakazam.active
 
     assert {:ok, state} = scripted_attack(state, :dragapult, :alakazam, target.instance_id, 50)
+    assert {:ok, state} = choose_first_prize(state, :dragapult)
 
     assert state.winner == :dragapult
     assert state.game_lifecycle == :finished
@@ -78,6 +79,7 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
     [replacement | _] = state.players.alakazam.bench
 
     assert {:ok, state} = scripted_attack(state, :dragapult, :alakazam, abra.instance_id, 50)
+    assert {:ok, state} = choose_first_prize(state, :dragapult)
     assert state.game_lifecycle == :replacing_active
 
     assert {:ok, state} =
@@ -108,6 +110,7 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
     active = state.players.alakazam.active
 
     assert {:ok, state} = scripted_attack(state, :dragapult, :alakazam, active.instance_id, 200)
+    assert {:ok, state} = choose_first_prize(state, :dragapult)
 
     assert state.winner == :dragapult
     assert state.players.dragapult.prizes == []
@@ -438,6 +441,7 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
              })
 
     assert state.players.dragapult.pokemon_knocked_out_during_opponents_last_turn?
+    assert {:ok, state} = choose_first_prize(state, :alakazam)
     assert state.game_lifecycle == :replacing_active
 
     [replacement] = state.players.dragapult.bench
@@ -929,6 +933,8 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
                type: :resolve_declared_attack,
                player_id: :alakazam
              })
+
+    assert {:ok, state} = choose_first_prize(state, :alakazam)
 
     assert state.winner == :alakazam
     assert :ok = Invariants.validate_card_accounting(state)
@@ -1456,6 +1462,8 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
                player_id: :dragapult
              })
 
+    assert {:ok, state} = choose_first_prize(state, :dragapult)
+
     damaged_bench = hd(state.players.alakazam.bench)
     assert damaged_bench.damage == 60
     assert state.game_lifecycle == :replacing_active
@@ -1576,6 +1584,8 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
                type: :resolve_declared_attack,
                player_id: :dragapult
              })
+
+    assert {:ok, state} = choose_first_prize(state, :dragapult)
 
     protected_target =
       Enum.find(state.players.alakazam.bench, &(&1.instance_id == bench_target.instance_id))
@@ -1977,6 +1987,16 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
 
   defp card_in_deck(state, player_id, card_id),
     do: Enum.find(state.players[player_id].deck, &(&1.card_id == card_id))
+
+  defp choose_first_prize(state, player_id) do
+    [prize | _] = state.players[player_id].prizes
+
+    Engine.apply_action(state, %Action{
+      type: :choose_prize,
+      player_id: player_id,
+      params: %{instance_id: prize.instance_id}
+    })
+  end
 
   defp pokemon_in_deck_by_stage(state, player_id, stage) do
     Enum.find(state.players[player_id].deck, fn card ->

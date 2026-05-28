@@ -456,6 +456,10 @@ defmodule Brock.Tcg.Sim.EngineTest do
                params: %{target_player_id: :alakazam, target_id: target.instance_id, damage: 50}
              })
 
+    assert state.game_lifecycle == :choosing_prizes
+
+    assert {:ok, state} = choose_first_prize(state, :dragapult)
+
     assert state.winner == :dragapult
     assert state.game_lifecycle == :finished
     assert state.players.alakazam.active == nil
@@ -465,9 +469,43 @@ defmodule Brock.Tcg.Sim.EngineTest do
 
     assert {:ok, undone} = Engine.undo(state)
     assert undone.winner == nil
+    assert undone.game_lifecycle == :choosing_prizes
+    assert undone.players.alakazam.active == nil
+
+    assert {:ok, undone} = Engine.undo(undone)
     assert undone.players.alakazam.active.instance_id == target.instance_id
     assert length(undone.players.dragapult.prizes) == 6
     assert :ok = Invariants.validate_card_accounting(undone)
+  end
+
+  test "choose_prize takes a selected prize instead of the top prize" do
+    assert {:ok, state} = setup_game_with_benches()
+
+    target = state.players.alakazam.active
+    [top_prize, chosen_prize | _] = state.players.dragapult.prizes
+
+    assert {:ok, state} =
+             attack_active_for_damage(state, :dragapult, :alakazam, target.instance_id, 50)
+
+    assert state.game_lifecycle == :choosing_prizes
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :choose_prize,
+               player_id: :dragapult,
+               params: %{instance_id: chosen_prize.instance_id}
+             })
+
+    assert state.game_lifecycle == :replacing_active
+    assert Enum.any?(state.players.dragapult.hand, &(&1.instance_id == chosen_prize.instance_id))
+    assert Enum.any?(state.players.dragapult.prizes, &(&1.instance_id == top_prize.instance_id))
+
+    refute Enum.any?(
+             state.players.dragapult.prizes,
+             &(&1.instance_id == chosen_prize.instance_id)
+           )
+
+    assert :ok = Invariants.validate_card_accounting(state)
   end
 
   test "declares and resolves a real attack from card metadata" do
@@ -617,6 +655,8 @@ defmodule Brock.Tcg.Sim.EngineTest do
     assert {:ok, state} =
              attack_active_for_damage(state, :dragapult, :alakazam, abra.instance_id, 50)
 
+    assert {:ok, state} = choose_first_prize(state, :dragapult)
+
     assert state.game_lifecycle == :replacing_active
     assert state.turn_lifecycle == :attack_resolving
     assert length(state.players.dragapult.prizes) == 5
@@ -644,6 +684,8 @@ defmodule Brock.Tcg.Sim.EngineTest do
     assert {:ok, state} =
              attack_active_for_damage(state, :alakazam, :dragapult, dreepy.instance_id, 70)
 
+    assert {:ok, state} = choose_first_prize(state, :alakazam)
+
     assert state.winner == :alakazam
     assert state.game_lifecycle == :finished
     assert state.players.dragapult.active == nil
@@ -661,6 +703,8 @@ defmodule Brock.Tcg.Sim.EngineTest do
 
     assert {:ok, state} =
              attack_active_for_damage(state, :dragapult, :alakazam, target.instance_id, 50)
+
+    assert {:ok, state} = choose_first_prize(state, :dragapult)
 
     assert state.winner == :dragapult
     assert state.game_lifecycle == :finished
@@ -707,6 +751,16 @@ defmodule Brock.Tcg.Sim.EngineTest do
 
   defp card_in_hand(state, player_id, card_id) do
     Enum.find(state.players[player_id].hand, &(&1.card_id == card_id))
+  end
+
+  defp choose_first_prize(state, player_id) do
+    [prize | _] = state.players[player_id].prizes
+
+    Engine.apply_action(state, %Action{
+      type: :choose_prize,
+      player_id: player_id,
+      params: %{instance_id: prize.instance_id}
+    })
   end
 
   defp setup_game_with_actives_only do

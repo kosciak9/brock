@@ -1059,6 +1059,34 @@ defmodule Brock.Tcg.Sim.Engine do
   end
 
   defp reduce(state, %Action{
+         type: :choose_prize,
+         player_id: player_id,
+         params: %{instance_id: instance_id}
+       }) do
+    with :ok <- require_game_lifecycle(state, :choosing_prizes),
+         {:ok, pending_prizes} <- fetch_pending_prizes(state, player_id),
+         {:ok, state} <- take_prize(state, player_id, instance_id) do
+      remaining = pending_prizes.remaining - 1
+
+      cond do
+        state.winner ->
+          {:ok, %{state | pending_prizes: nil}}
+
+        remaining > 0 ->
+          {:ok, %{state | pending_prizes: %{pending_prizes | remaining: remaining}}}
+
+        true ->
+          state
+          |> Map.put(:pending_prizes, nil)
+          |> finish_prize_resolution_after_choices(
+            pending_prizes.player_id,
+            pending_prizes.defending_player_id
+          )
+      end
+    end
+  end
+
+  defp reduce(state, %Action{
          type: :choose_replacement_active,
          player_id: player_id,
          params: %{instance_id: instance_id}
@@ -1736,7 +1764,11 @@ defmodule Brock.Tcg.Sim.Engine do
         state
         |> knock_out_pokemon(defending_player_id, target)
         |> mark_knock_out_for_unfair_stamp(attacking_player_id, defending_player_id)
-        |> award_prizes(attacking_player_id, Map.get(metadata, :prize_count, 1))
+        |> award_prizes(
+          attacking_player_id,
+          defending_player_id,
+          Map.get(metadata, :prize_count, 1)
+        )
         |> resolve_post_knock_out_game_state(attacking_player_id, defending_player_id)
       else
         {:ok, state}
@@ -1810,35 +1842,44 @@ defmodule Brock.Tcg.Sim.Engine do
     |> Kernel.++(Enum.flat_map(card.evolved_from, &discard_tree/1))
   end
 
-  defp award_prizes({:ok, state}, player_id, count), do: award_prizes(state, player_id, count)
-  defp award_prizes({:error, reason}, _player_id, _count), do: {:error, reason}
-  defp award_prizes(state, _player_id, 0), do: {:ok, state}
+  defp award_prizes({:ok, state}, player_id, defending_player_id, count),
+    do: award_prizes(state, player_id, defending_player_id, count)
 
-  defp award_prizes(state, player_id, count) when count > 0 do
-    with {:ok, state} <- take_prize(state, player_id) do
-      award_prizes(state, player_id, count - 1)
+  defp award_prizes({:error, reason}, _player_id, _defending_player_id, _count),
+    do: {:error, reason}
+
+  defp award_prizes(state, _player_id, _defending_player_id, 0), do: {:ok, state}
+
+  defp award_prizes(state, player_id, defending_player_id, count) when count > 0 do
+    with {:ok, game_lifecycle} <- GameLifecycle.transition(state.game_lifecycle, :choose_prizes) do
+      {:ok,
+       %{
+         state
+         | game_lifecycle: game_lifecycle,
+           pending_prizes: %{
+             player_id: player_id,
+             defending_player_id: defending_player_id,
+             remaining: count
+           }
+       }}
     end
   end
 
-  defp take_prize(state, player_id) do
+  defp take_prize(state, player_id, instance_id) do
     with {:ok, player} <- fetch_player(state, player_id) do
-      case player.prizes do
-        [] ->
+      with {:ok, card} <- find_in_player_zone(state, player_id, :prizes, instance_id),
+           {:ok, :hand} <- ZoneMovement.transition(:prizes, :hand),
+           {:ok, :in_hand} <- CardLifecycle.transition(card.lifecycle, :take_prize) do
+        card = %{card | zone: :hand, lifecycle: :in_hand}
+        prizes = reject_instance(player.prizes, instance_id)
+        player = %{player | prizes: prizes, hand: [card | player.hand]}
+        state = put_player(state, player)
+
+        if prizes == [] do
           {:ok, %{state | winner: player_id, game_lifecycle: :finished}}
-
-        [card | prizes] ->
-          with {:ok, :hand} <- ZoneMovement.transition(:prizes, :hand),
-               {:ok, :in_hand} <- CardLifecycle.transition(card.lifecycle, :take_prize) do
-            card = %{card | zone: :hand, lifecycle: :in_hand}
-            player = %{player | prizes: prizes, hand: [card | player.hand]}
-            state = put_player(state, player)
-
-            if prizes == [] do
-              {:ok, %{state | winner: player_id, game_lifecycle: :finished}}
-            else
-              {:ok, state}
-            end
-          end
+        else
+          {:ok, state}
+        end
       end
     end
   end
@@ -1856,6 +1897,13 @@ defmodule Brock.Tcg.Sim.Engine do
          _defending_player_id
        )
        when not is_nil(winner),
+       do: {:ok, state}
+
+  defp resolve_post_knock_out_game_state(
+         {:ok, %{game_lifecycle: :choosing_prizes} = state},
+         _attacking_player_id,
+         _defending_player_id
+       ),
        do: {:ok, state}
 
   defp resolve_post_knock_out_game_state({:ok, state}, attacking_player_id, defending_player_id) do
@@ -1884,6 +1932,29 @@ defmodule Brock.Tcg.Sim.Engine do
   end
 
   defp finish_prize_resolution(state), do: {:ok, state}
+
+  defp finish_prize_resolution_after_choices(state, attacking_player_id, defending_player_id) do
+    with {:ok, defending_player} <- fetch_player(state, defending_player_id) do
+      cond do
+        defending_player.active ->
+          with {:ok, game_lifecycle} <-
+                 GameLifecycle.transition(state.game_lifecycle, :finish_prizes) do
+            {:ok, %{state | game_lifecycle: game_lifecycle}}
+          end
+
+        defending_player.bench == [] ->
+          with {:ok, game_lifecycle} <- GameLifecycle.transition(state.game_lifecycle, :finish) do
+            {:ok, %{state | winner: attacking_player_id, game_lifecycle: game_lifecycle}}
+          end
+
+        true ->
+          with {:ok, game_lifecycle} <-
+                 GameLifecycle.transition(state.game_lifecycle, :replace_active) do
+            {:ok, %{state | game_lifecycle: game_lifecycle}}
+          end
+      end
+    end
+  end
 
   defp replace_in_play(player, card) do
     cond do
@@ -2323,6 +2394,17 @@ defmodule Brock.Tcg.Sim.Engine do
       :error -> {:error, {:unknown_player, player_id}}
     end
   end
+
+  defp fetch_pending_prizes(
+         %{pending_prizes: %{player_id: player_id} = pending_prizes},
+         player_id
+       ),
+       do: {:ok, pending_prizes}
+
+  defp fetch_pending_prizes(%{pending_prizes: nil}, _player_id), do: {:error, :no_pending_prizes}
+
+  defp fetch_pending_prizes(%{pending_prizes: %{player_id: pending_player_id}}, player_id),
+    do: {:error, {:not_pending_prize_player, player_id, pending_player_id}}
 
   defp put_player(state, player),
     do: %{state | players: Map.put(state.players, player.id, player)}

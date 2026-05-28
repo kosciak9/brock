@@ -15,6 +15,7 @@ defmodule Brock.Tcg.Sim.GameState do
             stadium: nil,
             pending_prompts: [],
             pending_attack: nil,
+            pending_prizes: nil,
             log: [],
             winner: nil,
             rng: nil,
