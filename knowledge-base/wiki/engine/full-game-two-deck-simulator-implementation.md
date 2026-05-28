@@ -57,6 +57,7 @@ The first reducer lives in `Brock.Tcg.Sim.Engine` and supports:
 - verified Team Rocket's Watchtower Colorless Pokémon Ability lock slice,
 - verified Forest of Vitality same-turn Grass Evolution exception slice,
 - verified Risky Ruins Basic non-Dark Bench damage-counter slice,
+- verified Rabsca Spherical Shield prevention for attack effects/damage to Benched Pokémon,
 - verified Drakloak Recon Directive, Kadabra/Alakazam Psychic Draw, and Dudunsparce Run Away Draw ability slices,
 - declaring scripted attacks and metadata-backed real attacks,
 - validating attack costs against attached Energy,
@@ -163,6 +164,7 @@ Current tests cover:
 - Forest of Vitality allowing Rellor to evolve into Rabsca on the same turn after the first turn,
 - Risky Ruins placing damage counters on Basic non-Dark Pokémon Benched during a turn,
 - Rellor Slight Intrusion opponent damage and self-damage,
+- Rabsca Spherical Shield preventing Phantom Dive Benched damage counters,
 - Drakloak Recon Directive, Alakazam Psychic Draw, Dudunsparce Run Away Draw,
 - turn handoff to the opponent,
 - scripted attack declaration and damage resolution,
@@ -183,9 +185,9 @@ Focused validation command used:
 mix format && mix test test/brock/tcg/sim
 ```
 
-Result on 2026-05-28 after Handheld Fan slice: 58 simulator tests, 0 failures.
+Result on 2026-05-28 after Rabsca Spherical Shield slice: 59 simulator tests, 0 failures.
 
-Full project validation also passed via `mix precommit`: 63 tests, 0 failures.
+Full project validation also passed via `mix precommit`: 64 tests, 0 failures.
 
 ## Next implementation questions
 

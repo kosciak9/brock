@@ -225,7 +225,13 @@ defmodule Brock.Tcg.Sim.CardRegistry do
       stage: :stage_1,
       evolves_from: "TEF-023",
       hp: 70,
-      prize_count: 1
+      prize_count: 1,
+      abilities: %{
+        spherical_shield: %{
+          name: "Spherical Shield",
+          effect: %{type: :prevent_attack_damage_and_effects_to_bench}
+        }
+      }
     },
     "SFA-040" => %{name: "Genesect", supertype: :pokemon, stage: :basic, hp: 110, prize_count: 1},
     "ASC-039" => %{name: "Psyduck", supertype: :pokemon, stage: :basic, hp: 70, prize_count: 1},

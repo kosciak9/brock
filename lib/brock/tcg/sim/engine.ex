@@ -1688,17 +1688,21 @@ defmodule Brock.Tcg.Sim.Engine do
          target_player_id: target_player_id,
          params: %{bench_damage: bench_damage}
        }) do
-    Enum.reduce_while(bench_damage, {:ok, state}, fn {target_id, counters}, {:ok, state} ->
-      result =
-        with {:ok, state} <- damage_pokemon(state, target_player_id, target_id, counters * 10) do
-          resolve_knock_outs_after_damage(state, player_id, target_player_id, target_id)
-        end
+    if bench_protected_from_attack_effects?(state, target_player_id) do
+      {:ok, state}
+    else
+      Enum.reduce_while(bench_damage, {:ok, state}, fn {target_id, counters}, {:ok, state} ->
+        result =
+          with {:ok, state} <- damage_pokemon(state, target_player_id, target_id, counters * 10) do
+            resolve_knock_outs_after_damage(state, player_id, target_player_id, target_id)
+          end
 
-      case result do
-        {:ok, state} -> {:cont, {:ok, state}}
-        {:error, reason} -> {:halt, {:error, reason}}
-      end
-    end)
+        case result do
+          {:ok, state} -> {:cont, {:ok, state}}
+          {:error, reason} -> {:halt, {:error, reason}}
+        end
+      end)
+    end
   end
 
   defp resolve_attack_effect(state, %{
@@ -1713,6 +1717,18 @@ defmodule Brock.Tcg.Sim.Engine do
   end
 
   defp resolve_attack_effect(state, _pending_attack), do: {:ok, state}
+
+  defp bench_protected_from_attack_effects?(state, player_id) do
+    case fetch_player(state, player_id) do
+      {:ok, player} ->
+        ([player.active] ++ player.bench)
+        |> Enum.reject(&is_nil/1)
+        |> Enum.any?(&(&1.card_id == "TEF-024"))
+
+      {:error, _reason} ->
+        false
+    end
+  end
 
   defp require_attack_effect_params(
          %{effect: %{type: :switch_self_with_bench}},

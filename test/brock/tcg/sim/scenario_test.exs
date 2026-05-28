@@ -1194,6 +1194,129 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
     assert :ok = Invariants.validate_card_accounting(state)
   end
 
+  test "Rabsca Spherical Shield prevents Phantom Dive bench counters" do
+    assert {:ok, state} = setup_game(active_player: :dragapult, alakazam_bench?: true)
+    assert {:ok, state} = open_turn(state, :dragapult)
+
+    psychic = card_in_hand(state, :dragapult, "MEE-005")
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :attach_energy,
+               player_id: :dragapult,
+               params: %{
+                 instance_id: psychic.instance_id,
+                 target_id: state.players.dragapult.active.instance_id
+               }
+             })
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{type: :end_turn, player_id: :dragapult})
+
+    assert {:ok, state} = Engine.apply_action(state, %Action{type: :start_next_turn})
+    assert {:ok, state} = open_turn(state, :alakazam)
+    assert {:ok, state, forest} = search_to_hand_by_card_id(state, :alakazam, "MEG-117")
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :play_stadium,
+               player_id: :alakazam,
+               params: %{instance_id: forest.instance_id}
+             })
+
+    assert {:ok, state, rellor} = search_to_hand_by_card_id(state, :alakazam, "TEF-023")
+    assert {:ok, state, rabsca} = search_to_hand_by_card_id(state, :alakazam, "TEF-024")
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :play_basic_to_bench,
+               player_id: :alakazam,
+               params: %{instance_id: rellor.instance_id}
+             })
+
+    rellor = Enum.find(state.players.alakazam.bench, &(&1.card_id == "TEF-023"))
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :evolve_from_hand,
+               player_id: :alakazam,
+               params: %{instance_id: rabsca.instance_id, target_id: rellor.instance_id}
+             })
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{type: :end_turn, player_id: :alakazam})
+
+    assert {:ok, state} = Engine.apply_action(state, %Action{type: :start_next_turn})
+    assert {:ok, state} = open_turn(state, :dragapult)
+
+    fire = card_in_hand(state, :dragapult, "MEE-002")
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :attach_energy,
+               player_id: :dragapult,
+               params: %{
+                 instance_id: fire.instance_id,
+                 target_id: state.players.dragapult.active.instance_id
+               }
+             })
+
+    assert {:ok, state, drakloak} = search_to_hand_by_card_id(state, :dragapult, "TWM-129")
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :evolve_from_hand,
+               player_id: :dragapult,
+               params: %{
+                 instance_id: drakloak.instance_id,
+                 target_id: state.players.dragapult.active.instance_id
+               }
+             })
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{type: :end_turn, player_id: :dragapult})
+
+    assert {:ok, state} = Engine.apply_action(state, %Action{type: :start_next_turn})
+    assert {:ok, state} = pass_turn(state, :alakazam)
+    assert {:ok, state} = open_turn(state, :dragapult)
+    assert {:ok, state, dragapult_ex} = search_to_hand_by_card_id(state, :dragapult, "TWM-130")
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :evolve_from_hand,
+               player_id: :dragapult,
+               params: %{
+                 instance_id: dragapult_ex.instance_id,
+                 target_id: state.players.dragapult.active.instance_id
+               }
+             })
+
+    bench_target = Enum.find(state.players.alakazam.bench, &(&1.card_id == "JTG-120"))
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :declare_attack,
+               player_id: :dragapult,
+               params: %{
+                 attack_id: :phantom_dive,
+                 bench_damage: %{bench_target.instance_id => 6}
+               }
+             })
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :resolve_declared_attack,
+               player_id: :dragapult
+             })
+
+    protected_target =
+      Enum.find(state.players.alakazam.bench, &(&1.instance_id == bench_target.instance_id))
+
+    assert protected_target.damage == 0
+    assert state.game_lifecycle == :replacing_active
+    assert :ok = Invariants.validate_card_accounting(state)
+  end
+
   defp exercise_unique_cards(state, player_id, card_ids) do
     card_ids
     |> MapSet.new()
