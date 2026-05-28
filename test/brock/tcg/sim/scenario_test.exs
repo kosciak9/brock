@@ -476,6 +476,58 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
     assert :ok = Invariants.validate_card_accounting(state)
   end
 
+  test "Genesect ACE Nullifier blocks opponent ACE SPEC cards while it has a Tool" do
+    assert {:ok, state} = setup_game(active_player: :dragapult)
+    assert {:ok, state} = pass_turn(state, :dragapult)
+    assert {:ok, state} = open_turn(state, :alakazam)
+    assert {:ok, state, genesect} = search_to_hand_by_card_id(state, :alakazam, "SFA-040")
+    assert {:ok, state, tool} = search_to_hand_by_card_id(state, :alakazam, "ASC-181")
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :play_basic_to_bench,
+               player_id: :alakazam,
+               params: %{instance_id: genesect.instance_id}
+             })
+
+    genesect = Enum.find(state.players.alakazam.bench, &(&1.card_id == "SFA-040"))
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :attach_tool,
+               player_id: :alakazam,
+               params: %{instance_id: tool.instance_id, target_id: genesect.instance_id}
+             })
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{type: :end_turn, player_id: :alakazam})
+
+    assert {:ok, state} = Engine.apply_action(state, %Action{type: :start_next_turn})
+    assert {:ok, state} = open_turn(state, :dragapult)
+    assert {:ok, state, stamp} = search_to_hand_by_card_id(state, :dragapult, "TWM-165")
+
+    state = put_in(state.players.dragapult.pokemon_knocked_out_during_opponents_last_turn?, true)
+
+    assert {:error, :ace_spec_cards_blocked_by_ace_nullifier} =
+             Engine.apply_action(state, %Action{
+               type: :unfair_stamp,
+               player_id: :dragapult,
+               params: %{instance_id: stamp.instance_id}
+             })
+
+    state = discard_genesect_tool(state)
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :unfair_stamp,
+               player_id: :dragapult,
+               params: %{instance_id: stamp.instance_id}
+             })
+
+    assert Enum.any?(state.players.dragapult.discard, &(&1.instance_id == stamp.instance_id))
+    assert :ok = Invariants.validate_card_accounting(state)
+  end
+
   test "Poké Pad searches a non-Rule Box Pokemon from deck" do
     assert {:ok, state} = setup_game(active_player: :dragapult)
     assert {:ok, state} = open_turn(state, :dragapult)
@@ -1885,6 +1937,25 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
 
       put_in(state.players[player_id], player)
     end)
+  end
+
+  defp discard_genesect_tool(state) do
+    player = state.players.alakazam
+    genesect = Enum.find(player.bench, &(&1.card_id == "SFA-040"))
+    discarded_tool = %{genesect.tool | zone: :discard, lifecycle: :discarded}
+    genesect = %{genesect | tool: nil}
+
+    player = %{
+      player
+      | bench:
+          Enum.map(player.bench, fn
+            %{instance_id: instance_id} when instance_id == genesect.instance_id -> genesect
+            pokemon -> pokemon
+          end),
+        discard: [discarded_tool | player.discard]
+    }
+
+    put_in(state.players.alakazam, player)
   end
 
   defp setup_game(opts) do
