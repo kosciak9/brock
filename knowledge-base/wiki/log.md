@@ -1,5 +1,9 @@
 # Wiki Log
 
+## [2026-05-29] planning | Meta Deck, TCGdex, Card DSL, and LiveView Play North Star
+- Added: North-star implementation plan for metadata-backed meta deck support, behavior DSL overlays, hook migration, coverage, pairwise smoke tests, and basic LiveView hotseat play
+- Updated: Engine index with north-star entry
+
 ## [2026-05-28] research | Cross-Platform TCG Client Architecture
 - Added: Raw React web/RN renderer research
 - Added: Raw embedded Godot web/Android/iOS research
