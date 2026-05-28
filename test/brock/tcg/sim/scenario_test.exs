@@ -753,6 +753,87 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
     assert :ok = Invariants.validate_card_accounting(state)
   end
 
+  test "Budew Itchy Pollen locks opponent Item cards for their next turn only" do
+    assert {:ok, state} = setup_game(active_player: :dragapult)
+    assert {:ok, state} = open_turn(state, :dragapult)
+
+    budew = card_in_hand(state, :dragapult, "ASC-016")
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :play_basic_to_bench,
+               player_id: :dragapult,
+               params: %{instance_id: budew.instance_id}
+             })
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :switch_active_with_bench,
+               player_id: :dragapult,
+               params: %{bench_id: budew.instance_id}
+             })
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :declare_attack,
+               player_id: :dragapult,
+               params: %{attack_id: :itchy_pollen}
+             })
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :resolve_declared_attack,
+               player_id: :dragapult
+             })
+
+    assert state.players.alakazam.item_cards_locked?
+    assert state.players.alakazam.active.damage == 10
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{type: :finish_attack, player_id: :dragapult})
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{type: :end_turn, player_id: :dragapult})
+
+    assert {:ok, state} = Engine.apply_action(state, %Action{type: :start_next_turn})
+    assert {:ok, state} = open_turn(state, :alakazam)
+
+    poffin = card_in_hand(state, :alakazam, "TEF-144")
+
+    [basic_1, basic_2 | _] =
+      Enum.filter(state.players.alakazam.deck, fn card ->
+        metadata = CardRegistry.fetch!(card.card_id)
+        metadata[:supertype] == :pokemon && metadata[:stage] == :basic && metadata[:hp] <= 70
+      end)
+
+    assert {:error, :item_cards_locked_this_turn} =
+             Engine.apply_action(state, %Action{
+               type: :buddy_buddy_poffin,
+               player_id: :alakazam,
+               params: %{
+                 instance_id: poffin.instance_id,
+                 target_ids: [basic_1.instance_id, basic_2.instance_id]
+               }
+             })
+
+    dawn = card_in_hand(state, :alakazam, "PFL-087")
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :play_trainer_to_discard,
+               player_id: :alakazam,
+               params: %{instance_id: dawn.instance_id}
+             })
+
+    assert state.players.alakazam.supporter_played?
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{type: :end_turn, player_id: :alakazam})
+
+    refute state.players.alakazam.item_cards_locked?
+    assert :ok = Invariants.validate_card_accounting(state)
+  end
+
   test "Drakloak Recon Directive keeps one of top two and bottoms the other" do
     assert {:ok, state} = setup_game(active_player: :dragapult)
     assert {:ok, state} = pass_turn(state, :dragapult)

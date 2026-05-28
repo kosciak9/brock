@@ -16,6 +16,7 @@ defmodule Brock.Tcg.Sim.PlayerState do
     bench: [],
     markers: MapSet.new(),
     supporter_played?: false,
+    item_cards_locked?: false,
     energy_attached?: false,
     retreated?: false,
     pokemon_knocked_out_during_opponents_last_turn?: false

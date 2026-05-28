@@ -257,6 +257,7 @@ defmodule Brock.Tcg.Sim.Engine do
          {:ok, card} <- find_in_player_zone(state, player_id, :hand, instance_id),
          {:ok, metadata} <- CardRegistry.fetch(card.card_id),
          :ok <- require_trainer(metadata),
+         :ok <- require_item_cards_playable_if_item(metadata, state, player_id),
          :ok <- require_supporter_available_if_supporter(metadata, state, player_id),
          {:ok, :discard} <- ZoneMovement.transition(:hand, :discard),
          {:ok, :discarded} <- CardLifecycle.transition(card.lifecycle, :discard) do
@@ -364,6 +365,7 @@ defmodule Brock.Tcg.Sim.Engine do
     with :ok <- require_active_player(state, player_id),
          :ok <- require_turn_lifecycle(state, :action_window),
          {:ok, candy} <- find_in_player_zone(state, player_id, :hand, candy_id),
+         :ok <- require_item_cards_playable(state, player_id),
          :ok <- require_card_id(candy, "MEG-125"),
          {:ok, evolution_card} <- find_in_player_zone(state, player_id, :hand, evolution_id),
          {:ok, evolution_metadata} <- CardRegistry.fetch(evolution_card.card_id),
@@ -391,6 +393,7 @@ defmodule Brock.Tcg.Sim.Engine do
          true <-
            length(target_ids) <= 2 || {:error, {:too_many_poffin_targets, length(target_ids)}},
          {:ok, poffin} <- find_in_player_zone(state, player_id, :hand, poffin_id),
+         :ok <- require_item_cards_playable(state, player_id),
          :ok <- require_card_id(poffin, "TEF-144"),
          {:ok, targets} <- fetch_deck_cards(state, player_id, target_ids),
          :ok <- require_poffin_targets(targets),
@@ -416,6 +419,7 @@ defmodule Brock.Tcg.Sim.Engine do
            length(discard_ids) == 2 ||
              {:error, {:wrong_ultra_ball_discard_count, length(discard_ids)}},
          {:ok, ultra_ball} <- find_in_player_zone(state, player_id, :hand, ultra_ball_id),
+         :ok <- require_item_cards_playable(state, player_id),
          :ok <- require_card_id(ultra_ball, "MEG-131"),
          {:ok, discard_cards} <- fetch_hand_cards(state, player_id, discard_ids),
          {:ok, target} <- find_in_player_zone(state, player_id, :deck, target_id),
@@ -458,6 +462,7 @@ defmodule Brock.Tcg.Sim.Engine do
     with :ok <- require_active_player(state, player_id),
          :ok <- require_turn_lifecycle(state, :action_window),
          {:ok, item} <- find_in_player_zone(state, player_id, :hand, item_id),
+         :ok <- require_item_cards_playable(state, player_id),
          :ok <- require_hammer_item(item),
          {:ok, target} <- find_in_play(state, target_player_id, target_id),
          {:ok, attachment} <- find_attachment(target, attachment_id),
@@ -477,6 +482,7 @@ defmodule Brock.Tcg.Sim.Engine do
     with :ok <- require_active_player(state, player_id),
          :ok <- require_turn_lifecycle(state, :action_window),
          {:ok, stretcher} <- find_in_player_zone(state, player_id, :hand, stretcher_id),
+         :ok <- require_item_cards_playable(state, player_id),
          :ok <- require_card_id(stretcher, "ASC-196"),
          {:ok, target} <- find_in_player_zone(state, player_id, :discard, target_id),
          {:ok, target_metadata} <- CardRegistry.fetch(target.card_id),
@@ -494,6 +500,7 @@ defmodule Brock.Tcg.Sim.Engine do
     with :ok <- require_active_player(state, player_id),
          :ok <- require_turn_lifecycle(state, :action_window),
          {:ok, poke_pad} <- find_in_player_zone(state, player_id, :hand, poke_pad_id),
+         :ok <- require_item_cards_playable(state, player_id),
          :ok <- require_card_id(poke_pad, "POR-081"),
          {:ok, target} <- find_in_player_zone(state, player_id, :deck, target_id),
          {:ok, target_metadata} <- CardRegistry.fetch(target.card_id),
@@ -540,6 +547,7 @@ defmodule Brock.Tcg.Sim.Engine do
            length(target_ids) == 5 ||
              {:error, {:sacred_ash_requires_five_targets, length(target_ids)}},
          {:ok, sacred_ash} <- find_in_player_zone(state, player_id, :hand, sacred_ash_id),
+         :ok <- require_item_cards_playable(state, player_id),
          :ok <- require_card_id(sacred_ash, "DRI-168"),
          {:ok, targets} <- fetch_discard_cards(state, player_id, target_ids),
          :ok <- require_all_pokemon(targets),
@@ -671,6 +679,7 @@ defmodule Brock.Tcg.Sim.Engine do
          {:ok, player} <- fetch_player(state, player_id),
          :ok <- require_pokemon_knocked_out_during_opponents_last_turn(player),
          {:ok, stamp} <- find_in_player_zone(state, player_id, :hand, stamp_id),
+         :ok <- require_item_cards_playable(state, player_id),
          :ok <- require_card_id(stamp, "TWM-165"),
          {:ok, opponent_id} <- opponent_id(state, player_id),
          {:ok, state} <- discard_card_from_hand(state, player_id, stamp, %{}),
@@ -913,7 +922,11 @@ defmodule Brock.Tcg.Sim.Engine do
     with :ok <- require_active_player(state, player_id),
          {:ok, turn_lifecycle} <- end_turn_lifecycle(state.turn_lifecycle),
          {:ok, player} <- fetch_player(state, player_id) do
-      player = %{player | pokemon_knocked_out_during_opponents_last_turn?: false}
+      player = %{
+        player
+        | pokemon_knocked_out_during_opponents_last_turn?: false,
+          item_cards_locked?: false
+      }
 
       {:ok,
        state
@@ -1716,6 +1729,15 @@ defmodule Brock.Tcg.Sim.Engine do
     end
   end
 
+  defp resolve_attack_effect(state, %{
+         attack: %{effect: %{type: :lock_opponent_items_next_turn}},
+         target_player_id: target_player_id
+       }) do
+    with {:ok, target_player} <- fetch_player(state, target_player_id) do
+      {:ok, put_player(state, %{target_player | item_cards_locked?: true})}
+    end
+  end
+
   defp resolve_attack_effect(state, _pending_attack), do: {:ok, state}
 
   defp bench_protected_from_attack_effects?(state, player_id) do
@@ -2017,6 +2039,18 @@ defmodule Brock.Tcg.Sim.Engine do
   end
 
   defp require_supporter_available_if_supporter(_metadata, _state, _player_id), do: :ok
+
+  defp require_item_cards_playable_if_item(%{trainer_type: :item}, state, player_id) do
+    require_item_cards_playable(state, player_id)
+  end
+
+  defp require_item_cards_playable_if_item(_metadata, _state, _player_id), do: :ok
+
+  defp require_item_cards_playable(state, player_id) do
+    with {:ok, player} <- fetch_player(state, player_id) do
+      if player.item_cards_locked?, do: {:error, :item_cards_locked_this_turn}, else: :ok
+    end
+  end
 
   defp require_card_id(%{card_id: card_id}, card_id), do: :ok
 

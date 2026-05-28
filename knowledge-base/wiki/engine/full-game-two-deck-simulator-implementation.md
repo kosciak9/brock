@@ -58,6 +58,7 @@ The first reducer lives in `Brock.Tcg.Sim.Engine` and supports:
 - verified Forest of Vitality same-turn Grass Evolution exception slice,
 - verified Risky Ruins Basic non-Dark Bench damage-counter slice,
 - verified Rabsca Spherical Shield prevention for attack effects/damage to Benched Pokémon,
+- verified Budew Itchy Pollen next-turn Item lock slice,
 - verified Drakloak Recon Directive, Kadabra/Alakazam Psychic Draw, and Dudunsparce Run Away Draw ability slices,
 - declaring scripted attacks and metadata-backed real attacks,
 - validating attack costs against attached Energy,
@@ -135,7 +136,8 @@ The current exact-text slice was checked against Limitless card pages for:
 - `MEG-127` Risky Ruins,
 - `TWM-150` Handheld Fan,
 - `TEF-023` Rellor,
-- `TEF-024` Rabsca.
+- `TEF-024` Rabsca,
+- `ASC-016` Budew.
 
 ## Verification
 
@@ -165,6 +167,7 @@ Current tests cover:
 - Risky Ruins placing damage counters on Basic non-Dark Pokémon Benched during a turn,
 - Rellor Slight Intrusion opponent damage and self-damage,
 - Rabsca Spherical Shield preventing Phantom Dive Benched damage counters,
+- Budew Itchy Pollen preventing opponent Item cards during their next turn while allowing Supporters and clearing afterward,
 - Drakloak Recon Directive, Alakazam Psychic Draw, Dudunsparce Run Away Draw,
 - turn handoff to the opponent,
 - scripted attack declaration and damage resolution,
@@ -185,9 +188,9 @@ Focused validation command used:
 mix format && mix test test/brock/tcg/sim
 ```
 
-Result on 2026-05-28 after Rabsca Spherical Shield slice: 59 simulator tests, 0 failures.
+Result on 2026-05-28 after Budew Itchy Pollen slice: 60 simulator tests, 0 failures.
 
-Full project validation also passed via `mix precommit`: 64 tests, 0 failures.
+Full project validation also passed via `mix precommit`: 65 tests, 0 failures.
 
 ## Next implementation questions
 

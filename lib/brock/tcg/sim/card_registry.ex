@@ -63,7 +63,14 @@ defmodule Brock.Tcg.Sim.CardRegistry do
       stage: :basic,
       hp: 30,
       prize_count: 1,
-      attacks: %{itchy_pollen: %{name: "Itchy Pollen", cost: [], damage: 10}}
+      attacks: %{
+        itchy_pollen: %{
+          name: "Itchy Pollen",
+          cost: [],
+          damage: 10,
+          effect: %{type: :lock_opponent_items_next_turn}
+        }
+      }
     },
     "PFL-014" => %{name: "Moltres", supertype: :pokemon, stage: :basic, hp: 120, prize_count: 1},
     "ASC-142" => %{
