@@ -62,6 +62,42 @@ defmodule Brock.Tcg.Sim.Engine do
     end
   end
 
+  defp reduce(state, %Action{type: :take_mulligan, player_id: player_id}) do
+    with :ok <- require_game_lifecycle(state, :setup),
+         {:ok, player} <- fetch_player(state, player_id),
+         :ok <- require_no_setup_pokemon_chosen(player),
+         :ok <- require_opening_hand_ready_for_mulligan(player),
+         :ok <- require_no_basic_pokemon_in_hand(player),
+         {:ok, state} <- shuffle_hand_into_deck(state, player_id),
+         {:ok, state} <- draw_cards(state, player_id, 7),
+         {:ok, player} <- fetch_player(state, player_id) do
+      player = %{player | mulligans_taken: player.mulligans_taken + 1}
+      {:ok, put_player(state, player)}
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :draw_mulligan_bonus,
+         player_id: player_id,
+         params: %{count: count}
+       })
+       when is_integer(count) and count >= 0 do
+    with :ok <- require_game_lifecycle(state, :setup),
+         {:ok, player} <- fetch_player(state, player_id),
+         {:ok, opponent_id} <- opponent_id(state, player_id),
+         {:ok, opponent} <- fetch_player(state, opponent_id),
+         :ok <- require_mulligan_bonus_available(player, opponent, count),
+         {:ok, state} <- draw_cards(state, player_id, count),
+         {:ok, player} <- fetch_player(state, player_id) do
+      player = %{
+        player
+        | mulligan_bonus_draws_taken: player.mulligan_bonus_draws_taken + count
+      }
+
+      {:ok, put_player(state, player)}
+    end
+  end
+
   defp reduce(state, %Action{
          type: :choose_active_from_hand,
          player_id: player_id,
@@ -2305,6 +2341,36 @@ defmodule Brock.Tcg.Sim.Engine do
 
       {player_id, player} ->
         {:error, {:wrong_prize_count, player_id, length(player.prizes), count}}
+    end
+  end
+
+  defp require_no_setup_pokemon_chosen(%{active: nil, bench: []}), do: :ok
+
+  defp require_no_setup_pokemon_chosen(player),
+    do: {:error, {:cannot_mulligan_after_setup_pokemon_chosen, player.id}}
+
+  defp require_opening_hand_ready_for_mulligan(%{hand: hand}) when length(hand) == 7, do: :ok
+
+  defp require_opening_hand_ready_for_mulligan(%{hand: hand}),
+    do: {:error, {:mulligan_requires_seven_card_hand, length(hand)}}
+
+  defp require_no_basic_pokemon_in_hand(player) do
+    if Enum.any?(player.hand, &CardRegistry.basic_pokemon?(&1.card_id)) do
+      {:error, :cannot_mulligan_with_basic_pokemon_in_hand}
+    else
+      :ok
+    end
+  end
+
+  defp require_mulligan_bonus_available(_player, _opponent, 0), do: :ok
+
+  defp require_mulligan_bonus_available(player, opponent, count) do
+    available = opponent.mulligans_taken - player.mulligan_bonus_draws_taken
+
+    if count <= available do
+      :ok
+    else
+      {:error, {:too_many_mulligan_bonus_cards, count, available}}
     end
   end
 

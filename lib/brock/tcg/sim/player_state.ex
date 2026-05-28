@@ -14,6 +14,8 @@ defmodule Brock.Tcg.Sim.PlayerState do
     lost_zone: [],
     active: nil,
     bench: [],
+    mulligans_taken: 0,
+    mulligan_bonus_draws_taken: 0,
     markers: MapSet.new(),
     supporter_played?: false,
     item_cards_locked?: false,

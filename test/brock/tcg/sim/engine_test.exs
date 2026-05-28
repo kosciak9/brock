@@ -2,6 +2,7 @@ defmodule Brock.Tcg.Sim.EngineTest do
   use ExUnit.Case, async: true
 
   alias Brock.Tcg.Sim.Action
+  alias Brock.Tcg.Sim.CardRegistry
   alias Brock.Tcg.Sim.Decks.Alakazam27147
   alias Brock.Tcg.Sim.Decks.Dragapult27431
   alias Brock.Tcg.Sim.Engine
@@ -181,6 +182,89 @@ defmodule Brock.Tcg.Sim.EngineTest do
     assert length(redone.players.dragapult.prizes) == 6
     assert length(redone.players.alakazam.prizes) == 6
     assert :ok = Invariants.validate_card_accounting(redone)
+  end
+
+  test "mulligan redraws seven when opening hand has no Basic Pokemon" do
+    no_basic_opening = [
+      "MEE-005",
+      "MEE-002",
+      "MEE-007",
+      "MEG-119",
+      "SCR-133",
+      "POR-071",
+      "TEF-144"
+    ]
+
+    state =
+      Engine.new_game(
+        active_player: :dragapult,
+        players: [
+          dragapult:
+            full_deck_with_opening(no_basic_opening ++ ["TWM-128"], Dragapult27431.card_ids()),
+          alakazam: full_deck_with_opening(@alakazam_setup_deck, Alakazam27147.card_ids())
+        ]
+      )
+
+    assert {:ok, state} = Engine.apply_action(state, %Action{type: :start_setup})
+    assert {:ok, state} = Engine.apply_action(state, %Action{type: :draw_opening_hand})
+    refute Enum.any?(state.players.dragapult.hand, &CardRegistry.basic_pokemon?(&1.card_id))
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{type: :take_mulligan, player_id: :dragapult})
+
+    assert state.players.dragapult.mulligans_taken == 1
+    assert length(state.players.dragapult.hand) == 7
+    assert Enum.any?(state.players.dragapult.hand, &(&1.card_id == "TWM-128"))
+    assert :ok = Invariants.validate_card_accounting(state)
+
+    assert {:error, :cannot_mulligan_with_basic_pokemon_in_hand} =
+             Engine.apply_action(state, %Action{type: :take_mulligan, player_id: :dragapult})
+  end
+
+  test "opponent may draw up to one bonus card per mulligan" do
+    no_basic_opening = [
+      "MEE-005",
+      "MEE-002",
+      "MEE-007",
+      "MEG-119",
+      "SCR-133",
+      "POR-071",
+      "TEF-144"
+    ]
+
+    state =
+      Engine.new_game(
+        active_player: :dragapult,
+        players: [
+          dragapult:
+            full_deck_with_opening(no_basic_opening ++ ["TWM-128"], Dragapult27431.card_ids()),
+          alakazam: full_deck_with_opening(@alakazam_setup_deck, Alakazam27147.card_ids())
+        ]
+      )
+
+    assert {:ok, state} = Engine.apply_action(state, %Action{type: :start_setup})
+    assert {:ok, state} = Engine.apply_action(state, %Action{type: :draw_opening_hand})
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{type: :take_mulligan, player_id: :dragapult})
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :draw_mulligan_bonus,
+               player_id: :alakazam,
+               params: %{count: 1}
+             })
+
+    assert state.players.alakazam.mulligan_bonus_draws_taken == 1
+    assert length(state.players.alakazam.hand) == 8
+    assert :ok = Invariants.validate_card_accounting(state)
+
+    assert {:error, {:too_many_mulligan_bonus_cards, 1, 0}} =
+             Engine.apply_action(state, %Action{
+               type: :draw_mulligan_bonus,
+               player_id: :alakazam,
+               params: %{count: 1}
+             })
   end
 
   test "plays a Basic Pokémon to Bench and attaches Energy with undo/redo" do
