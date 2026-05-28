@@ -1257,6 +1257,84 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
     assert :ok = Invariants.validate_card_accounting(state)
   end
 
+  test "Meowth ex Last-Ditch Catch searches a Supporter when benched from hand" do
+    assert {:ok, state} = setup_game(active_player: :dragapult)
+    assert {:ok, state} = open_turn(state, :dragapult)
+    assert {:ok, state, meowth} = search_to_hand_by_card_id(state, :dragapult, "POR-062")
+
+    supporter = card_in_deck(state, :dragapult, "MEG-114")
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :play_basic_to_bench,
+               player_id: :dragapult,
+               params: %{instance_id: meowth.instance_id}
+             })
+
+    meowth = Enum.find(state.players.dragapult.bench, &(&1.card_id == "POR-062"))
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :use_ability,
+               player_id: :dragapult,
+               params: %{
+                 source_id: meowth.instance_id,
+                 ability_id: :last_ditch_catch,
+                 target_id: supporter.instance_id
+               }
+             })
+
+    assert Enum.any?(state.players.dragapult.hand, &(&1.instance_id == supporter.instance_id))
+    refute Enum.any?(state.players.dragapult.deck, &(&1.instance_id == supporter.instance_id))
+
+    assert {:error, {:marker_already_used, {:ability_used, :last_ditch}}} =
+             Engine.apply_action(state, %Action{
+               type: :use_ability,
+               player_id: :dragapult,
+               params: %{
+                 source_id: meowth.instance_id,
+                 ability_id: :last_ditch_catch,
+                 target_id: card_in_deck(state, :dragapult, "SCR-133").instance_id
+               }
+             })
+
+    assert :ok = Invariants.validate_card_accounting(state)
+  end
+
+  test "Meowth ex Tuck Tail returns itself and attached cards to hand" do
+    assert {:ok, state} = setup_custom_basic_game(:dragapult, "POR-062", "ASC-142")
+    assert {:ok, state} = open_turn(state, :dragapult)
+
+    state =
+      attach_from_hand_without_turn_limit(state, :dragapult, ["MEE-002", "MEE-005", "MEE-007"])
+
+    meowth_id = state.players.dragapult.active.instance_id
+    attached_ids = Enum.map(state.players.dragapult.active.attachments, & &1.instance_id)
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :declare_attack,
+               player_id: :dragapult,
+               params: %{attack_id: :tuck_tail}
+             })
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :resolve_declared_attack,
+               player_id: :dragapult
+             })
+
+    assert state.players.alakazam.active.damage == 60
+    assert state.players.dragapult.active == nil
+    assert Enum.any?(state.players.dragapult.hand, &(&1.instance_id == meowth_id))
+
+    assert Enum.all?(attached_ids, fn instance_id ->
+             Enum.any?(state.players.dragapult.hand, &(&1.instance_id == instance_id))
+           end)
+
+    assert :ok = Invariants.validate_card_accounting(state)
+  end
+
   test "Munkidori Adrena-Brain moves up to three damage counters with Darkness Energy" do
     assert {:ok, state} = setup_custom_basic_game(:dragapult, "TWM-095", "ASC-142")
     assert {:ok, state} = open_turn(state, :dragapult)
