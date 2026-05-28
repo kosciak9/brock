@@ -456,25 +456,31 @@ defmodule Brock.Tcg.Sim.Engine do
   defp reduce(state, %Action{
          type: :discard_attached_energy_with_item,
          player_id: player_id,
-         params: %{
-           instance_id: item_id,
-           target_player_id: target_player_id,
-           target_id: target_id,
-           attachment_id: attachment_id
-         }
+         params:
+           %{
+             instance_id: item_id,
+             target_player_id: target_player_id,
+             target_id: target_id,
+             attachment_id: attachment_id
+           } = params
        }) do
     with :ok <- require_active_player(state, player_id),
          :ok <- require_turn_lifecycle(state, :action_window),
          {:ok, item} <- find_in_player_zone(state, player_id, :hand, item_id),
          :ok <- require_item_cards_playable(state, player_id),
          :ok <- require_hammer_item(item),
+         :ok <- require_hammer_coin_result(item, params),
          {:ok, target} <- find_in_play(state, target_player_id, target_id),
          {:ok, attachment} <- find_attachment(target, attachment_id),
          {:ok, attachment_metadata} <- CardRegistry.fetch(attachment.card_id),
          :ok <- require_energy(attachment_metadata),
          :ok <- require_hammer_can_discard(item, attachment_metadata),
          {:ok, state} <- discard_card_from_hand(state, player_id, item, %{}) do
-      discard_attached_card(state, target_player_id, target, attachment)
+      if hammer_discards_energy?(item, params) do
+        discard_attached_card(state, target_player_id, target, attachment)
+      else
+        {:ok, state}
+      end
     end
   end
 
@@ -2527,6 +2533,22 @@ defmodule Brock.Tcg.Sim.Engine do
 
   defp require_hammer_item(%{card_id: card_id}) when card_id in ["POR-071", "TWM-148"], do: :ok
   defp require_hammer_item(card), do: {:error, {:not_hammer_item, card.card_id}}
+
+  defp require_hammer_coin_result(%{card_id: "POR-071"}, %{coin_result: result})
+       when result in [:heads, :tails],
+       do: :ok
+
+  defp require_hammer_coin_result(%{card_id: "POR-071"}, %{coin_result: result}),
+    do: {:error, {:invalid_coin_result, result}}
+
+  defp require_hammer_coin_result(%{card_id: "POR-071"}, _params),
+    do: {:error, :missing_coin_result}
+
+  defp require_hammer_coin_result(_item, _params), do: :ok
+
+  defp hammer_discards_energy?(%{card_id: "POR-071"}, %{coin_result: :heads}), do: true
+  defp hammer_discards_energy?(%{card_id: "POR-071"}, %{coin_result: :tails}), do: false
+  defp hammer_discards_energy?(_item, _params), do: true
 
   defp require_hammer_can_discard(%{card_id: "TWM-148"}, %{energy_type: :special}), do: :ok
 

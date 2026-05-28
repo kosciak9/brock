@@ -246,6 +246,7 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
                player_id: :dragapult,
                params: %{
                  instance_id: hammer.instance_id,
+                 coin_result: :heads,
                  target_player_id: :alakazam,
                  target_id: state.players.alakazam.active.instance_id,
                  attachment_id: attached.instance_id
