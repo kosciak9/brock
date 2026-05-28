@@ -33,7 +33,7 @@ defmodule Brock.Tcg.Sim.Engine do
          }}
       end)
 
-    %GameState{players: state_players, active_player: active_player}
+    %GameState{players: state_players, active_player: active_player, first_player: active_player}
   end
 
   def apply_action(%GameState{} = state, %Action{} = action) do
@@ -874,6 +874,7 @@ defmodule Brock.Tcg.Sim.Engine do
          {:ok, player} <- fetch_player(state, player_id),
          :ok <- require_active_pokemon(player_id, player),
          :ok <- require_can_attack(player.active),
+         :ok <- require_first_player_can_attack(state, player_id),
          {:ok, game_lifecycle} <- GameLifecycle.transition(state.game_lifecycle, :declare_attack),
          {:ok, turn_lifecycle} <- TurnLifecycle.transition(state.turn_lifecycle, :declare_attack) do
       {:ok,
@@ -897,6 +898,7 @@ defmodule Brock.Tcg.Sim.Engine do
          {:ok, player} <- fetch_player(state, player_id),
          :ok <- require_active_pokemon(player_id, player),
          :ok <- require_can_attack(player.active),
+         :ok <- require_first_player_can_attack(state, player_id),
          {:ok, attack} <- CardRegistry.fetch_attack(player.active.card_id, attack_id),
          :ok <- require_attack_cost(player.active, attack),
          :ok <- require_confusion_result(player.active, params),
@@ -2428,7 +2430,8 @@ defmodule Brock.Tcg.Sim.Engine do
     do: {:error, {:tool_already_attached, target.instance_id}}
 
   defp require_supporter_available_if_supporter(%{trainer_type: :supporter}, state, player_id) do
-    with {:ok, player} <- fetch_player(state, player_id) do
+    with :ok <- require_first_player_can_play_supporter(state, player_id),
+         {:ok, player} <- fetch_player(state, player_id) do
       if player.supporter_played? do
         {:error, :supporter_already_played_this_turn}
       else
@@ -2438,6 +2441,19 @@ defmodule Brock.Tcg.Sim.Engine do
   end
 
   defp require_supporter_available_if_supporter(_metadata, _state, _player_id), do: :ok
+
+  defp require_first_player_can_attack(%{first_player: player_id, turn_number: 1}, player_id),
+    do: {:error, :first_player_cannot_attack_on_first_turn}
+
+  defp require_first_player_can_attack(_state, _player_id), do: :ok
+
+  defp require_first_player_can_play_supporter(
+         %{first_player: player_id, turn_number: 1},
+         player_id
+       ),
+       do: {:error, :first_player_cannot_play_supporter_on_first_turn}
+
+  defp require_first_player_can_play_supporter(_state, _player_id), do: :ok
 
   defp require_item_cards_playable_if_item(%{trainer_type: :item}, state, player_id) do
     require_item_cards_playable(state, player_id)

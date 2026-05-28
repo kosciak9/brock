@@ -43,6 +43,8 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
 
     assert {:ok, state} = Engine.apply_action(state, %Action{type: :open_action_window})
 
+    assert {:ok, state} = advance_to_next_turn_action_window(state, :dragapult)
+
     {state, dragapult_touched} =
       exercise_unique_cards(state, :dragapult, Dragapult27431.card_ids())
 
@@ -1853,20 +1855,57 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
   defp open_turn(state, player_id) do
     with {:ok, state} <-
            Engine.apply_action(state, %Action{type: :draw_for_turn, player_id: player_id}) do
+      with {:ok, state} <- Engine.apply_action(state, %Action{type: :open_action_window}) do
+        if state.first_player == player_id && state.turn_number == 1 do
+          advance_to_next_turn_action_window(state, player_id)
+        else
+          {:ok, state}
+        end
+      end
+    end
+  end
+
+  defp advance_to_next_turn_action_window(state, player_id) do
+    with {:ok, state} <-
+           Engine.apply_action(state, %Action{type: :end_turn, player_id: player_id}),
+         {:ok, state} <- Engine.apply_action(state, %Action{type: :start_next_turn}),
+         {:ok, opponent_id} <- other_player_id(state, player_id),
+         {:ok, state} <-
+           Engine.apply_action(state, %Action{type: :draw_for_turn, player_id: opponent_id}),
+         {:ok, state} <- Engine.apply_action(state, %Action{type: :open_action_window}),
+         {:ok, state} <-
+           Engine.apply_action(state, %Action{type: :end_turn, player_id: opponent_id}),
+         {:ok, state} <- Engine.apply_action(state, %Action{type: :start_next_turn}),
+         {:ok, state} <-
+           Engine.apply_action(state, %Action{type: :draw_for_turn, player_id: player_id}) do
       Engine.apply_action(state, %Action{type: :open_action_window})
     end
   end
 
-  defp search_to_hand_by_card_id(state, player_id, card_id) do
-    card = card_in_deck(state, player_id, card_id)
+  defp other_player_id(state, player_id) do
+    state.players
+    |> Map.keys()
+    |> Enum.reject(&(&1 == player_id))
+    |> case do
+      [other] -> {:ok, other}
+      other -> {:error, {:expected_one_other_player, other}}
+    end
+  end
 
-    with {:ok, state} <-
-           Engine.apply_action(state, %Action{
-             type: :search_deck_to_hand,
-             player_id: player_id,
-             params: %{instance_id: card.instance_id}
-           }) do
-      {:ok, state, card_in_hand(state, player_id, card_id)}
+  defp search_to_hand_by_card_id(state, player_id, card_id) do
+    if card = card_in_hand(state, player_id, card_id) do
+      {:ok, state, card}
+    else
+      card = card_in_deck(state, player_id, card_id)
+
+      with {:ok, state} <-
+             Engine.apply_action(state, %Action{
+               type: :search_deck_to_hand,
+               player_id: player_id,
+               params: %{instance_id: card.instance_id}
+             }) do
+        {:ok, state, card_in_hand(state, player_id, card_id)}
+      end
     end
   end
 
@@ -1894,12 +1933,7 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
   end
 
   defp scripted_attack(state, attacking_player_id, defending_player_id, target_id, damage) do
-    with {:ok, state} <-
-           Engine.apply_action(state, %Action{
-             type: :draw_for_turn,
-             player_id: attacking_player_id
-           }),
-         {:ok, state} <- Engine.apply_action(state, %Action{type: :open_action_window}),
+    with {:ok, state} <- open_attack_window(state, attacking_player_id),
          {:ok, state} <-
            Engine.apply_action(state, %Action{
              type: :declare_attack,
@@ -1910,6 +1944,21 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
         player_id: attacking_player_id,
         params: %{target_player_id: defending_player_id, target_id: target_id, damage: damage}
       })
+    end
+  end
+
+  defp open_attack_window(%{first_player: player_id, turn_number: 1} = state, player_id) do
+    with {:ok, state} <-
+           Engine.apply_action(state, %Action{type: :draw_for_turn, player_id: player_id}),
+         {:ok, state} <- Engine.apply_action(state, %Action{type: :open_action_window}) do
+      advance_to_next_turn_action_window(state, player_id)
+    end
+  end
+
+  defp open_attack_window(state, player_id) do
+    with {:ok, state} <-
+           Engine.apply_action(state, %Action{type: :draw_for_turn, player_id: player_id}) do
+      Engine.apply_action(state, %Action{type: :open_action_window})
     end
   end
 

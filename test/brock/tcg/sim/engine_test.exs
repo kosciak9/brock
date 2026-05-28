@@ -329,10 +329,7 @@ defmodule Brock.Tcg.Sim.EngineTest do
 
     target = state.players.alakazam.active
 
-    assert {:ok, state} =
-             Engine.apply_action(state, %Action{type: :draw_for_turn, player_id: :dragapult})
-
-    assert {:ok, state} = Engine.apply_action(state, %Action{type: :open_action_window})
+    assert {:ok, state} = advance_to_next_turn_action_window(state, :dragapult)
 
     assert {:ok, state} =
              Engine.apply_action(state, %Action{type: :declare_attack, player_id: :dragapult})
@@ -362,10 +359,7 @@ defmodule Brock.Tcg.Sim.EngineTest do
     assert {:ok, state} = setup_game_with_actives_only()
     abra = state.players.alakazam.active
 
-    assert {:ok, state} =
-             Engine.apply_action(state, %Action{type: :draw_for_turn, player_id: :dragapult})
-
-    assert {:ok, state} = Engine.apply_action(state, %Action{type: :open_action_window})
+    assert {:ok, state} = advance_to_next_turn_action_window(state, :dragapult)
 
     energy = card_in_hand(state, :dragapult, "MEE-005")
     dreepy = state.players.dragapult.active
@@ -406,10 +400,7 @@ defmodule Brock.Tcg.Sim.EngineTest do
   test "rejects real attacks when attached Energy cannot pay the cost" do
     assert {:ok, state} = setup_game_with_actives_only()
 
-    assert {:ok, state} =
-             Engine.apply_action(state, %Action{type: :draw_for_turn, player_id: :dragapult})
-
-    assert {:ok, state} = Engine.apply_action(state, %Action{type: :open_action_window})
+    assert {:ok, state} = advance_to_next_turn_action_window(state, :dragapult)
 
     energy = card_in_hand(state, :dragapult, "MEE-005")
     dreepy = state.players.dragapult.active
@@ -737,12 +728,7 @@ defmodule Brock.Tcg.Sim.EngineTest do
          target_id,
          damage
        ) do
-    with {:ok, state} <-
-           Engine.apply_action(state, %Action{
-             type: :draw_for_turn,
-             player_id: attacking_player_id
-           }),
-         {:ok, state} <- Engine.apply_action(state, %Action{type: :open_action_window}),
+    with {:ok, state} <- open_attack_window(state, attacking_player_id),
          {:ok, state} <-
            Engine.apply_action(state, %Action{
              type: :declare_attack,
@@ -753,6 +739,17 @@ defmodule Brock.Tcg.Sim.EngineTest do
         player_id: attacking_player_id,
         params: %{target_player_id: defending_player_id, target_id: target_id, damage: damage}
       })
+    end
+  end
+
+  defp open_attack_window(%{first_player: player_id, turn_number: 1} = state, player_id) do
+    advance_to_next_turn_action_window(state, player_id)
+  end
+
+  defp open_attack_window(state, player_id) do
+    with {:ok, state} <-
+           Engine.apply_action(state, %Action{type: :draw_for_turn, player_id: player_id}) do
+      Engine.apply_action(state, %Action{type: :open_action_window})
     end
   end
 

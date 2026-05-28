@@ -7,6 +7,7 @@ defmodule Brock.Tcg.Sim.GameState do
 
   defstruct players: %{},
             active_player: nil,
+            first_player: nil,
             game_lifecycle: :not_started,
             turn_lifecycle: :not_in_turn,
             prompt_lifecycle: :no_prompt,
