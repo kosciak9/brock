@@ -890,6 +890,7 @@ defmodule Brock.Tcg.Sim.Engine do
          :ok <- require_active_pokemon(player_id, player),
          {:ok, attack} <- CardRegistry.fetch_attack(player.active.card_id, attack_id),
          :ok <- require_attack_cost(player.active, attack),
+         :ok <- require_confusion_result(player.active, params),
          {:ok, defender_id} <- opponent_id(state, player_id),
          {:ok, defender} <- fetch_player(state, defender_id),
          :ok <- require_active_pokemon(defender_id, defender),
@@ -902,6 +903,7 @@ defmodule Brock.Tcg.Sim.Engine do
         attack_id: attack_id,
         attack: attack,
         params: Map.drop(params, [:attack_id]),
+        attacker_status: player.active.status,
         target_player_id: defender_id,
         target_id: defender.active.instance_id
       }
@@ -921,24 +923,34 @@ defmodule Brock.Tcg.Sim.Engine do
     with :ok <- require_active_player(state, player_id),
          :ok <- require_game_lifecycle(state, :resolving_attack),
          {:ok, pending_attack} <- fetch_pending_attack(state, player_id),
-         {:ok, turn_lifecycle} <- TurnLifecycle.transition(state.turn_lifecycle, :resolve_attack),
-         {:ok, state} <-
-           damage_pokemon(
-             state,
-             pending_attack.target_player_id,
-             pending_attack.target_id,
-             attack_damage(state, pending_attack)
-           ),
-         {:ok, state} <- apply_handheld_fan_if_needed(state, pending_attack),
-         {:ok, state} <-
-           resolve_knock_outs_after_damage(
-             state,
-             player_id,
-             pending_attack.target_player_id,
-             pending_attack.target_id
-           ),
-         {:ok, state} <- resolve_attack_effect(state, pending_attack) do
-      {:ok, %{state | turn_lifecycle: turn_lifecycle, pending_attack: nil}}
+         {:ok, turn_lifecycle} <- TurnLifecycle.transition(state.turn_lifecycle, :resolve_attack) do
+      case resolve_confusion_check(state, pending_attack) do
+        {:ok, state} ->
+          with {:ok, state} <-
+                 damage_pokemon(
+                   state,
+                   pending_attack.target_player_id,
+                   pending_attack.target_id,
+                   attack_damage(state, pending_attack)
+                 ),
+               {:ok, state} <- apply_handheld_fan_if_needed(state, pending_attack),
+               {:ok, state} <-
+                 resolve_knock_outs_after_damage(
+                   state,
+                   player_id,
+                   pending_attack.target_player_id,
+                   pending_attack.target_id
+                 ),
+               {:ok, state} <- resolve_attack_effect(state, pending_attack) do
+            {:ok, %{state | turn_lifecycle: turn_lifecycle, pending_attack: nil}}
+          end
+
+        {:confused_tails, state} ->
+          {:ok, %{state | turn_lifecycle: turn_lifecycle, pending_attack: nil}}
+
+        {:error, reason} ->
+          {:error, reason}
+      end
     end
   end
 
@@ -1844,6 +1856,32 @@ defmodule Brock.Tcg.Sim.Engine do
   defp fetch_pending_attack(%{pending_attack: pending_attack}, player_id),
     do: {:error, {:pending_attack_belongs_to_other_player, pending_attack.player_id, player_id}}
 
+  defp resolve_confusion_check(
+         state,
+         %{attacker_status: :confused, params: %{confusion_result: :tails}} = pending_attack
+       ) do
+    with {:ok, opponent_id} <- opponent_id(state, pending_attack.player_id),
+         {:ok, state} <-
+           damage_pokemon(state, pending_attack.player_id, pending_attack.attacker_id, 30),
+         {:ok, state} <-
+           resolve_knock_outs_after_damage(
+             state,
+             opponent_id,
+             pending_attack.player_id,
+             pending_attack.attacker_id
+           ) do
+      {:confused_tails, state}
+    end
+  end
+
+  defp resolve_confusion_check(
+         state,
+         %{attacker_status: :confused, params: %{confusion_result: :heads}}
+       ),
+       do: {:ok, state}
+
+  defp resolve_confusion_check(state, _pending_attack), do: {:ok, state}
+
   defp attack_damage(state, %{
          attack: %{
            effect: %{type: :active_damage_counters_per_hand_card, counters_per_card: counters}
@@ -2094,6 +2132,18 @@ defmodule Brock.Tcg.Sim.Engine do
       {:error, {:cannot_pay_attack_cost, attack.id, attack.cost, provided_types}}
     end
   end
+
+  defp require_confusion_result(%{status: :confused}, %{confusion_result: result})
+       when result in [:heads, :tails],
+       do: :ok
+
+  defp require_confusion_result(%{status: :confused}, %{confusion_result: result}),
+    do: {:error, {:invalid_confusion_result, result}}
+
+  defp require_confusion_result(%{status: :confused}, _params),
+    do: {:error, :missing_confusion_result}
+
+  defp require_confusion_result(_attacker, _params), do: :ok
 
   defp can_pay_cost?(cost, provided_types) do
     {typed_cost, colorless_cost} = Enum.split_with(cost, &(&1 != :colorless))
