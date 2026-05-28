@@ -1002,7 +1002,7 @@ defmodule Brock.Tcg.Sim.Engine do
          {:ok, :active} <- ZoneMovement.transition(:bench, :active),
          {:ok, game_lifecycle} <-
            GameLifecycle.transition(state.game_lifecycle, :replacement_chosen) do
-      moved = %{card | zone: :active}
+      moved = %{card | zone: :active, status: nil}
       player = %{player | active: moved, bench: reject_instance(player.bench, instance_id)}
       {:ok, %{put_player(state, player) | game_lifecycle: game_lifecycle}}
     end
@@ -1214,7 +1214,7 @@ defmodule Brock.Tcg.Sim.Engine do
           lifecycle: :in_play_evolved,
           attachments: target.attachments,
           damage: target.damage,
-          status: target.status,
+          status: nil,
           tool: target.tool,
           evolved_from: [
             %{target | attachments: [], tool: nil, evolved_from: []} | target.evolved_from
@@ -1420,8 +1420,8 @@ defmodule Brock.Tcg.Sim.Engine do
   defp switch_opponent_bench_to_active(state, opponent_id, target) do
     with {:ok, opponent} <- fetch_player(state, opponent_id),
          active when not is_nil(active) <- opponent.active do
-      moved_active = %{active | zone: :bench}
-      moved_target = %{target | zone: :active}
+      moved_active = %{active | zone: :bench, status: nil}
+      moved_target = %{target | zone: :active, status: nil}
 
       opponent = %{
         opponent
@@ -1439,8 +1439,8 @@ defmodule Brock.Tcg.Sim.Engine do
   defp switch_own_bench_to_active(state, player_id, target, opts) do
     with {:ok, player} <- fetch_player(state, player_id),
          active when not is_nil(active) <- player.active do
-      moved_active = %{active | zone: :bench}
-      moved_target = %{target | zone: :active}
+      moved_active = %{active | zone: :bench, status: nil}
+      moved_target = %{target | zone: :active, status: nil}
 
       player = %{
         player
