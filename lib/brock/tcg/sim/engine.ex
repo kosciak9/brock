@@ -189,6 +189,19 @@ defmodule Brock.Tcg.Sim.Engine do
     end
   end
 
+  defp reduce(state, %Action{type: :skip_draw_for_turn, player_id: player_id}) do
+    with :ok <- require_active_player(state, player_id),
+         {:ok, turn_lifecycle} <-
+           TurnLifecycle.transition(state.turn_lifecycle, :skip_draw_for_turn) do
+      {:ok,
+       %{
+         state
+         | turn_lifecycle: turn_lifecycle,
+           log: ["#{player_id} skipped draw for turn" | state.log]
+       }}
+    end
+  end
+
   defp reduce(state, %Action{type: :open_action_window}) do
     with {:ok, turn_lifecycle} <-
            TurnLifecycle.transition(state.turn_lifecycle, :open_action_window) do

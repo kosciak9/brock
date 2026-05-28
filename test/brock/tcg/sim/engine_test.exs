@@ -388,6 +388,19 @@ defmodule Brock.Tcg.Sim.EngineTest do
     assert error.event == :draw_for_turn
   end
 
+  test "skip_draw_for_turn advances to action window without drawing" do
+    assert {:ok, state} = setup_game_with_actives_only()
+
+    hand_size_before = length(state.players.dragapult.hand)
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{type: :skip_draw_for_turn, player_id: :dragapult})
+
+    assert state.turn_lifecycle == :action_window
+    assert length(state.players.dragapult.hand) == hand_size_before
+    assert :ok = Invariants.validate_card_accounting(state)
+  end
+
   test "ends a turn and starts the opponent turn" do
     assert {:ok, state} = setup_game_with_actives_only()
 
