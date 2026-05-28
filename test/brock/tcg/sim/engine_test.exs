@@ -401,6 +401,24 @@ defmodule Brock.Tcg.Sim.EngineTest do
     assert :ok = Invariants.validate_card_accounting(state)
   end
 
+  test "discard_from_deck moves a card from deck to discard" do
+    assert {:ok, state} = setup_game_with_actives_only()
+    assert {:ok, state} = advance_to_next_turn_action_window(state, :dragapult)
+
+    target = hd(state.players.dragapult.deck)
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :discard_from_deck,
+               player_id: :dragapult,
+               params: %{instance_id: target.instance_id}
+             })
+
+    assert Enum.any?(state.players.dragapult.discard, &(&1.instance_id == target.instance_id))
+    refute Enum.any?(state.players.dragapult.deck, &(&1.instance_id == target.instance_id))
+    assert :ok = Invariants.validate_card_accounting(state)
+  end
+
   test "ends a turn and starts the opponent turn" do
     assert {:ok, state} = setup_game_with_actives_only()
 

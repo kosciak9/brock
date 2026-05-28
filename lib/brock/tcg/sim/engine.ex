@@ -398,6 +398,20 @@ defmodule Brock.Tcg.Sim.Engine do
   end
 
   defp reduce(state, %Action{
+         type: :discard_from_deck,
+         player_id: player_id,
+         params: %{instance_id: instance_id}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, card} <- find_in_player_zone(state, player_id, :deck, instance_id),
+         {:ok, :discard} <- ZoneMovement.transition(:deck, :discard),
+         {:ok, :discarded} <- CardLifecycle.transition(card.lifecycle, :discard_from_deck) do
+      discard_card_from_deck(state, player_id, card)
+    end
+  end
+
+  defp reduce(state, %Action{
          type: :recover_discard_to_hand,
          player_id: player_id,
          params: %{instance_id: instance_id}
@@ -1295,6 +1309,20 @@ defmodule Brock.Tcg.Sim.Engine do
           discard: [discarded | player.discard],
           supporter_played?:
             player.supporter_played? || Map.get(metadata, :trainer_type) == :supporter
+      }
+
+      {:ok, put_player(state, player)}
+    end
+  end
+
+  defp discard_card_from_deck(state, player_id, card) do
+    with {:ok, player} <- fetch_player(state, player_id) do
+      discarded = %{card | zone: :discard, lifecycle: :discarded}
+
+      player = %{
+        player
+        | deck: reject_instance(player.deck, card.instance_id),
+          discard: [discarded | player.discard]
       }
 
       {:ok, put_player(state, player)}
