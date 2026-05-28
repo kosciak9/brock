@@ -226,6 +226,7 @@ defmodule Brock.Tcg.Sim.Engine do
          :ok <- require_turn_lifecycle(state, :action_window),
          {:ok, player} <- fetch_player(state, player_id),
          :ok <- require_active_pokemon(player_id, player),
+         :ok <- require_can_retreat(player.active),
          :ok <- require_not_retreated_this_turn(player),
          {:ok, active_metadata} <- CardRegistry.fetch(player.active.card_id),
          {:ok, bench_card} <- find_in_player_zone(state, player_id, :bench, bench_id),
@@ -872,6 +873,7 @@ defmodule Brock.Tcg.Sim.Engine do
          :ok <- require_turn_lifecycle(state, :action_window),
          {:ok, player} <- fetch_player(state, player_id),
          :ok <- require_active_pokemon(player_id, player),
+         :ok <- require_can_attack(player.active),
          {:ok, game_lifecycle} <- GameLifecycle.transition(state.game_lifecycle, :declare_attack),
          {:ok, turn_lifecycle} <- TurnLifecycle.transition(state.turn_lifecycle, :declare_attack) do
       {:ok,
@@ -894,6 +896,7 @@ defmodule Brock.Tcg.Sim.Engine do
          :ok <- require_turn_lifecycle(state, :action_window),
          {:ok, player} <- fetch_player(state, player_id),
          :ok <- require_active_pokemon(player_id, player),
+         :ok <- require_can_attack(player.active),
          {:ok, attack} <- CardRegistry.fetch_attack(player.active.card_id, attack_id),
          :ok <- require_attack_cost(player.active, attack),
          :ok <- require_confusion_result(player.active, params),
@@ -2307,6 +2310,16 @@ defmodule Brock.Tcg.Sim.Engine do
     do: {:error, {:missing_active_pokemon, player_id}}
 
   defp require_active_pokemon(_player_id, _player), do: :ok
+
+  defp require_can_attack(%{status: status}) when status in [:asleep, :paralyzed],
+    do: {:error, {:cannot_attack_while, status}}
+
+  defp require_can_attack(_pokemon), do: :ok
+
+  defp require_can_retreat(%{status: status}) when status in [:asleep, :paralyzed],
+    do: {:error, {:cannot_retreat_while, status}}
+
+  defp require_can_retreat(_pokemon), do: :ok
 
   defp require_basic_pokemon(%{supertype: :pokemon, stage: :basic}), do: :ok
   defp require_basic_pokemon(metadata), do: {:error, {:not_basic_pokemon, metadata}}
