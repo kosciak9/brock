@@ -558,6 +558,92 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
     assert :ok = Invariants.validate_card_accounting(state)
   end
 
+  test "Judge shuffles both players' hands and each draws four" do
+    assert {:ok, state} = setup_game(active_player: :dragapult)
+    assert {:ok, state} = open_turn(state, :dragapult)
+    assert {:ok, state, judge} = search_to_hand_by_card_id(state, :dragapult, "POR-076")
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :judge,
+               player_id: :dragapult,
+               params: %{instance_id: judge.instance_id}
+             })
+
+    assert length(state.players.dragapult.hand) == 4
+    assert length(state.players.alakazam.hand) == 4
+    assert Enum.any?(state.players.dragapult.discard, &(&1.instance_id == judge.instance_id))
+    assert state.players.dragapult.supporter_played?
+    assert :ok = Invariants.validate_card_accounting(state)
+  end
+
+  test "Hilda searches an Evolution Pokemon and an Energy card" do
+    assert {:ok, state} = setup_game(active_player: :alakazam)
+    assert {:ok, state} = open_turn(state, :alakazam)
+    assert {:ok, state, hilda} = search_to_hand_by_card_id(state, :alakazam, "WHT-084")
+
+    evolution = pokemon_in_deck_by_stage(state, :alakazam, :stage_2)
+
+    energy =
+      card_in_deck(state, :alakazam, "POR-088") || card_in_deck(state, :alakazam, "MEE-005")
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :hilda,
+               player_id: :alakazam,
+               params: %{
+                 instance_id: hilda.instance_id,
+                 evolution_id: evolution.instance_id,
+                 energy_id: energy.instance_id
+               }
+             })
+
+    assert Enum.any?(state.players.alakazam.hand, &(&1.instance_id == evolution.instance_id))
+    assert Enum.any?(state.players.alakazam.hand, &(&1.instance_id == energy.instance_id))
+    assert Enum.any?(state.players.alakazam.discard, &(&1.instance_id == hilda.instance_id))
+    assert state.players.alakazam.supporter_played?
+    assert :ok = Invariants.validate_card_accounting(state)
+  end
+
+  test "Lana's Aid recovers up to three non-Rule Box Pokemon and Basic Energy" do
+    assert {:ok, state} = setup_game(active_player: :alakazam)
+    assert {:ok, state} = open_turn(state, :alakazam)
+    assert {:ok, state, lana} = search_to_hand_by_card_id(state, :alakazam, "TWM-155")
+
+    {state, targets} =
+      Enum.reduce(["MEG-055", "TEF-129", "MEE-005"], {state, []}, fn card_id, {state, targets} ->
+        {:ok, state, card} = ensure_card_in_hand(state, :alakazam, card_id)
+
+        assert {:ok, state} =
+                 Engine.apply_action(state, %Action{
+                   type: :discard_from_hand,
+                   player_id: :alakazam,
+                   params: %{instance_id: card.instance_id}
+                 })
+
+        {state, [card | targets]}
+      end)
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :lanas_aid,
+               player_id: :alakazam,
+               params: %{
+                 instance_id: lana.instance_id,
+                 target_ids: Enum.map(targets, & &1.instance_id)
+               }
+             })
+
+    for target <- targets do
+      assert Enum.any?(state.players.alakazam.hand, &(&1.instance_id == target.instance_id))
+      refute Enum.any?(state.players.alakazam.discard, &(&1.instance_id == target.instance_id))
+    end
+
+    assert Enum.any?(state.players.alakazam.discard, &(&1.instance_id == lana.instance_id))
+    assert state.players.alakazam.supporter_played?
+    assert :ok = Invariants.validate_card_accounting(state)
+  end
+
   test "retreat pays Energy, switches with Bench, and is once per turn" do
     assert {:ok, state} = setup_game(active_player: :dragapult)
     assert {:ok, state} = open_turn(state, :dragapult)

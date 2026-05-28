@@ -548,6 +548,67 @@ defmodule Brock.Tcg.Sim.Engine do
     end
   end
 
+  defp reduce(state, %Action{
+         type: :judge,
+         player_id: player_id,
+         params: %{instance_id: judge_id}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, judge} <- find_in_player_zone(state, player_id, :hand, judge_id),
+         {:ok, judge_metadata} <- CardRegistry.fetch(judge.card_id),
+         :ok <- require_card_id(judge, "POR-076"),
+         :ok <- require_supporter_available_if_supporter(judge_metadata, state, player_id),
+         {:ok, opponent_id} <- opponent_id(state, player_id),
+         {:ok, state} <- discard_card_from_hand(state, player_id, judge, judge_metadata),
+         {:ok, state} <- shuffle_hand_into_deck(state, player_id),
+         {:ok, state} <- shuffle_hand_into_deck(state, opponent_id),
+         {:ok, state} <- draw_cards(state, player_id, 4) do
+      draw_cards(state, opponent_id, 4)
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :hilda,
+         player_id: player_id,
+         params: %{instance_id: hilda_id, evolution_id: evolution_id, energy_id: energy_id}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, hilda} <- find_in_player_zone(state, player_id, :hand, hilda_id),
+         {:ok, hilda_metadata} <- CardRegistry.fetch(hilda.card_id),
+         :ok <- require_card_id(hilda, "WHT-084"),
+         :ok <- require_supporter_available_if_supporter(hilda_metadata, state, player_id),
+         {:ok, targets} <- fetch_deck_cards(state, player_id, [evolution_id, energy_id]),
+         :ok <- require_evolution_pokemon(Enum.at(targets, 0)),
+         {:ok, energy_metadata} <- CardRegistry.fetch(Enum.at(targets, 1).card_id),
+         :ok <- require_energy(energy_metadata),
+         {:ok, state} <- discard_card_from_hand(state, player_id, hilda, hilda_metadata) do
+      move_deck_cards_to_hand(state, player_id, targets)
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :lanas_aid,
+         player_id: player_id,
+         params: %{instance_id: lana_id, target_ids: target_ids}
+       })
+       when is_list(target_ids) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         true <-
+           length(target_ids) <= 3 || {:error, {:too_many_lanas_aid_targets, length(target_ids)}},
+         {:ok, lana} <- find_in_player_zone(state, player_id, :hand, lana_id),
+         {:ok, lana_metadata} <- CardRegistry.fetch(lana.card_id),
+         :ok <- require_card_id(lana, "TWM-155"),
+         :ok <- require_supporter_available_if_supporter(lana_metadata, state, player_id),
+         {:ok, targets} <- fetch_discard_cards(state, player_id, target_ids),
+         :ok <- require_lanas_aid_targets(targets),
+         {:ok, state} <- discard_card_from_hand(state, player_id, lana, lana_metadata) do
+      move_discard_cards_to_hand(state, player_id, targets)
+    end
+  end
+
   defp reduce(
          state,
          %Action{
@@ -1119,6 +1180,14 @@ defmodule Brock.Tcg.Sim.Engine do
       }
 
       {:ok, put_player(state, player)}
+    end
+  end
+
+  defp move_discard_cards_to_hand(state, _player_id, []), do: {:ok, state}
+
+  defp move_discard_cards_to_hand(state, player_id, [card | rest]) do
+    with {:ok, state} <- move_discard_card_to_hand(state, player_id, card) do
+      move_discard_cards_to_hand(state, player_id, rest)
     end
   end
 
@@ -1739,6 +1808,24 @@ defmodule Brock.Tcg.Sim.Engine do
   defp require_night_stretcher_target(metadata),
     do: {:error, {:invalid_night_stretcher_target, metadata.id}}
 
+  defp require_lanas_aid_targets(targets) do
+    Enum.reduce_while(targets, :ok, fn target, :ok ->
+      result =
+        with {:ok, metadata} <- CardRegistry.fetch(target.card_id) do
+          case metadata do
+            %{supertype: :pokemon} -> require_non_rule_box_pokemon(metadata)
+            %{supertype: :energy, energy_type: :basic} -> :ok
+            _ -> {:error, {:invalid_lanas_aid_target, metadata.id}}
+          end
+        end
+
+      case result do
+        :ok -> {:cont, :ok}
+        {:error, reason} -> {:halt, {:error, reason}}
+      end
+    end)
+  end
+
   defp require_pokemon(%{supertype: :pokemon}), do: :ok
   defp require_pokemon(metadata), do: {:error, {:not_pokemon, metadata}}
 
@@ -1761,6 +1848,20 @@ defmodule Brock.Tcg.Sim.Engine do
 
       {:error, reason} ->
         {:error, reason}
+    end
+  end
+
+  defp require_evolution_pokemon(card) do
+    with {:ok, %{supertype: :pokemon, stage: stage} = metadata} <-
+           CardRegistry.fetch(card.card_id) do
+      if stage in [:stage_1, :stage_2] do
+        :ok
+      else
+        {:error, {:not_evolution_pokemon, metadata.id, stage}}
+      end
+    else
+      {:ok, metadata} -> {:error, {:not_pokemon, metadata}}
+      {:error, reason} -> {:error, reason}
     end
   end
 
