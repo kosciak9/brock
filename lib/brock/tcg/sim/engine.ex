@@ -207,7 +207,7 @@ defmodule Brock.Tcg.Sim.Engine do
          {:ok, target} <- find_in_play(state, player_id, target_id),
          :ok <- require_evolves_from(evolution_metadata, target),
          :ok <- require_first_turn_evolution_allowed(state),
-         :ok <- require_can_evolve_this_turn(state, target),
+         :ok <- require_can_evolve_this_turn(state, target, evolution_metadata),
          {:ok, :in_play_evolved} <- CardLifecycle.transition(evolution_card.lifecycle, :evolve) do
       evolve_pokemon(state, player_id, evolution_card, target)
     end
@@ -371,7 +371,7 @@ defmodule Brock.Tcg.Sim.Engine do
          {:ok, target} <- find_in_play(state, player_id, target_id),
          :ok <- require_rare_candy_evolves_from(evolution_metadata, target),
          :ok <- require_first_turn_evolution_allowed(state),
-         :ok <- require_can_evolve_this_turn(state, target),
+         :ok <- require_can_evolve_this_turn(state, target, evolution_metadata),
          {:ok, :discard} <- ZoneMovement.transition(:hand, :discard),
          {:ok, :discarded} <- CardLifecycle.transition(candy.lifecycle, :discard),
          {:ok, :in_play_evolved} <- CardLifecycle.transition(evolution_card.lifecycle, :evolve),
@@ -2070,10 +2070,35 @@ defmodule Brock.Tcg.Sim.Engine do
 
   defp require_first_turn_evolution_allowed(_state), do: :ok
 
-  defp require_can_evolve_this_turn(%{turn_number: turn_number}, %{turn_entered_play: turn_number}),
-       do: {:error, :cannot_evolve_pokemon_played_this_turn}
+  defp require_can_evolve_this_turn(
+         %{turn_number: turn_number} = state,
+         %{turn_entered_play: turn_number} = target,
+         evolution_metadata
+       ) do
+    if forest_of_vitality_allows_same_turn_evolution?(state, target, evolution_metadata) do
+      :ok
+    else
+      {:error, :cannot_evolve_pokemon_played_this_turn}
+    end
+  end
 
-  defp require_can_evolve_this_turn(_state, _target), do: :ok
+  defp require_can_evolve_this_turn(_state, _target, _evolution_metadata), do: :ok
+
+  defp forest_of_vitality_allows_same_turn_evolution?(
+         %{turn_number: turn_number, stadium: %{card_id: "MEG-117"}},
+         target,
+         %{type: :grass}
+       )
+       when turn_number > 1 do
+    with {:ok, %{type: :grass}} <- CardRegistry.fetch(target.card_id) do
+      true
+    else
+      _ -> false
+    end
+  end
+
+  defp forest_of_vitality_allows_same_turn_evolution?(_state, _target, _evolution_metadata),
+    do: false
 
   defp require_energy_attachment_available(%{energy_attached?: false}), do: :ok
 

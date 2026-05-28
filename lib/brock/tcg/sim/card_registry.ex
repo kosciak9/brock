@@ -201,10 +201,18 @@ defmodule Brock.Tcg.Sim.CardRegistry do
         land_crush: %{name: "Land Crush", cost: [:colorless, :colorless, :colorless], damage: 90}
       }
     },
-    "TEF-023" => %{name: "Rellor", supertype: :pokemon, stage: :basic, hp: 50, prize_count: 1},
+    "TEF-023" => %{
+      name: "Rellor",
+      supertype: :pokemon,
+      type: :grass,
+      stage: :basic,
+      hp: 50,
+      prize_count: 1
+    },
     "TEF-024" => %{
       name: "Rabsca",
       supertype: :pokemon,
+      type: :grass,
       stage: :stage_1,
       evolves_from: "TEF-023",
       hp: 70,

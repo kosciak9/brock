@@ -921,6 +921,43 @@ defmodule Brock.Tcg.Sim.ScenarioTest do
     assert :ok = Invariants.validate_card_accounting(state)
   end
 
+  test "Forest of Vitality allows same-turn Grass evolution after first turn" do
+    assert {:ok, state} = setup_game(active_player: :dragapult)
+    assert {:ok, state} = pass_turn(state, :dragapult)
+    assert {:ok, state} = open_turn(state, :alakazam)
+    assert {:ok, state, forest} = search_to_hand_by_card_id(state, :alakazam, "MEG-117")
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :play_stadium,
+               player_id: :alakazam,
+               params: %{instance_id: forest.instance_id}
+             })
+
+    assert {:ok, state, rellor} = search_to_hand_by_card_id(state, :alakazam, "TEF-023")
+    assert {:ok, state, rabsca} = search_to_hand_by_card_id(state, :alakazam, "TEF-024")
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :play_basic_to_bench,
+               player_id: :alakazam,
+               params: %{instance_id: rellor.instance_id}
+             })
+
+    rellor = Enum.find(state.players.alakazam.bench, &(&1.card_id == "TEF-023"))
+    assert rellor.turn_entered_play == state.turn_number
+
+    assert {:ok, state} =
+             Engine.apply_action(state, %Action{
+               type: :evolve_from_hand,
+               player_id: :alakazam,
+               params: %{instance_id: rabsca.instance_id, target_id: rellor.instance_id}
+             })
+
+    assert Enum.any?(state.players.alakazam.bench, &(&1.card_id == "TEF-024"))
+    assert :ok = Invariants.validate_card_accounting(state)
+  end
+
   test "Dragapult ex Phantom Dive damages Active and places six bench counters" do
     assert {:ok, state} = setup_game(active_player: :dragapult, alakazam_bench?: true)
     assert {:ok, state} = open_turn(state, :dragapult)

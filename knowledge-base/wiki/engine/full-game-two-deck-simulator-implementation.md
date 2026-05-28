@@ -54,6 +54,7 @@ The first reducer lives in `Brock.Tcg.Sim.Engine` and supports:
 - verified Poké Pad non-Rule Box Pokémon search, Dawn staged Pokémon search, and Sacred Ash discard-to-deck recovery slices,
 - verified Judge both-player shuffle/draw, Hilda Evolution-plus-Energy search, and Lana's Aid discard recovery slices,
 - verified Team Rocket's Watchtower Colorless Pokémon Ability lock slice,
+- verified Forest of Vitality same-turn Grass Evolution exception slice,
 - verified Drakloak Recon Directive, Kadabra/Alakazam Psychic Draw, and Dudunsparce Run Away Draw ability slices,
 - declaring scripted attacks and metadata-backed real attacks,
 - validating attack costs against attached Energy,
@@ -125,7 +126,10 @@ The current exact-text slice was checked against Limitless card pages for:
 - `WHT-084` Hilda,
 - `TWM-155` Lana's Aid,
 - `ASC-181` Air Balloon,
-- `DRI-180` Team Rocket's Watchtower.
+- `DRI-180` Team Rocket's Watchtower,
+- `MEG-117` Forest of Vitality,
+- `TEF-023` Rellor,
+- `TEF-024` Rabsca.
 
 ## Verification
 
@@ -150,6 +154,7 @@ Current tests cover:
 - Poké Pad, Dawn, and Sacred Ash supported-scope behavior,
 - Judge, Hilda, and Lana's Aid supported-scope behavior,
 - Team Rocket's Watchtower blocking Dudunsparce Run Away Draw,
+- Forest of Vitality allowing Rellor to evolve into Rabsca on the same turn after the first turn,
 - Drakloak Recon Directive, Alakazam Psychic Draw, Dudunsparce Run Away Draw,
 - turn handoff to the opponent,
 - scripted attack declaration and damage resolution,
@@ -170,9 +175,9 @@ Focused validation command used:
 mix format && mix test test/brock/tcg/sim
 ```
 
-Result on 2026-05-28 after Team Rocket's Watchtower slice: 54 simulator tests, 0 failures.
+Result on 2026-05-28 after Forest of Vitality slice: 55 simulator tests, 0 failures.
 
-Full project validation also passed via `mix precommit`: 59 tests, 0 failures.
+Full project validation also passed via `mix precommit`: 60 tests, 0 failures.
 
 ## Next implementation questions
 

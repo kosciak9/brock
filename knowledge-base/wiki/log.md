@@ -31,6 +31,7 @@
 - Added: Verified Judge, Hilda, and Lana's Aid Supporter effect notes
 - Added: Verified Air Balloon retreat-cost reduction note
 - Added: Verified Team Rocket's Watchtower Colorless Ability lock note
+- Added: Verified Forest of Vitality same-turn Grass Evolution note
 - Updated: Engine index with full-game two-deck simulator implementation entry
 
 ## [2026-05-27] research | Card Engine Authoring Models
