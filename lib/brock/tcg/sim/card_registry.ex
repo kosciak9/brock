@@ -10,10 +10,13 @@ defmodule Brock.Tcg.Sim.CardRegistry do
     "TWM-128" => %{
       name: "Dreepy",
       supertype: :pokemon,
+      type: :dragon,
       stage: :basic,
       hp: 70,
       prize_count: 1,
       retreat_cost: [:colorless],
+      weakness: nil,
+      resistance: nil,
       attacks: %{
         petty_grudge: %{name: "Petty Grudge", cost: [:psychic], damage: 10},
         bite: %{name: "Bite", cost: [:fire, :psychic], damage: 40}
@@ -22,11 +25,14 @@ defmodule Brock.Tcg.Sim.CardRegistry do
     "TWM-129" => %{
       name: "Drakloak",
       supertype: :pokemon,
+      type: :dragon,
       stage: :stage_1,
       evolves_from: "TWM-128",
       hp: 90,
       prize_count: 1,
       retreat_cost: [:colorless],
+      weakness: nil,
+      resistance: nil,
       abilities: %{
         recon_directive: %{
           name: "Recon Directive",
@@ -40,12 +46,15 @@ defmodule Brock.Tcg.Sim.CardRegistry do
     "TWM-130" => %{
       name: "Dragapult ex",
       supertype: :pokemon,
+      type: :dragon,
       stage: :stage_2,
       evolves_from: "TWM-129",
       rule_box?: true,
       hp: 320,
       prize_count: 2,
       retreat_cost: [:colorless],
+      weakness: nil,
+      resistance: nil,
       attacks: %{
         jet_headbutt: %{name: "Jet Headbutt", cost: [:colorless], damage: 70},
         phantom_dive: %{
@@ -59,10 +68,13 @@ defmodule Brock.Tcg.Sim.CardRegistry do
     "TWM-095" => %{
       name: "Munkidori",
       supertype: :pokemon,
+      type: :psychic,
       stage: :basic,
       hp: 110,
       prize_count: 1,
       retreat_cost: [:colorless],
+      weakness: %{type: :darkness, multiplier: 2},
+      resistance: %{type: :fighting, value: -30},
       abilities: %{
         adrena_brain: %{
           name: "Adrena-Brain",
@@ -85,9 +97,12 @@ defmodule Brock.Tcg.Sim.CardRegistry do
     "ASC-016" => %{
       name: "Budew",
       supertype: :pokemon,
+      type: :grass,
       stage: :basic,
       hp: 30,
       prize_count: 1,
+      weakness: %{type: :fire, multiplier: 2},
+      resistance: nil,
       attacks: %{
         itchy_pollen: %{
           name: "Itchy Pollen",
@@ -100,10 +115,13 @@ defmodule Brock.Tcg.Sim.CardRegistry do
     "PFL-014" => %{
       name: "Moltres",
       supertype: :pokemon,
+      type: :fire,
       stage: :basic,
       hp: 120,
       prize_count: 1,
       retreat_cost: [:colorless],
+      weakness: %{type: :water, multiplier: 2},
+      resistance: nil,
       attacks: %{
         fighting_wings: %{
           name: "Fighting Wings",
@@ -116,11 +134,14 @@ defmodule Brock.Tcg.Sim.CardRegistry do
     "ASC-142" => %{
       name: "Fezandipiti ex",
       supertype: :pokemon,
+      type: :darkness,
       stage: :basic,
       rule_box?: true,
       hp: 210,
       prize_count: 2,
       retreat_cost: [:colorless],
+      weakness: %{type: :fighting, multiplier: 2},
+      resistance: nil,
       abilities: %{
         flip_the_script: %{
           name: "Flip the Script",
@@ -145,6 +166,8 @@ defmodule Brock.Tcg.Sim.CardRegistry do
       hp: 170,
       prize_count: 2,
       retreat_cost: [:colorless],
+      weakness: %{type: :fighting, multiplier: 2},
+      resistance: nil,
       abilities: %{
         last_ditch_catch: %{
           name: "Last-Ditch Catch",
@@ -204,6 +227,8 @@ defmodule Brock.Tcg.Sim.CardRegistry do
       hp: 50,
       prize_count: 1,
       retreat_cost: [:colorless],
+      weakness: %{type: :darkness, multiplier: 2},
+      resistance: %{type: :fighting, value: -30},
       attacks: %{
         teleportation_attack: %{
           name: "Teleportation Attack",
@@ -221,6 +246,8 @@ defmodule Brock.Tcg.Sim.CardRegistry do
       hp: 80,
       prize_count: 1,
       retreat_cost: [:colorless],
+      weakness: %{type: :darkness, multiplier: 2},
+      resistance: %{type: :fighting, value: -30},
       abilities: %{
         psychic_draw: %{name: "Psychic Draw", effect: %{type: :evolution_draw, count: 2}}
       },
@@ -236,6 +263,8 @@ defmodule Brock.Tcg.Sim.CardRegistry do
       hp: 140,
       prize_count: 1,
       retreat_cost: [:colorless],
+      weakness: %{type: :darkness, multiplier: 2},
+      resistance: %{type: :fighting, value: -30},
       abilities: %{
         psychic_draw: %{name: "Psychic Draw", effect: %{type: :evolution_draw, count: 3}}
       },
@@ -256,6 +285,8 @@ defmodule Brock.Tcg.Sim.CardRegistry do
       hp: 70,
       prize_count: 1,
       retreat_cost: [:colorless],
+      weakness: %{type: :fighting, multiplier: 2},
+      resistance: nil,
       attacks: %{
         trading_places: %{
           name: "Trading Places",
@@ -275,6 +306,8 @@ defmodule Brock.Tcg.Sim.CardRegistry do
       hp: 140,
       prize_count: 1,
       retreat_cost: [:colorless, :colorless, :colorless],
+      weakness: %{type: :fighting, multiplier: 2},
+      resistance: nil,
       abilities: %{
         run_away_draw: %{
           name: "Run Away Draw",
@@ -292,6 +325,8 @@ defmodule Brock.Tcg.Sim.CardRegistry do
       stage: :basic,
       hp: 50,
       prize_count: 1,
+      weakness: %{type: :fire, multiplier: 2},
+      resistance: nil,
       attacks: %{
         slight_intrusion: %{
           name: "Slight Intrusion",
@@ -309,6 +344,8 @@ defmodule Brock.Tcg.Sim.CardRegistry do
       evolves_from: "TEF-023",
       hp: 70,
       prize_count: 1,
+      weakness: %{type: :fire, multiplier: 2},
+      resistance: nil,
       abilities: %{
         spherical_shield: %{
           name: "Spherical Shield",
@@ -324,6 +361,8 @@ defmodule Brock.Tcg.Sim.CardRegistry do
       hp: 110,
       prize_count: 1,
       retreat_cost: [:colorless],
+      weakness: %{type: :fire, multiplier: 2},
+      resistance: %{type: :grass, value: -30},
       abilities: %{
         ace_nullifier: %{
           name: "ACE Nullifier",
@@ -346,6 +385,8 @@ defmodule Brock.Tcg.Sim.CardRegistry do
       hp: 70,
       prize_count: 1,
       retreat_cost: [:colorless],
+      weakness: %{type: :lightning, multiplier: 2},
+      resistance: nil,
       abilities: %{
         damp: %{
           name: "Damp",
@@ -364,6 +405,8 @@ defmodule Brock.Tcg.Sim.CardRegistry do
       hp: 70,
       prize_count: 1,
       retreat_cost: [:colorless],
+      weakness: %{type: :metal, multiplier: 2},
+      resistance: nil,
       attacks: %{
         electromagnetic_sonar: %{
           name: "Electromagnetic Sonar",

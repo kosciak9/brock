@@ -1882,7 +1882,13 @@ defmodule Brock.Tcg.Sim.Engine do
 
   defp resolve_confusion_check(state, _pending_attack), do: {:ok, state}
 
-  defp attack_damage(state, %{
+  defp attack_damage(state, pending_attack) do
+    state
+    |> base_attack_damage(pending_attack)
+    |> apply_weakness_and_resistance(state, pending_attack)
+  end
+
+  defp base_attack_damage(state, %{
          attack: %{
            effect: %{type: :active_damage_counters_per_hand_card, counters_per_card: counters}
          },
@@ -1892,7 +1898,7 @@ defmodule Brock.Tcg.Sim.Engine do
     length(player.hand) * counters * 10
   end
 
-  defp attack_damage(state, %{
+  defp base_attack_damage(state, %{
          attack: %{damage: damage, effect: %{type: :bonus_damage_if_defender_pokemon_ex} = effect},
          target_player_id: target_player_id,
          target_id: target_id
@@ -1905,7 +1911,43 @@ defmodule Brock.Tcg.Sim.Engine do
     end
   end
 
-  defp attack_damage(_state, %{attack: attack}), do: Map.fetch!(attack, :damage)
+  defp base_attack_damage(_state, %{attack: attack}), do: Map.fetch!(attack, :damage)
+
+  defp apply_weakness_and_resistance(0, _state, _pending_attack), do: 0
+
+  defp apply_weakness_and_resistance(
+         damage,
+         state,
+         %{player_id: player_id, target_player_id: target_player_id, target_id: target_id}
+       ) do
+    with {:ok, attacker} <- fetch_player(state, player_id),
+         %{active: active_attacker} when not is_nil(active_attacker) <- attacker,
+         {:ok, attacker_metadata} <- CardRegistry.fetch(active_attacker.card_id),
+         {:ok, target} <- find_in_play(state, target_player_id, target_id),
+         true <- active_target?(state, target_player_id, target),
+         {:ok, target_metadata} <- CardRegistry.fetch(target.card_id) do
+      damage
+      |> apply_weakness(attacker_metadata[:type], target_metadata[:weakness])
+      |> apply_resistance(attacker_metadata[:type], target_metadata[:resistance])
+    else
+      _ -> damage
+    end
+  end
+
+  defp active_target?(state, player_id, target) do
+    case fetch_player(state, player_id) do
+      {:ok, %{active: %{instance_id: instance_id}}} -> instance_id == target.instance_id
+      _ -> false
+    end
+  end
+
+  defp apply_weakness(damage, type, %{type: type, multiplier: multiplier}),
+    do: damage * multiplier
+
+  defp apply_weakness(damage, _type, _weakness), do: damage
+
+  defp apply_resistance(damage, type, %{type: type, value: value}), do: max(damage + value, 0)
+  defp apply_resistance(damage, _type, _resistance), do: damage
 
   defp pokemon_ex?(%{supertype: :pokemon, name: name}) when is_binary(name) do
     String.ends_with?(name, " ex")
