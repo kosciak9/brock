@@ -530,7 +530,7 @@ defmodule Brock.Tcg.Sim.CardRegistry do
           damage: 0,
           effect: %{type: :recover_trainer_from_discard_to_hand}
         },
-        gnaw: %{name: "Gnaw", cost: [:psychic], damage: 30}
+        gnaw: %{name: "Gnaw", cost: [:psychic], damage: 30, effect: nil}
       }
     },
     "SSP-111" => %{

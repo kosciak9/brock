@@ -3,6 +3,14 @@ defmodule Brock.Tcg.Cards.Behaviors.SSP do
 
   use Brock.Tcg.Cards.DSL
 
+  card "SSP-087" do
+    attack(:electromagnetic_sonar,
+      effect: %{type: :recover_trainer_from_discard_to_hand}
+    )
+
+    attack(:gnaw, effect: nil)
+  end
+
   card "SSP-111" do
     attack(:coordinated_throwing,
       damage: 0,
