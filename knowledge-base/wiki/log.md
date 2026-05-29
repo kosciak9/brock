@@ -1,5 +1,10 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Rabsca Before-Damage Hook
+- Added: `Brock.Tcg.Sim.Hooks` now handles Rabsca `Spherical Shield` opponent attack-effect bench damage prevention through the `:before_damage` phase
+- Migrated: Phantom Dive bench damage now routes through the hook path instead of using a Rabsca-specific engine helper
+- Verified: targeted Rabsca scenario, `mix test test/brock/tcg/sim`, `mix brock.cards.coverage`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Team Rocket's Watchtower Before-Ability Hook
 - Added: `Brock.Tcg.Sim.Hooks` now handles Team Rocket's Watchtower Colorless Pokémon Ability prevention through the `:before_ability` phase
 - Migrated: Ability lookup now runs hook checks before resolving executable Ability behavior, removing the Watchtower-specific reducer check from `Brock.Tcg.Sim.Engine`

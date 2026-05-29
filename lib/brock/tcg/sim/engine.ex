@@ -2147,21 +2147,21 @@ defmodule Brock.Tcg.Sim.Engine do
          target_player_id: target_player_id,
          params: %{bench_damage: bench_damage}
        }) do
-    if bench_protected_from_attack_effects?(state, target_player_id) do
-      {:ok, state}
-    else
-      Enum.reduce_while(bench_damage, {:ok, state}, fn {target_id, counters}, {:ok, state} ->
-        result =
-          with {:ok, state} <- damage_pokemon(state, target_player_id, target_id, counters * 10) do
-            resolve_knock_outs_after_damage(state, player_id, target_player_id, target_id)
-          end
+    Enum.reduce_while(bench_damage, {:ok, state}, fn {target_id, counters}, {:ok, state} ->
+      result =
+        damage_bench_pokemon_from_attack_effect(
+          state,
+          player_id,
+          target_player_id,
+          target_id,
+          counters * 10
+        )
 
-        case result do
-          {:ok, state} -> {:cont, {:ok, state}}
-          {:error, reason} -> {:halt, {:error, reason}}
-        end
-      end)
-    end
+      case result do
+        {:ok, state} -> {:cont, {:ok, state}}
+        {:error, reason} -> {:halt, {:error, reason}}
+      end
+    end)
   end
 
   defp resolve_attack_effect(state, %{
@@ -2228,15 +2228,33 @@ defmodule Brock.Tcg.Sim.Engine do
 
   defp resolve_attack_effect(state, _pending_attack), do: {:ok, state}
 
-  defp bench_protected_from_attack_effects?(state, player_id) do
-    case fetch_player(state, player_id) do
-      {:ok, player} ->
-        ([player.active] ++ player.bench)
-        |> Enum.reject(&is_nil/1)
-        |> Enum.any?(&(&1.card_id == "TEF-024"))
+  defp damage_bench_pokemon_from_attack_effect(
+         state,
+         attacking_player_id,
+         target_player_id,
+         target_id,
+         damage
+       ) do
+    context = %{
+      source: :attack_effect,
+      attacking_player_id: attacking_player_id,
+      target_player_id: target_player_id,
+      target_id: target_id,
+      target_zone: :bench,
+      damage: damage
+    }
 
-      {:error, _reason} ->
-        false
+    case Hooks.run(state, :before_damage, context) do
+      {:ok, state} ->
+        with {:ok, state} <- damage_pokemon(state, target_player_id, target_id, damage) do
+          resolve_knock_outs_after_damage(state, attacking_player_id, target_player_id, target_id)
+        end
+
+      {:halt, {:damage_prevented_by_ability, _card_id, _ability_id}} ->
+        {:ok, state}
+
+      {:halt, reason} ->
+        {:error, reason}
     end
   end
 

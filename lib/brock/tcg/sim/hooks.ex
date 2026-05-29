@@ -3,8 +3,8 @@ defmodule Brock.Tcg.Sim.Hooks do
   Hook phase runner for card effects that modify or block generic engine actions.
 
   Hooks return `{:ok, state}` when play should continue or `{:halt, reason}`
-  when a card effect prevents the action. Reducers normalize halted hooks into
-  their existing `{:error, reason}` convention.
+  when a card effect prevents the action. Reducers decide whether a halted hook
+  is an error or a legal prevention/no-op for the active phase.
   """
 
   def run(state, :before_play_trainer, context) do
@@ -20,7 +20,30 @@ defmodule Brock.Tcg.Sim.Hooks do
     end
   end
 
+  def run(state, :before_damage, context) do
+    with {:ok, state} <- prevent_bench_attack_damage_if_spherical_shield(state, context) do
+      {:ok, state}
+    end
+  end
+
   def run(state, _phase, _context), do: {:ok, state}
+
+  defp prevent_bench_attack_damage_if_spherical_shield(
+         state,
+         %{
+           source: :attack_effect,
+           attacking_player_id: attacking_player_id,
+           target_player_id: target_player_id,
+           target_zone: :bench
+         }
+       )
+       when attacking_player_id != target_player_id do
+    if card_in_play?(state, target_player_id, "TEF-024"),
+      do: {:halt, {:damage_prevented_by_ability, "TEF-024", :spherical_shield}},
+      else: {:ok, state}
+  end
+
+  defp prevent_bench_attack_damage_if_spherical_shield(state, _context), do: {:ok, state}
 
   defp prevent_colorless_ability_if_watchtower(
          %{stadium: %{card_id: "DRI-180"}} = _state,
@@ -88,4 +111,11 @@ defmodule Brock.Tcg.Sim.Hooks do
   end
 
   defp in_play_cards(player), do: [player.active | player.bench] |> Enum.reject(&is_nil/1)
+
+  defp card_in_play?(state, player_id, card_id) do
+    case fetch_player(state, player_id) do
+      {:ok, player} -> Enum.any?(in_play_cards(player), &(&1.card_id == card_id))
+      {:error, _reason} -> false
+    end
+  end
 end
