@@ -1,0 +1,80 @@
+{
+  "brock_id": "TWM-025",
+  "source": {
+    "base_url": "https://api.tcgdex.net/v2/en",
+    "dynamic_fields_removed": [
+      "pricing"
+    ],
+    "language": "en",
+    "provider": "TCGdex"
+  },
+  "tcgdex": {
+    "abilities": [
+      {
+        "effect": "Once during your turn, you may attach a Basic {G} Energy card from your hand to this Pokémon. If you attached Energy to a Pokémon in this way, draw a card.",
+        "name": "Teal Dance",
+        "type": "Ability"
+      }
+    ],
+    "attacks": [
+      {
+        "cost": [
+          "Grass",
+          "Grass",
+          "Grass"
+        ],
+        "damage": "30+",
+        "effect": "This attack does 30 more damage for each Energy attached to both Active Pokémon.",
+        "name": "Myriad Leaf Shower"
+      }
+    ],
+    "category": "Pokemon",
+    "dexId": [
+      1017
+    ],
+    "hp": 210,
+    "id": "sv06-025",
+    "illustrator": "5ban Graphics",
+    "image": "https://assets.tcgdex.net/en/sv/sv06/025",
+    "legal": {
+      "expanded": true,
+      "standard": true
+    },
+    "localId": "025",
+    "name": "Teal Mask Ogerpon ex",
+    "rarity": "Double rare",
+    "regulationMark": "H",
+    "retreat": 1,
+    "set": {
+      "cardCount": {
+        "official": 167,
+        "total": 226
+      },
+      "id": "sv06",
+      "logo": "https://assets.tcgdex.net/en/sv/sv06/logo",
+      "name": "Twilight Masquerade",
+      "symbol": "https://assets.tcgdex.net/univ/sv/sv06/symbol"
+    },
+    "stage": "Basic",
+    "suffix": "ex",
+    "types": [
+      "Grass"
+    ],
+    "updated": "2026-05-04T00:16:35+01:00",
+    "variants": {
+      "firstEdition": false,
+      "holo": true,
+      "normal": false,
+      "reverse": false,
+      "wPromo": false
+    },
+    "variants_detailed": [
+      {
+        "size": "standard",
+        "type": "holo",
+        "variantId": "jr7oetx1mqug9"
+      }
+    ]
+  },
+  "tcgdex_id": "sv06-025"
+}

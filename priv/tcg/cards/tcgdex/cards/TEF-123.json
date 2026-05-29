@@ -1,0 +1,91 @@
+{
+  "brock_id": "TEF-123",
+  "source": {
+    "base_url": "https://api.tcgdex.net/v2/en",
+    "dynamic_fields_removed": [
+      "pricing"
+    ],
+    "language": "en",
+    "provider": "TCGdex"
+  },
+  "tcgdex": {
+    "attacks": [
+      {
+        "cost": [
+          "Colorless"
+        ],
+        "effect": "Discard your hand and draw 6 cards.",
+        "name": "Burst Roar"
+      },
+      {
+        "cost": [
+          "Lightning",
+          "Fighting"
+        ],
+        "damage": "70×",
+        "effect": "You may discard any amount of Basic Energy from your Pokémon. This attack does 70 damage for each card you discarded in this way.",
+        "name": "Bellowing Thunder"
+      }
+    ],
+    "category": "Pokemon",
+    "dexId": [
+      1021
+    ],
+    "hp": 240,
+    "id": "sv05-123",
+    "illustrator": "aky CG Works",
+    "image": "https://assets.tcgdex.net/en/sv/sv05/123",
+    "legal": {
+      "expanded": true,
+      "standard": true
+    },
+    "localId": "123",
+    "name": "Raging Bolt ex",
+    "rarity": "Double rare",
+    "regulationMark": "H",
+    "retreat": 3,
+    "set": {
+      "cardCount": {
+        "official": 162,
+        "total": 218
+      },
+      "id": "sv05",
+      "name": "Temporal Forces",
+      "symbol": "https://assets.tcgdex.net/univ/sv/sv05/symbol"
+    },
+    "stage": "Basic",
+    "suffix": "ex",
+    "types": [
+      "Dragon"
+    ],
+    "updated": "2026-05-06T18:45:51Z",
+    "variants": {
+      "firstEdition": false,
+      "holo": true,
+      "normal": false,
+      "reverse": false,
+      "wPromo": false
+    },
+    "variants_detailed": [
+      {
+        "size": "standard",
+        "type": "holo",
+        "variantId": "jr7oetx1mqug9"
+      },
+      {
+        "size": "jumbo",
+        "stamp": [
+          "set-logo"
+        ],
+        "type": "holo",
+        "variantId": "7g4cbxtmtngwhnkbcgz"
+      },
+      {
+        "size": "jumbo",
+        "type": "holo",
+        "variantId": "slwlv6rn87"
+      }
+    ]
+  },
+  "tcgdex_id": "sv05-123"
+}

@@ -1,0 +1,76 @@
+{
+  "brock_id": "ASC-142",
+  "source": {
+    "base_url": "https://api.tcgdex.net/v2/en",
+    "dynamic_fields_removed": [
+      "pricing"
+    ],
+    "language": "en",
+    "provider": "TCGdex"
+  },
+  "tcgdex": {
+    "abilities": [
+      {
+        "effect": "Once during your turn, if any of your Pokémon were Knocked Out during your opponent's last turn, you may draw 3 cards. You can't use more than 1 Flip the Script Ability each turn.",
+        "name": "Flip the Script",
+        "type": "Ability"
+      }
+    ],
+    "attacks": [
+      {
+        "cost": [
+          "Colorless",
+          "Colorless",
+          "Colorless"
+        ],
+        "effect": "This attack does 100 damage to 1 of your opponent's Pokémon. (Don't apply Weakness and Resistance for Benched Pokémon.)",
+        "name": "Cruel Arrow"
+      }
+    ],
+    "category": "Pokemon",
+    "hp": 210,
+    "id": "me02.5-142",
+    "illustrator": "takuyoa",
+    "image": "https://assets.tcgdex.net/en/me/me02.5/142",
+    "legal": {
+      "expanded": true,
+      "standard": true
+    },
+    "localId": "142",
+    "name": "Fezandipiti ex",
+    "rarity": "Double rare",
+    "regulationMark": "H",
+    "retreat": 1,
+    "set": {
+      "cardCount": {
+        "official": 217,
+        "total": 295
+      },
+      "id": "me02.5",
+      "logo": "https://assets.tcgdex.net/en/me/me02.5/logo",
+      "name": "Ascended Heroes",
+      "symbol": "https://assets.tcgdex.net/univ/me/me02.5/symbol"
+    },
+    "stage": "Basic",
+    "suffix": "ex",
+    "types": [
+      "Darkness"
+    ],
+    "updated": "2026-04-25T21:46:36+01:00",
+    "variants": {
+      "firstEdition": false,
+      "holo": true,
+      "normal": false,
+      "reverse": false,
+      "wPromo": false
+    },
+    "variants_detailed": [
+      {
+        "size": "standard",
+        "type": "holo",
+        "variantId": "jr7oetx1mqug9"
+      }
+    ]
+  },
+  "tcgdex_id": "me02.5-142"
+}

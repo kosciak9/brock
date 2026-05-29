@@ -1,0 +1,47 @@
+{
+  "brock_id": "MEE-002",
+  "source": {
+    "base_url": "https://api.tcgdex.net/v2/en",
+    "dynamic_fields_removed": [
+      "pricing"
+    ],
+    "language": "en",
+    "provider": "TCGdex"
+  },
+  "tcgdex": {
+    "category": "Energy",
+    "energyType": "Normal",
+    "id": "mee-002",
+    "legal": {
+      "expanded": true,
+      "standard": true
+    },
+    "localId": "002",
+    "name": "Fire Energy",
+    "rarity": "Common",
+    "set": {
+      "cardCount": {
+        "official": 8,
+        "total": 8
+      },
+      "id": "mee",
+      "name": "Mega Evolution Energy"
+    },
+    "updated": "2026-03-06T18:15:02Z",
+    "variants": {
+      "firstEdition": false,
+      "holo": false,
+      "normal": true,
+      "reverse": false,
+      "wPromo": false
+    },
+    "variants_detailed": [
+      {
+        "size": "standard",
+        "type": "normal",
+        "variantId": "generated"
+      }
+    ]
+  },
+  "tcgdex_id": "mee-002"
+}

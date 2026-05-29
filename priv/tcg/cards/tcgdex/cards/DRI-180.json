@@ -1,0 +1,58 @@
+{
+  "brock_id": "DRI-180",
+  "source": {
+    "base_url": "https://api.tcgdex.net/v2/en",
+    "dynamic_fields_removed": [
+      "pricing"
+    ],
+    "language": "en",
+    "provider": "TCGdex"
+  },
+  "tcgdex": {
+    "category": "Trainer",
+    "effect": "{C} Pokémon in play (both yours and your opponent's) have no Abilities.",
+    "id": "sv10-180",
+    "illustrator": "AYUMI ODASHIMA",
+    "image": "https://assets.tcgdex.net/en/sv/sv10/180",
+    "legal": {
+      "expanded": true,
+      "standard": true
+    },
+    "localId": "180",
+    "name": "Team Rocket's Watchtower",
+    "rarity": "Uncommon",
+    "regulationMark": "I",
+    "set": {
+      "cardCount": {
+        "official": 182,
+        "total": 244
+      },
+      "id": "sv10",
+      "logo": "https://assets.tcgdex.net/en/sv/sv10/logo",
+      "name": "Destined Rivals",
+      "symbol": "https://assets.tcgdex.net/univ/sv/sv10/symbol"
+    },
+    "trainerType": "Stadium",
+    "updated": "2026-04-14T22:44:49+01:00",
+    "variants": {
+      "firstEdition": false,
+      "holo": false,
+      "normal": true,
+      "reverse": true,
+      "wPromo": false
+    },
+    "variants_detailed": [
+      {
+        "size": "standard",
+        "type": "normal",
+        "variantId": "endfynwn4n10gzq"
+      },
+      {
+        "size": "standard",
+        "type": "reverse",
+        "variantId": "cm4kqul3x1bwlz1f"
+      }
+    ]
+  },
+  "tcgdex_id": "sv10-180"
+}

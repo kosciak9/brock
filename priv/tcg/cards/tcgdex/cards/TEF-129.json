@@ -1,0 +1,89 @@
+{
+  "brock_id": "TEF-129",
+  "source": {
+    "base_url": "https://api.tcgdex.net/v2/en",
+    "dynamic_fields_removed": [
+      "pricing"
+    ],
+    "language": "en",
+    "provider": "TCGdex"
+  },
+  "tcgdex": {
+    "abilities": [
+      {
+        "effect": "Once during your turn, you may draw 3 cards. If you drew any cards in this way, shuffle this Pokémon and all attached cards into your deck.",
+        "name": "Run Away Draw",
+        "type": "Ability"
+      }
+    ],
+    "attacks": [
+      {
+        "cost": [
+          "Colorless",
+          "Colorless",
+          "Colorless"
+        ],
+        "damage": 90,
+        "name": "Land Crush"
+      }
+    ],
+    "category": "Pokemon",
+    "dexId": [
+      982
+    ],
+    "evolveFrom": "Dunsparce",
+    "hp": 140,
+    "id": "sv05-129",
+    "illustrator": "Teeziro",
+    "image": "https://assets.tcgdex.net/en/sv/sv05/129",
+    "legal": {
+      "expanded": true,
+      "standard": true
+    },
+    "localId": "129",
+    "name": "Dudunsparce",
+    "rarity": "Rare",
+    "regulationMark": "H",
+    "retreat": 3,
+    "set": {
+      "cardCount": {
+        "official": 162,
+        "total": 218
+      },
+      "id": "sv05",
+      "name": "Temporal Forces",
+      "symbol": "https://assets.tcgdex.net/univ/sv/sv05/symbol"
+    },
+    "stage": "Stage1",
+    "types": [
+      "Colorless"
+    ],
+    "updated": "2026-05-06T18:45:51Z",
+    "variants": {
+      "firstEdition": false,
+      "holo": true,
+      "normal": true,
+      "reverse": true,
+      "wPromo": false
+    },
+    "variants_detailed": [
+      {
+        "size": "standard",
+        "type": "holo",
+        "variantId": "jr7oetx1mqug9"
+      },
+      {
+        "size": "standard",
+        "type": "reverse",
+        "variantId": "cm4kqul3x1bwlz1f"
+      },
+      {
+        "foil": "league",
+        "size": "standard",
+        "type": "normal",
+        "variantId": "4thsfrqeerf4rl1h86gwmx"
+      }
+    ]
+  },
+  "tcgdex_id": "sv05-129"
+}

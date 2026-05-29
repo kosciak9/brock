@@ -1,0 +1,53 @@
+{
+  "brock_id": "SVI-186",
+  "source": {
+    "base_url": "https://api.tcgdex.net/v2/en",
+    "dynamic_fields_removed": [
+      "pricing"
+    ],
+    "language": "en",
+    "provider": "TCGdex"
+  },
+  "tcgdex": {
+    "category": "Trainer",
+    "effect": "Look at the top 7 cards of your deck. You may reveal a Supporter card you find there and put it into your hand. Shuffle the other cards back into your deck.",
+    "id": "sv01-186",
+    "illustrator": "Toyste Beach",
+    "image": "https://assets.tcgdex.net/en/sv/sv01/186",
+    "legal": {
+      "expanded": true,
+      "standard": false
+    },
+    "localId": "186",
+    "name": "Pokégear 3.0",
+    "rarity": "Common",
+    "regulationMark": "G",
+    "set": {
+      "cardCount": {
+        "official": 198,
+        "total": 258
+      },
+      "id": "sv01",
+      "logo": "https://assets.tcgdex.net/en/sv/sv01/logo",
+      "name": "Scarlet & Violet",
+      "symbol": "https://assets.tcgdex.net/univ/sv/sv01/symbol"
+    },
+    "trainerType": "Item",
+    "updated": "2025-12-23T20:44:27+01:00",
+    "variants": {
+      "firstEdition": false,
+      "holo": false,
+      "normal": true,
+      "reverse": false,
+      "wPromo": false
+    },
+    "variants_detailed": [
+      {
+        "size": "standard",
+        "type": "normal",
+        "variantId": "generated"
+      }
+    ]
+  },
+  "tcgdex_id": "sv01-186"
+}

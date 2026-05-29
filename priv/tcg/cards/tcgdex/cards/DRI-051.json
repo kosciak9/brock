@@ -1,0 +1,103 @@
+{
+  "brock_id": "DRI-051",
+  "source": {
+    "base_url": "https://api.tcgdex.net/v2/en",
+    "dynamic_fields_removed": [
+      "pricing"
+    ],
+    "language": "en",
+    "provider": "TCGdex"
+  },
+  "tcgdex": {
+    "abilities": [
+      {
+        "effect": "Prevent all effects of attacks used by your opponent's Pokémon done to your Basic Team Rocket's Pokémon. (Existing effects are not removed. Damage is not an effect.)",
+        "name": "Repelling Veil",
+        "type": "Ability"
+      }
+    ],
+    "attacks": [
+      {
+        "cost": [
+          "Water",
+          "Colorless",
+          "Colorless"
+        ],
+        "damage": "60+",
+        "effect": "If this Pokémon has any Team Rocket's Energy attached, this attack does 60 more damage.",
+        "name": "Dark Frost"
+      }
+    ],
+    "category": "Pokemon",
+    "dexId": [
+      144
+    ],
+    "hp": 120,
+    "id": "sv10-051",
+    "illustrator": "Mitsuhiro Arita",
+    "image": "https://assets.tcgdex.net/en/sv/sv10/051",
+    "legal": {
+      "expanded": true,
+      "standard": true
+    },
+    "localId": "051",
+    "name": "Team Rocket's Articuno",
+    "rarity": "Rare",
+    "regulationMark": "I",
+    "retreat": 1,
+    "set": {
+      "cardCount": {
+        "official": 182,
+        "total": 244
+      },
+      "id": "sv10",
+      "logo": "https://assets.tcgdex.net/en/sv/sv10/logo",
+      "name": "Destined Rivals",
+      "symbol": "https://assets.tcgdex.net/univ/sv/sv10/symbol"
+    },
+    "stage": "Basic",
+    "types": [
+      "Water"
+    ],
+    "updated": "2026-04-14T22:44:49+01:00",
+    "variants": {
+      "firstEdition": false,
+      "holo": true,
+      "normal": true,
+      "reverse": true,
+      "wPromo": false
+    },
+    "variants_detailed": [
+      {
+        "size": "standard",
+        "type": "reverse",
+        "variantId": "cm4kqul3x1bwlz1f"
+      },
+      {
+        "size": "standard",
+        "type": "holo",
+        "variantId": "jr7oetx1mqug9"
+      },
+      {
+        "size": "standard",
+        "stamp": [
+          "set-logo"
+        ],
+        "type": "holo",
+        "variantId": "555jb0efopmyclvkikic41"
+      },
+      {
+        "foil": "cosmos",
+        "size": "standard",
+        "type": "holo",
+        "variantId": "5zs5af49g93yryvw1ftj"
+      },
+      {
+        "size": "standard",
+        "type": "normal",
+        "variantId": "endfynwn4n10gzq"
+      }
+    ]
+  },
+  "tcgdex_id": "sv10-051"
+}

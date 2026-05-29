@@ -1,0 +1,78 @@
+{
+  "brock_id": "SFA-040",
+  "source": {
+    "base_url": "https://api.tcgdex.net/v2/en",
+    "dynamic_fields_removed": [
+      "pricing"
+    ],
+    "language": "en",
+    "provider": "TCGdex"
+  },
+  "tcgdex": {
+    "abilities": [
+      {
+        "effect": "If this Pokémon has a Pokémon Tool attached, your opponent can't play any ACE SPEC cards from their hand.",
+        "name": "ACE Nullifier",
+        "type": "Ability"
+      }
+    ],
+    "attacks": [
+      {
+        "cost": [
+          "Metal",
+          "Colorless",
+          "Colorless"
+        ],
+        "damage": 100,
+        "name": "Magnetic Blast"
+      }
+    ],
+    "category": "Pokemon",
+    "dexId": [
+      649
+    ],
+    "hp": 110,
+    "id": "sv06.5-040",
+    "illustrator": "Kazumasa Yasukuni",
+    "image": "https://assets.tcgdex.net/en/sv/sv06.5/040",
+    "legal": {
+      "expanded": true,
+      "standard": true
+    },
+    "localId": "040",
+    "name": "Genesect",
+    "rarity": "Uncommon",
+    "regulationMark": "H",
+    "retreat": 1,
+    "set": {
+      "cardCount": {
+        "official": 64,
+        "total": 99
+      },
+      "id": "sv06.5",
+      "logo": "https://assets.tcgdex.net/en/sv/sv06.5/logo",
+      "name": "Shrouded Fable",
+      "symbol": "https://assets.tcgdex.net/univ/sv/sv06.5/symbol"
+    },
+    "stage": "Basic",
+    "types": [
+      "Metal"
+    ],
+    "updated": "2025-08-16T20:39:55Z",
+    "variants": {
+      "firstEdition": false,
+      "holo": false,
+      "normal": true,
+      "reverse": false,
+      "wPromo": false
+    },
+    "variants_detailed": [
+      {
+        "size": "standard",
+        "type": "normal",
+        "variantId": "generated"
+      }
+    ]
+  },
+  "tcgdex_id": "sv06.5-040"
+}

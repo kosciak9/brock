@@ -1,0 +1,111 @@
+{
+  "brock_id": "SSP-076",
+  "source": {
+    "base_url": "https://api.tcgdex.net/v2/en",
+    "dynamic_fields_removed": [
+      "pricing"
+    ],
+    "language": "en",
+    "provider": "TCGdex"
+  },
+  "tcgdex": {
+    "abilities": [
+      {
+        "effect": "Your Basic Pokémon in play have no Retreat Cost.",
+        "name": "Skyliner",
+        "type": "Ability"
+      }
+    ],
+    "attacks": [
+      {
+        "cost": [
+          "Psychic",
+          "Psychic",
+          "Colorless"
+        ],
+        "damage": 200,
+        "effect": "During your next turn, this Pokémon can't attack.",
+        "name": "Eon Blade"
+      }
+    ],
+    "category": "Pokemon",
+    "dexId": [
+      380
+    ],
+    "hp": 210,
+    "id": "sv08-076",
+    "illustrator": "takuyoa",
+    "image": "https://assets.tcgdex.net/en/sv/sv08/076",
+    "legal": {
+      "expanded": true,
+      "standard": true
+    },
+    "localId": "076",
+    "name": "Latias ex",
+    "rarity": "Double rare",
+    "regulationMark": "H",
+    "retreat": 2,
+    "set": {
+      "cardCount": {
+        "official": 191,
+        "total": 252
+      },
+      "id": "sv08",
+      "logo": "https://assets.tcgdex.net/en/sv/sv08/logo",
+      "name": "Surging Sparks"
+    },
+    "stage": "Basic",
+    "suffix": "ex",
+    "types": [
+      "Psychic"
+    ],
+    "updated": "2026-04-28T20:18:34+01:00",
+    "variants": {
+      "firstEdition": false,
+      "holo": true,
+      "normal": false,
+      "reverse": false,
+      "wPromo": false
+    },
+    "variants_detailed": [
+      {
+        "size": "standard",
+        "type": "holo",
+        "variantId": "jr7oetx1mqug9"
+      },
+      {
+        "size": "standard",
+        "stamp": [
+          "set-logo"
+        ],
+        "type": "holo",
+        "variantId": "555jb0efopmyclvkikic41"
+      },
+      {
+        "size": "jumbo",
+        "stamp": [
+          "set-logo"
+        ],
+        "type": "holo",
+        "variantId": "7g4cbxtmtngwhnkbcgz"
+      },
+      {
+        "size": "standard",
+        "stamp": [
+          "player-rewards-program"
+        ],
+        "type": "holo",
+        "variantId": "mtltux8quqoc7vwp24c9zzhgmzduu8xcik8"
+      },
+      {
+        "size": "standard",
+        "stamp": [
+          "gym-challenge"
+        ],
+        "type": "holo",
+        "variantId": "2fnyg4g5376d7w3hlmh9pk4ay0k"
+      }
+    ]
+  },
+  "tcgdex_id": "sv08-076"
+}

@@ -1,0 +1,210 @@
+{
+  "brock_id": "TEF-144",
+  "source": {
+    "base_url": "https://api.tcgdex.net/v2/en",
+    "dynamic_fields_removed": [
+      "pricing"
+    ],
+    "language": "en",
+    "provider": "TCGdex"
+  },
+  "tcgdex": {
+    "category": "Trainer",
+    "effect": "Search your deck for up to 2 Basic Pokémon with 70 HP or less and put them onto your Bench. Then, shuffle your deck.",
+    "id": "sv05-144",
+    "illustrator": "AYUMI ODASHIMA",
+    "image": "https://assets.tcgdex.net/en/sv/sv05/144",
+    "legal": {
+      "expanded": true,
+      "standard": true
+    },
+    "localId": "144",
+    "name": "Buddy-Buddy Poffin",
+    "rarity": "Uncommon",
+    "regulationMark": "H",
+    "set": {
+      "cardCount": {
+        "official": 162,
+        "total": 218
+      },
+      "id": "sv05",
+      "name": "Temporal Forces",
+      "symbol": "https://assets.tcgdex.net/univ/sv/sv05/symbol"
+    },
+    "trainerType": "Item",
+    "updated": "2026-05-06T18:45:51Z",
+    "variants": {
+      "firstEdition": false,
+      "holo": true,
+      "normal": true,
+      "reverse": true,
+      "wPromo": false
+    },
+    "variants_detailed": [
+      {
+        "size": "standard",
+        "type": "normal",
+        "variantId": "endfynwn4n10gzq"
+      },
+      {
+        "size": "standard",
+        "type": "reverse",
+        "variantId": "cm4kqul3x1bwlz1f"
+      },
+      {
+        "size": "standard",
+        "stamp": [
+          "international-championship-europe"
+        ],
+        "type": "normal",
+        "variantId": "39lupxb3xe344ke5fmcyjmcqjcgyujtsaxsp5pgqgmh9jjrr"
+      },
+      {
+        "size": "standard",
+        "stamp": [
+          "international-championship-europe",
+          "champion"
+        ],
+        "type": "normal",
+        "variantId": "zjzxndwv6eypiwpbyhyfja2mr822nrr854cwjrnh4grbpbh9exdpmps"
+      },
+      {
+        "size": "standard",
+        "stamp": [
+          "international-championship-europe",
+          "staff"
+        ],
+        "type": "normal",
+        "variantId": "1jom9tl7knrye588zzs5gvlkw5xz8dj4yszz37agms06dckpk6zrj"
+      },
+      {
+        "size": "standard",
+        "stamp": [
+          "international-championship-europe",
+          "top-eight"
+        ],
+        "type": "normal",
+        "variantId": "um7xz4zaup183x3bp3xni5sc84v3sh8fa6mzfsqbp2fbgm1w21q2zbzs"
+      },
+      {
+        "size": "standard",
+        "stamp": [
+          "international-championship-latin-america"
+        ],
+        "type": "normal",
+        "variantId": "15ag6k6v76ip93ll88u6hzjj2qmo1il7vl44p1ac2m8ddorghvwzyaw"
+      },
+      {
+        "size": "standard",
+        "stamp": [
+          "international-championship-latin-america",
+          "champion"
+        ],
+        "type": "normal",
+        "variantId": "che1uekj7ysuwrt90iabqm62rv5rhj2rk9any9duqj2sya24lqb3ywgbnnlihr"
+      },
+      {
+        "size": "standard",
+        "stamp": [
+          "international-championship-latin-america",
+          "staff"
+        ],
+        "type": "normal",
+        "variantId": "jjsm7p4ykxvacxb9ugzn5plj2tc14i7xmj11tvuf97vi3tuk9u6w159vbfi"
+      },
+      {
+        "size": "standard",
+        "stamp": [
+          "international-championship-latin-america",
+          "top-eight"
+        ],
+        "type": "normal",
+        "variantId": "aqz3l6jojx4k4cz52chcuybyt4kp2v4e691n0ohx2z7mzbo4ctpf8ozfyg9or2f"
+      },
+      {
+        "size": "standard",
+        "stamp": [
+          "international-championship-north-america"
+        ],
+        "type": "normal",
+        "variantId": "15ag6k6v76ip93ll88u6hzjj2qmo1il7vl44u6l5ruwewu3pgfacrif"
+      },
+      {
+        "size": "standard",
+        "stamp": [
+          "international-championship-north-america",
+          "champion"
+        ],
+        "type": "normal",
+        "variantId": "che1uekj7ysuwrt90iabqm62rv5rhj2rk9any9duqj2y3kvtuecn48pa70ybpa"
+      },
+      {
+        "size": "standard",
+        "stamp": [
+          "international-championship-north-america",
+          "staff"
+        ],
+        "type": "normal",
+        "variantId": "jjsm7p4ykxvacxb9ugzn5plj2tc14i7xmj149mb0oejs5ur5480blavuja7"
+      },
+      {
+        "size": "standard",
+        "stamp": [
+          "international-championship-north-america",
+          "top-eight"
+        ],
+        "type": "normal",
+        "variantId": "aqz3l6jojx4k4cz52chcuybyt4kp2v4e691ocx5bew18jsctyejydlbs6u21xqg"
+      },
+      {
+        "size": "standard",
+        "stamp": [
+          "gym-challenge"
+        ],
+        "type": "normal",
+        "variantId": "1t06ikeqvuekyvnt4u9307a5qjm1d"
+      },
+      {
+        "size": "standard",
+        "stamp": [
+          "master-ball-league"
+        ],
+        "type": "normal",
+        "variantId": "us0ioug2cipyc55xvdhjg6ztgqq4rnz6a"
+      },
+      {
+        "size": "standard",
+        "stamp": [
+          "master-ball-league",
+          "judge"
+        ],
+        "type": "normal",
+        "variantId": "ekm63g4zgfo9hd2a3u5y6zi0cmp842qx8utohl"
+      },
+      {
+        "foil": "player-reward",
+        "size": "standard",
+        "type": "reverse",
+        "variantId": "1ifx2jn9yl6z52ikjkxwa1n8idpjac"
+      },
+      {
+        "foil": "cosmos",
+        "size": "standard",
+        "stamp": [
+          "player-rewards-program"
+        ],
+        "type": "holo",
+        "variantId": "6x9wic2vzb5bfzn0gz10e76xy60nqt2vwbzzupgwp6"
+      },
+      {
+        "size": "standard",
+        "stamp": [
+          "player-rewards-program"
+        ],
+        "type": "normal",
+        "variantId": "gx8bq2hegum3q6irsxlvqxm955ikw9gd1h311"
+      }
+    ]
+  },
+  "tcgdex_id": "sv05-144"
+}

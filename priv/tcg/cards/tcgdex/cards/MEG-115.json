@@ -1,0 +1,58 @@
+{
+  "brock_id": "MEG-115",
+  "source": {
+    "base_url": "https://api.tcgdex.net/v2/en",
+    "dynamic_fields_removed": [
+      "pricing"
+    ],
+    "language": "en",
+    "provider": "TCGdex"
+  },
+  "tcgdex": {
+    "category": "Trainer",
+    "effect": "Move a Basic Energy from 1 of your Pokémon to another of your Pokémon.",
+    "id": "me01-115",
+    "illustrator": "Studio Bora Inc.",
+    "image": "https://assets.tcgdex.net/en/me/me01/115",
+    "legal": {
+      "expanded": true,
+      "standard": true
+    },
+    "localId": "115",
+    "name": "Energy Switch",
+    "rarity": "Common",
+    "regulationMark": "I",
+    "set": {
+      "cardCount": {
+        "official": 132,
+        "total": 188
+      },
+      "id": "me01",
+      "logo": "https://assets.tcgdex.net/en/me/me01/logo",
+      "name": "Mega Evolution",
+      "symbol": "https://assets.tcgdex.net/univ/me/me01/symbol"
+    },
+    "trainerType": "Item",
+    "updated": "2026-04-21T19:02:59Z",
+    "variants": {
+      "firstEdition": false,
+      "holo": false,
+      "normal": true,
+      "reverse": true,
+      "wPromo": false
+    },
+    "variants_detailed": [
+      {
+        "size": "standard",
+        "type": "normal",
+        "variantId": "endfynwn4n10gzq"
+      },
+      {
+        "size": "standard",
+        "type": "reverse",
+        "variantId": "cm4kqul3x1bwlz1f"
+      }
+    ]
+  },
+  "tcgdex_id": "me01-115"
+}

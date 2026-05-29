@@ -1,0 +1,64 @@
+{
+  "brock_id": "WHT-084",
+  "source": {
+    "base_url": "https://api.tcgdex.net/v2/en",
+    "dynamic_fields_removed": [
+      "pricing"
+    ],
+    "language": "en",
+    "provider": "TCGdex"
+  },
+  "tcgdex": {
+    "category": "Trainer",
+    "effect": "Search your deck for an Evolution Pokémon and an Energy card, reveal them, and put them into your hand. Then, shuffle your deck.",
+    "id": "sv10.5w-084",
+    "illustrator": "yuu",
+    "image": "https://assets.tcgdex.net/en/sv/sv10.5w/084",
+    "legal": {
+      "expanded": true,
+      "standard": true
+    },
+    "localId": "084",
+    "name": "Hilda",
+    "rarity": "Uncommon",
+    "regulationMark": "I",
+    "set": {
+      "cardCount": {
+        "official": 86,
+        "total": 173
+      },
+      "id": "sv10.5w",
+      "logo": "https://assets.tcgdex.net/en/sv/sv10.5w/logo",
+      "name": "White Flare",
+      "symbol": "https://assets.tcgdex.net/univ/sv/sv10.5w/symbol"
+    },
+    "trainerType": "Supporter",
+    "updated": "2026-04-21T19:45:38+01:00",
+    "variants": {
+      "firstEdition": false,
+      "holo": false,
+      "normal": true,
+      "reverse": true,
+      "wPromo": false
+    },
+    "variants_detailed": [
+      {
+        "size": "standard",
+        "type": "normal",
+        "variantId": "endfynwn4n10gzq"
+      },
+      {
+        "size": "standard",
+        "type": "reverse",
+        "variantId": "cm4kqul3x1bwlz1f"
+      },
+      {
+        "foil": "pokeball",
+        "size": "standard",
+        "type": "reverse",
+        "variantId": "3739bbtj3i910y5ynn9xc6ryf"
+      }
+    ]
+  },
+  "tcgdex_id": "sv10.5w-084"
+}

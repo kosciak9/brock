@@ -1,0 +1,58 @@
+{
+  "brock_id": "ASC-181",
+  "source": {
+    "base_url": "https://api.tcgdex.net/v2/en",
+    "dynamic_fields_removed": [
+      "pricing"
+    ],
+    "language": "en",
+    "provider": "TCGdex"
+  },
+  "tcgdex": {
+    "category": "Trainer",
+    "effect": "The Retreat Cost of the Pokémon this card is attached to is {C}{C} less.",
+    "id": "me02.5-181",
+    "illustrator": "Studio Bora Inc.",
+    "image": "https://assets.tcgdex.net/en/me/me02.5/181",
+    "legal": {
+      "expanded": true,
+      "standard": true
+    },
+    "localId": "181",
+    "name": "Air Balloon",
+    "rarity": "Uncommon",
+    "regulationMark": "I",
+    "set": {
+      "cardCount": {
+        "official": 217,
+        "total": 295
+      },
+      "id": "me02.5",
+      "logo": "https://assets.tcgdex.net/en/me/me02.5/logo",
+      "name": "Ascended Heroes",
+      "symbol": "https://assets.tcgdex.net/univ/me/me02.5/symbol"
+    },
+    "trainerType": "Tool",
+    "updated": "2026-04-15T19:47:06Z",
+    "variants": {
+      "firstEdition": false,
+      "holo": false,
+      "normal": true,
+      "reverse": true,
+      "wPromo": false
+    },
+    "variants_detailed": [
+      {
+        "size": "standard",
+        "type": "normal",
+        "variantId": "endfynwn4n10gzq"
+      },
+      {
+        "size": "standard",
+        "type": "reverse",
+        "variantId": "cm4kqul3x1bwlz1f"
+      }
+    ]
+  },
+  "tcgdex_id": "me02.5-181"
+}

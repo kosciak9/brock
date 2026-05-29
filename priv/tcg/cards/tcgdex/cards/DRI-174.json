@@ -1,0 +1,58 @@
+{
+  "brock_id": "DRI-174",
+  "source": {
+    "base_url": "https://api.tcgdex.net/v2/en",
+    "dynamic_fields_removed": [
+      "pricing"
+    ],
+    "language": "en",
+    "provider": "TCGdex"
+  },
+  "tcgdex": {
+    "category": "Trainer",
+    "effect": "Switch your Active Team Rocket's Pokémon with 1 of your Benched Team Rocket's Pokémon. If you do, switch in 1 of your opponent's Benched Pokémon to the Active Spot.",
+    "id": "sv10-174",
+    "illustrator": "akagi",
+    "image": "https://assets.tcgdex.net/en/sv/sv10/174",
+    "legal": {
+      "expanded": true,
+      "standard": true
+    },
+    "localId": "174",
+    "name": "Team Rocket's Giovanni",
+    "rarity": "Uncommon",
+    "regulationMark": "I",
+    "set": {
+      "cardCount": {
+        "official": 182,
+        "total": 244
+      },
+      "id": "sv10",
+      "logo": "https://assets.tcgdex.net/en/sv/sv10/logo",
+      "name": "Destined Rivals",
+      "symbol": "https://assets.tcgdex.net/univ/sv/sv10/symbol"
+    },
+    "trainerType": "Supporter",
+    "updated": "2026-04-14T22:44:49+01:00",
+    "variants": {
+      "firstEdition": false,
+      "holo": false,
+      "normal": true,
+      "reverse": true,
+      "wPromo": false
+    },
+    "variants_detailed": [
+      {
+        "size": "standard",
+        "type": "normal",
+        "variantId": "endfynwn4n10gzq"
+      },
+      {
+        "size": "standard",
+        "type": "reverse",
+        "variantId": "cm4kqul3x1bwlz1f"
+      }
+    ]
+  },
+  "tcgdex_id": "sv10-174"
+}

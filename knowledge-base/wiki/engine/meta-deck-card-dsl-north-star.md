@@ -262,7 +262,8 @@ Cards may exist as `metadata_cached` before their deck is supported. This is exp
 - Imported Festival Lead 27445 as a static deck module using the deck macro.
 - Imported Lopunny Dudunsparce 27514 as a static deck module using the deck macro.
 - Imported Rocket's Mewtwo 27459 as a static deck module using the deck macro.
-- Cache TCGdex metadata for all six supported decks.
+- Added `Brock.Tcg.Data.TCGdex` plus opt-in `mix brock.cards.sync` network sync for cache generation.
+- Cached TCGdex set metadata for the 15 deck-pool sets and card metadata for 101 unique cards across all six known deck modules under `priv/tcg/cards/tcgdex`.
 - Keep importer/cache tests offline by default; tag network tests as `:external`.
 
 ### Phase 2: metadata-backed registry facade

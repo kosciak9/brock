@@ -1,0 +1,57 @@
+{
+  "brock_id": "SCR-131",
+  "source": {
+    "base_url": "https://api.tcgdex.net/v2/en",
+    "dynamic_fields_removed": [
+      "pricing"
+    ],
+    "language": "en",
+    "provider": "TCGdex"
+  },
+  "tcgdex": {
+    "category": "Trainer",
+    "effect": "Each player who has any Tera Pokémon in play can have up to 8 Pokémon on their Bench.\n\nIf a player no longer has any Tera Pokémon in play, that player discards Pokémon from their Bench until they have 5. When this card leaves play, both players discard Pokémon from their Bench until they have 5, and the player who played this card discards first.",
+    "id": "sv07-131",
+    "illustrator": "MARINA Chikazawa",
+    "image": "https://assets.tcgdex.net/en/sv/sv07/131",
+    "legal": {
+      "expanded": true,
+      "standard": true
+    },
+    "localId": "131",
+    "name": "Area Zero Underdepths",
+    "rarity": "Uncommon",
+    "regulationMark": "H",
+    "set": {
+      "cardCount": {
+        "official": 142,
+        "total": 175
+      },
+      "id": "sv07",
+      "logo": "https://assets.tcgdex.net/en/sv/sv07/logo",
+      "name": "Stellar Crown"
+    },
+    "trainerType": "Stadium",
+    "updated": "2026-04-28T20:19:50+01:00",
+    "variants": {
+      "firstEdition": false,
+      "holo": false,
+      "normal": true,
+      "reverse": true,
+      "wPromo": false
+    },
+    "variants_detailed": [
+      {
+        "size": "standard",
+        "type": "normal",
+        "variantId": "endfynwn4n10gzq"
+      },
+      {
+        "size": "standard",
+        "type": "reverse",
+        "variantId": "cm4kqul3x1bwlz1f"
+      }
+    ]
+  },
+  "tcgdex_id": "sv07-131"
+}

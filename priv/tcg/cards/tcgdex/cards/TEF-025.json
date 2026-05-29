@@ -1,0 +1,79 @@
+{
+  "brock_id": "TEF-025",
+  "source": {
+    "base_url": "https://api.tcgdex.net/v2/en",
+    "dynamic_fields_removed": [
+      "pricing"
+    ],
+    "language": "en",
+    "provider": "TCGdex"
+  },
+  "tcgdex": {
+    "abilities": [
+      {
+        "effect": "When you play this Pokémon from your hand onto your Bench during your turn, you may switch it with your Active Pokémon. If you do, you may move any amount of Energy from your other Pokémon to this Pokémon.",
+        "name": "Rapid Vernier",
+        "type": "Ability"
+      }
+    ],
+    "attacks": [
+      {
+        "cost": [
+          "Grass",
+          "Grass",
+          "Colorless"
+        ],
+        "damage": 180,
+        "effect": "During your next turn, this Pokémon can't attack.",
+        "name": "Prism Edge"
+      }
+    ],
+    "category": "Pokemon",
+    "dexId": [
+      1010
+    ],
+    "hp": 220,
+    "id": "sv05-025",
+    "illustrator": "5ban Graphics",
+    "image": "https://assets.tcgdex.net/en/sv/sv05/025",
+    "legal": {
+      "expanded": true,
+      "standard": true
+    },
+    "localId": "025",
+    "name": "Iron Leaves ex",
+    "rarity": "Double rare",
+    "regulationMark": "H",
+    "retreat": 1,
+    "set": {
+      "cardCount": {
+        "official": 162,
+        "total": 218
+      },
+      "id": "sv05",
+      "name": "Temporal Forces",
+      "symbol": "https://assets.tcgdex.net/univ/sv/sv05/symbol"
+    },
+    "stage": "Basic",
+    "suffix": "ex",
+    "types": [
+      "Grass"
+    ],
+    "updated": "2026-05-06T18:45:51Z",
+    "variants": {
+      "firstEdition": false,
+      "holo": true,
+      "normal": false,
+      "reverse": false,
+      "wPromo": false
+    },
+    "variants_detailed": [
+      {
+        "size": "standard",
+        "type": "holo",
+        "variantId": "jr7oetx1mqug9"
+      }
+    ]
+  },
+  "tcgdex_id": "sv05-025"
+}

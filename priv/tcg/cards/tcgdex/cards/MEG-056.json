@@ -1,0 +1,82 @@
+{
+  "brock_id": "MEG-056",
+  "source": {
+    "base_url": "https://api.tcgdex.net/v2/en",
+    "dynamic_fields_removed": [
+      "pricing"
+    ],
+    "language": "en",
+    "provider": "TCGdex"
+  },
+  "tcgdex": {
+    "abilities": [
+      {
+        "effect": "Once during your turn, when you play this Pokémon from your hand to evolve 1 of your Pokémon, you may use this Ability. Draw 3 cards.",
+        "name": "Psychic Draw",
+        "type": "Ability"
+      }
+    ],
+    "attacks": [
+      {
+        "cost": [
+          "Psychic"
+        ],
+        "effect": "Place 2 damage counters on your opponent's Active Pokémon for each card in your hand.",
+        "name": "Powerful Hand"
+      }
+    ],
+    "category": "Pokemon",
+    "dexId": [
+      65
+    ],
+    "evolveFrom": "Kadabra",
+    "hp": 140,
+    "id": "me01-056",
+    "illustrator": "Bun Toujo",
+    "image": "https://assets.tcgdex.net/en/me/me01/056",
+    "legal": {
+      "expanded": true,
+      "standard": true
+    },
+    "localId": "056",
+    "name": "Alakazam",
+    "rarity": "Rare",
+    "regulationMark": "I",
+    "retreat": 1,
+    "set": {
+      "cardCount": {
+        "official": 132,
+        "total": 188
+      },
+      "id": "me01",
+      "logo": "https://assets.tcgdex.net/en/me/me01/logo",
+      "name": "Mega Evolution",
+      "symbol": "https://assets.tcgdex.net/univ/me/me01/symbol"
+    },
+    "stage": "Stage2",
+    "types": [
+      "Psychic"
+    ],
+    "updated": "2026-04-21T19:02:59Z",
+    "variants": {
+      "firstEdition": false,
+      "holo": true,
+      "normal": false,
+      "reverse": true,
+      "wPromo": false
+    },
+    "variants_detailed": [
+      {
+        "size": "standard",
+        "type": "holo",
+        "variantId": "jr7oetx1mqug9"
+      },
+      {
+        "size": "standard",
+        "type": "reverse",
+        "variantId": "cm4kqul3x1bwlz1f"
+      }
+    ]
+  },
+  "tcgdex_id": "me01-056"
+}

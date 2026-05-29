@@ -1,0 +1,87 @@
+{
+  "brock_id": "JTG-056",
+  "source": {
+    "base_url": "https://api.tcgdex.net/v2/en",
+    "dynamic_fields_removed": [
+      "pricing"
+    ],
+    "language": "en",
+    "provider": "TCGdex"
+  },
+  "tcgdex": {
+    "abilities": [
+      {
+        "effect": "The Weakness of each of your opponent's {N} Pokémon in play is now {P}. (Apply Weakness as ×2.)",
+        "name": "Fairy Zone",
+        "type": "Ability"
+      }
+    ],
+    "attacks": [
+      {
+        "cost": [
+          "Psychic",
+          "Colorless"
+        ],
+        "damage": "20+",
+        "effect": "This attack does 20 more damage for each Benched Pokémon (both yours and your opponent's).",
+        "name": "Full Moon Rondo"
+      }
+    ],
+    "category": "Pokemon",
+    "dexId": [
+      35
+    ],
+    "hp": 190,
+    "id": "sv09-056",
+    "illustrator": "5ban Graphics",
+    "image": "https://assets.tcgdex.net/en/sv/sv09/056",
+    "legal": {
+      "expanded": true,
+      "standard": true
+    },
+    "localId": "056",
+    "name": "Lillie's Clefairy ex",
+    "rarity": "Double rare",
+    "regulationMark": "I",
+    "retreat": 1,
+    "set": {
+      "cardCount": {
+        "official": 159,
+        "total": 190
+      },
+      "id": "sv09",
+      "logo": "https://assets.tcgdex.net/en/sv/sv09/logo",
+      "name": "Journey Together",
+      "symbol": "https://assets.tcgdex.net/univ/sv/sv09/symbol"
+    },
+    "stage": "Basic",
+    "suffix": "ex",
+    "types": [
+      "Psychic"
+    ],
+    "updated": "2026-04-25T21:46:36+01:00",
+    "variants": {
+      "firstEdition": false,
+      "holo": true,
+      "normal": false,
+      "reverse": false,
+      "wPromo": false
+    },
+    "variants_detailed": [
+      {
+        "size": "standard",
+        "type": "holo",
+        "variantId": "jr7oetx1mqug9"
+      },
+      {
+        "size": "standard",
+        "stamp": [
+          "player-rewards-program"
+        ],
+        "type": "holo",
+        "variantId": "mtltux8quqoc7vwp24c9zzhgmzduu8xcik8"
+      }
+    ]
+  },
+  "tcgdex_id": "sv09-056"
+}

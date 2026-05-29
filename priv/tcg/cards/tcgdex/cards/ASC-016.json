@@ -1,0 +1,76 @@
+{
+  "brock_id": "ASC-016",
+  "source": {
+    "base_url": "https://api.tcgdex.net/v2/en",
+    "dynamic_fields_removed": [
+      "pricing"
+    ],
+    "language": "en",
+    "provider": "TCGdex"
+  },
+  "tcgdex": {
+    "attacks": [
+      {
+        "damage": 10,
+        "effect": "During your opponent's next turn, they can't play any Item cards from their hand.",
+        "name": "Itchy Pollen"
+      }
+    ],
+    "category": "Pokemon",
+    "hp": 30,
+    "id": "me02.5-016",
+    "illustrator": "Yoriyuki Ikegami",
+    "image": "https://assets.tcgdex.net/en/me/me02.5/016",
+    "legal": {
+      "expanded": true,
+      "standard": true
+    },
+    "localId": "016",
+    "name": "Budew",
+    "rarity": "Common",
+    "regulationMark": "H",
+    "retreat": 0,
+    "set": {
+      "cardCount": {
+        "official": 217,
+        "total": 295
+      },
+      "id": "me02.5",
+      "logo": "https://assets.tcgdex.net/en/me/me02.5/logo",
+      "name": "Ascended Heroes",
+      "symbol": "https://assets.tcgdex.net/univ/me/me02.5/symbol"
+    },
+    "stage": "Basic",
+    "types": [
+      "Grass"
+    ],
+    "updated": "2026-04-15T19:47:06Z",
+    "variants": {
+      "firstEdition": false,
+      "holo": false,
+      "normal": true,
+      "reverse": true,
+      "wPromo": false
+    },
+    "variants_detailed": [
+      {
+        "size": "standard",
+        "type": "normal",
+        "variantId": "endfynwn4n10gzq"
+      },
+      {
+        "foil": "friendball",
+        "size": "standard",
+        "type": "reverse",
+        "variantId": "2618rzb14ro3mef8iltahk1chlu"
+      },
+      {
+        "foil": "energy",
+        "size": "standard",
+        "type": "reverse",
+        "variantId": "3wehmjjju11cdaad92gj82f"
+      }
+    ]
+  },
+  "tcgdex_id": "me02.5-016"
+}

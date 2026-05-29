@@ -1,0 +1,73 @@
+{
+  "brock_id": "SSP-169",
+  "source": {
+    "base_url": "https://api.tcgdex.net/v2/en",
+    "dynamic_fields_removed": [
+      "pricing"
+    ],
+    "language": "en",
+    "provider": "TCGdex"
+  },
+  "tcgdex": {
+    "category": "Trainer",
+    "effect": "If you have more Prize cards remaining than your opponent, attacks used by the Pokémon this card is attached to cost {C} less.",
+    "id": "sv08-169",
+    "illustrator": "Toyste Beach",
+    "image": "https://assets.tcgdex.net/en/sv/sv08/169",
+    "legal": {
+      "expanded": true,
+      "standard": true
+    },
+    "localId": "169",
+    "name": "Counter Gain",
+    "rarity": "Uncommon",
+    "regulationMark": "H",
+    "set": {
+      "cardCount": {
+        "official": 191,
+        "total": 252
+      },
+      "id": "sv08",
+      "logo": "https://assets.tcgdex.net/en/sv/sv08/logo",
+      "name": "Surging Sparks"
+    },
+    "trainerType": "Tool",
+    "updated": "2026-04-28T20:18:34+01:00",
+    "variants": {
+      "firstEdition": false,
+      "holo": false,
+      "normal": true,
+      "reverse": true,
+      "wPromo": false
+    },
+    "variants_detailed": [
+      {
+        "size": "standard",
+        "type": "normal",
+        "variantId": "endfynwn4n10gzq"
+      },
+      {
+        "size": "standard",
+        "type": "reverse",
+        "variantId": "cm4kqul3x1bwlz1f"
+      },
+      {
+        "size": "standard",
+        "stamp": [
+          "gym-challenge"
+        ],
+        "type": "normal",
+        "variantId": "1t06ikeqvuekyvnt4u9307a5qjm1d"
+      },
+      {
+        "size": "standard",
+        "stamp": [
+          "player-rewards-program"
+        ],
+        "type": "normal",
+        "variantId": "gx8bq2hegum3q6irsxlvqxm955ikw9gd1h311"
+      }
+    ]
+  },
+  "tcgdex_id": "sv08-169"
+}

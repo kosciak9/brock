@@ -1,0 +1,83 @@
+{
+  "brock_id": "TWM-015",
+  "source": {
+    "base_url": "https://api.tcgdex.net/v2/en",
+    "dynamic_fields_removed": [
+      "pricing"
+    ],
+    "language": "en",
+    "provider": "TCGdex"
+  },
+  "tcgdex": {
+    "abilities": [
+      {
+        "effect": "Once during your turn, if your Active Pokémon has the Festival Lead Ability, you may search your deck for a card and put it into your hand. Then, shuffle your deck.",
+        "name": "Boom Boom Groove",
+        "type": "Ability"
+      }
+    ],
+    "attacks": [
+      {
+        "cost": [
+          "Grass",
+          "Grass"
+        ],
+        "damage": 50,
+        "name": "Beat"
+      }
+    ],
+    "category": "Pokemon",
+    "dexId": [
+      811
+    ],
+    "evolveFrom": "Grookey",
+    "hp": 100,
+    "id": "sv06-015",
+    "illustrator": "GOSSAN",
+    "image": "https://assets.tcgdex.net/en/sv/sv06/015",
+    "legal": {
+      "expanded": true,
+      "standard": true
+    },
+    "localId": "015",
+    "name": "Thwackey",
+    "rarity": "Common",
+    "regulationMark": "H",
+    "retreat": 2,
+    "set": {
+      "cardCount": {
+        "official": 167,
+        "total": 226
+      },
+      "id": "sv06",
+      "logo": "https://assets.tcgdex.net/en/sv/sv06/logo",
+      "name": "Twilight Masquerade",
+      "symbol": "https://assets.tcgdex.net/univ/sv/sv06/symbol"
+    },
+    "stage": "Stage1",
+    "types": [
+      "Grass"
+    ],
+    "updated": "2026-05-04T00:16:35+01:00",
+    "variants": {
+      "firstEdition": false,
+      "holo": false,
+      "normal": true,
+      "reverse": true,
+      "wPromo": false
+    },
+    "variants_detailed": [
+      {
+        "size": "standard",
+        "type": "normal",
+        "variantId": "endfynwn4n10gzq"
+      },
+      {
+        "size": "standard",
+        "type": "reverse",
+        "variantId": "cm4kqul3x1bwlz1f"
+      }
+    ]
+  },
+  "tcgdex_id": "sv06-015"
+}

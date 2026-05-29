@@ -1,0 +1,78 @@
+{
+  "brock_id": "PFL-084",
+  "source": {
+    "base_url": "https://api.tcgdex.net/v2/en",
+    "dynamic_fields_removed": [
+      "pricing"
+    ],
+    "language": "en",
+    "provider": "TCGdex"
+  },
+  "tcgdex": {
+    "attacks": [
+      {
+        "cost": [
+          "Colorless"
+        ],
+        "damage": "60+",
+        "effect": "If this Pokémon moved from your Bench to the Active Spot this turn, this attack does 170 more damage.",
+        "name": "Gale Thrust"
+      },
+      {
+        "cost": [
+          "Colorless",
+          "Colorless"
+        ],
+        "damage": 160,
+        "effect": "This attack's damage isn't affected by any effects on your opponent's Active Pokémon.",
+        "name": "Spiky Hopper"
+      }
+    ],
+    "category": "Pokemon",
+    "dexId": [
+      428
+    ],
+    "evolveFrom": "Buneary",
+    "hp": 330,
+    "id": "me02-084",
+    "image": "https://assets.tcgdex.net/en/me/me02/084",
+    "legal": {
+      "expanded": true,
+      "standard": true
+    },
+    "localId": "084",
+    "name": "Mega Lopunny ex",
+    "rarity": "Double rare",
+    "regulationMark": "I",
+    "retreat": 1,
+    "set": {
+      "cardCount": {
+        "official": 94,
+        "total": 130
+      },
+      "id": "me02",
+      "logo": "https://assets.tcgdex.net/en/me/me02/logo",
+      "name": "Phantasmal Flames"
+    },
+    "stage": "Stage1",
+    "types": [
+      "Colorless"
+    ],
+    "updated": "2026-04-21T19:45:13+01:00",
+    "variants": {
+      "firstEdition": false,
+      "holo": true,
+      "normal": false,
+      "reverse": false,
+      "wPromo": false
+    },
+    "variants_detailed": [
+      {
+        "size": "standard",
+        "type": "holo",
+        "variantId": "jr7oetx1mqug9"
+      }
+    ]
+  },
+  "tcgdex_id": "me02-084"
+}

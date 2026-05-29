@@ -1,0 +1,92 @@
+{
+  "brock_id": "MEG-119",
+  "source": {
+    "base_url": "https://api.tcgdex.net/v2/en",
+    "dynamic_fields_removed": [
+      "pricing"
+    ],
+    "language": "en",
+    "provider": "TCGdex"
+  },
+  "tcgdex": {
+    "category": "Trainer",
+    "effect": "Shuffle your hand into your deck. Then, draw 6 cards. If you have exactly 6 Prize cards remaining, draw 8 cards instead.",
+    "id": "me01-119",
+    "illustrator": "Atsushi Furusawa",
+    "image": "https://assets.tcgdex.net/en/me/me01/119",
+    "legal": {
+      "expanded": true,
+      "standard": true
+    },
+    "localId": "119",
+    "name": "Lillie's Determination",
+    "rarity": "Uncommon",
+    "regulationMark": "I",
+    "set": {
+      "cardCount": {
+        "official": 132,
+        "total": 188
+      },
+      "id": "me01",
+      "logo": "https://assets.tcgdex.net/en/me/me01/logo",
+      "name": "Mega Evolution",
+      "symbol": "https://assets.tcgdex.net/univ/me/me01/symbol"
+    },
+    "trainerType": "Supporter",
+    "updated": "2026-04-21T19:02:59Z",
+    "variants": {
+      "firstEdition": false,
+      "holo": true,
+      "normal": true,
+      "reverse": true,
+      "wPromo": false
+    },
+    "variants_detailed": [
+      {
+        "size": "standard",
+        "type": "normal",
+        "variantId": "endfynwn4n10gzq"
+      },
+      {
+        "size": "standard",
+        "type": "reverse",
+        "variantId": "cm4kqul3x1bwlz1f"
+      },
+      {
+        "foil": "cosmos",
+        "size": "standard",
+        "stamp": [
+          "player-rewards-program"
+        ],
+        "type": "holo",
+        "variantId": "6x9wic2vzb5bfzn0gz10e76xy60nqt2vwbzzupgwp6"
+      },
+      {
+        "size": "standard",
+        "stamp": [
+          "player-rewards-program"
+        ],
+        "type": "normal",
+        "variantId": "gx8bq2hegum3q6irsxlvqxm955ikw9gd1h311"
+      },
+      {
+        "size": "standard",
+        "stamp": [
+          "regional-championships"
+        ],
+        "type": "normal",
+        "variantId": "gx8bq2hegvl5g45wgglxhz3i120jscen0psbo"
+      },
+      {
+        "size": "standard",
+        "stamp": [
+          "regional-championships",
+          "staff"
+        ],
+        "type": "normal",
+        "variantId": "80gdqxre91h6u93zd18nahawka6ni9aofap3umtkgy"
+      }
+    ]
+  },
+  "tcgdex_id": "me01-119"
+}

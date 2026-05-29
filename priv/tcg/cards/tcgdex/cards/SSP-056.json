@@ -1,0 +1,83 @@
+{
+  "brock_id": "SSP-056",
+  "source": {
+    "base_url": "https://api.tcgdex.net/v2/en",
+    "dynamic_fields_removed": [
+      "pricing"
+    ],
+    "language": "en",
+    "provider": "TCGdex"
+  },
+  "tcgdex": {
+    "abilities": [
+      {
+        "effect": "When you play this Pokémon from your hand onto your Bench during your turn, you may discard a Stadium in play.",
+        "name": "Snow Sink",
+        "type": "Ability"
+      }
+    ],
+    "attacks": [
+      {
+        "cost": [
+          "Water",
+          "Water",
+          "Colorless"
+        ],
+        "damage": 120,
+        "effect": "Put an Energy attached to this Pokémon into your hand.",
+        "name": "Icicle Loop"
+      }
+    ],
+    "category": "Pokemon",
+    "dexId": [
+      1002
+    ],
+    "hp": 120,
+    "id": "sv08-056",
+    "illustrator": "Yuya Oka",
+    "image": "https://assets.tcgdex.net/en/sv/sv08/056",
+    "legal": {
+      "expanded": true,
+      "standard": true
+    },
+    "localId": "056",
+    "name": "Chien-Pao",
+    "rarity": "Rare",
+    "regulationMark": "H",
+    "retreat": 1,
+    "set": {
+      "cardCount": {
+        "official": 191,
+        "total": 252
+      },
+      "id": "sv08",
+      "logo": "https://assets.tcgdex.net/en/sv/sv08/logo",
+      "name": "Surging Sparks"
+    },
+    "stage": "Basic",
+    "types": [
+      "Water"
+    ],
+    "updated": "2026-04-28T20:18:34+01:00",
+    "variants": {
+      "firstEdition": false,
+      "holo": true,
+      "normal": false,
+      "reverse": true,
+      "wPromo": false
+    },
+    "variants_detailed": [
+      {
+        "size": "standard",
+        "type": "holo",
+        "variantId": "jr7oetx1mqug9"
+      },
+      {
+        "size": "standard",
+        "type": "reverse",
+        "variantId": "cm4kqul3x1bwlz1f"
+      }
+    ]
+  },
+  "tcgdex_id": "sv08-056"
+}

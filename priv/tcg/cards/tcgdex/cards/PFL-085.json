@@ -1,0 +1,56 @@
+{
+  "brock_id": "PFL-085",
+  "source": {
+    "base_url": "https://api.tcgdex.net/v2/en",
+    "dynamic_fields_removed": [
+      "pricing"
+    ],
+    "language": "en",
+    "provider": "TCGdex"
+  },
+  "tcgdex": {
+    "category": "Trainer",
+    "effect": "Prevent all damage counters from being placed on Benched Pokémon (both yours and your opponent's) by effects of attacks and Abilities from the opponent's Pokémon. (Damage from attacks is still taken.)",
+    "id": "me02-085",
+    "image": "https://assets.tcgdex.net/en/me/me02/085",
+    "legal": {
+      "expanded": true,
+      "standard": true
+    },
+    "localId": "085",
+    "name": "Battle Cage",
+    "rarity": "Uncommon",
+    "regulationMark": "I",
+    "set": {
+      "cardCount": {
+        "official": 94,
+        "total": 130
+      },
+      "id": "me02",
+      "logo": "https://assets.tcgdex.net/en/me/me02/logo",
+      "name": "Phantasmal Flames"
+    },
+    "trainerType": "Stadium",
+    "updated": "2026-04-21T19:45:13+01:00",
+    "variants": {
+      "firstEdition": false,
+      "holo": false,
+      "normal": true,
+      "reverse": true,
+      "wPromo": false
+    },
+    "variants_detailed": [
+      {
+        "size": "standard",
+        "type": "normal",
+        "variantId": "endfynwn4n10gzq"
+      },
+      {
+        "size": "standard",
+        "type": "reverse",
+        "variantId": "cm4kqul3x1bwlz1f"
+      }
+    ]
+  },
+  "tcgdex_id": "me02-085"
+}

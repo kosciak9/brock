@@ -1,0 +1,89 @@
+{
+  "brock_id": "DRI-020",
+  "source": {
+    "base_url": "https://api.tcgdex.net/v2/en",
+    "dynamic_fields_removed": [
+      "pricing"
+    ],
+    "language": "en",
+    "provider": "TCGdex"
+  },
+  "tcgdex": {
+    "abilities": [
+      {
+        "effect": "Once during your turn, you may attach a Basic Energy card from your discard pile to this Pokémon.",
+        "name": "Charging Up",
+        "type": "Ability"
+      }
+    ],
+    "attacks": [
+      {
+        "cost": [
+          "Grass",
+          "Colorless"
+        ],
+        "damage": "30×",
+        "effect": "This attack does 30 damage for each of your Team Rocket's Pokémon in play.",
+        "name": "Rocket Rush"
+      }
+    ],
+    "category": "Pokemon",
+    "dexId": [
+      918
+    ],
+    "evolveFrom": "Team Rocket's Tarountula",
+    "hp": 130,
+    "id": "sv10-020",
+    "illustrator": "Taiga Kasai",
+    "image": "https://assets.tcgdex.net/en/sv/sv10/020",
+    "legal": {
+      "expanded": true,
+      "standard": true
+    },
+    "localId": "020",
+    "name": "Team Rocket's Spidops",
+    "rarity": "Rare",
+    "regulationMark": "I",
+    "retreat": 2,
+    "set": {
+      "cardCount": {
+        "official": 182,
+        "total": 244
+      },
+      "id": "sv10",
+      "logo": "https://assets.tcgdex.net/en/sv/sv10/logo",
+      "name": "Destined Rivals",
+      "symbol": "https://assets.tcgdex.net/univ/sv/sv10/symbol"
+    },
+    "stage": "Stage1",
+    "types": [
+      "Grass"
+    ],
+    "updated": "2026-04-14T22:44:49+01:00",
+    "variants": {
+      "firstEdition": false,
+      "holo": true,
+      "normal": true,
+      "reverse": true,
+      "wPromo": false
+    },
+    "variants_detailed": [
+      {
+        "size": "standard",
+        "type": "reverse",
+        "variantId": "cm4kqul3x1bwlz1f"
+      },
+      {
+        "size": "standard",
+        "type": "holo",
+        "variantId": "jr7oetx1mqug9"
+      },
+      {
+        "size": "standard",
+        "type": "normal",
+        "variantId": "endfynwn4n10gzq"
+      }
+    ]
+  },
+  "tcgdex_id": "sv10-020"
+}
