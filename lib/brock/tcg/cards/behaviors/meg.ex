@@ -11,4 +11,8 @@ defmodule Brock.Tcg.Cards.Behaviors.MEG do
       }
     )
   end
+
+  card "MEG-115" do
+    card_effect(effect: %{type: :move_basic_energy_between_own_pokemon})
+  end
 end

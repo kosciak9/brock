@@ -30,6 +30,7 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
     "MEG-125" => :rare_candy,
     "TWM-148" => :enhanced_hammer,
     "DRI-168" => :sacred_ash,
+    "MEG-115" => :energy_switch,
     "TWM-150" => :handheld_fan,
     "ASC-181" => :air_balloon,
     "MEG-117" => :forest_of_vitality
@@ -47,6 +48,7 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
                               :draw_when_attached_from_hand,
                               :evolution_draw,
                               :lock_opponent_items_next_turn,
+                              :move_basic_energy_between_own_pokemon,
                               :move_damage_counters,
                               :opponent_bench_damage_counters,
                               :opponent_cannot_play_ace_spec_if_tool_attached,

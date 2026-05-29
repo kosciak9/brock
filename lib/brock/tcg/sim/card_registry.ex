@@ -211,6 +211,12 @@ defmodule Brock.Tcg.Sim.CardRegistry do
     "POR-071" => %{name: "Crushing Hammer", supertype: :trainer, trainer_type: :item},
     "TEF-144" => %{name: "Buddy-Buddy Poffin", supertype: :trainer, trainer_type: :item},
     "POR-081" => %{name: "Poké Pad", supertype: :trainer, trainer_type: :item},
+    "MEG-115" => %{
+      name: "Energy Switch",
+      supertype: :trainer,
+      trainer_type: :item,
+      effect: %{type: :move_basic_energy_between_own_pokemon}
+    },
     "MEG-131" => %{name: "Ultra Ball", supertype: :trainer, trainer_type: :item},
     "ASC-196" => %{name: "Night Stretcher", supertype: :trainer, trainer_type: :item},
     "TWM-165" => %{

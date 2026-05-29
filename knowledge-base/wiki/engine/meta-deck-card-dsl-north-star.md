@@ -307,6 +307,7 @@ Cards may exist as `metadata_cached` before their deck is supported. This is exp
 
 - Implemented Rabsca `Psychic` as a variable-damage attack primitive and TEF DSL manifest entry, closing the remaining fixed-deck `behavior_missing` coverage gap before broader new-deck behavior-family work.
 - Expanded `mix brock.cards.coverage` to report all six known deck modules and all 101 cached cards, exposing imported-deck `behavior_missing` and `generic_damage_only` gaps for Phase 5 prioritization.
+- Implemented Energy Switch `MEG-115` as the first new imported-deck Item behavior slice, with a DSL manifest entry and reducer action for moving a Basic Energy between the player's Pokémon.
 - Implement missing behavior families for the four imported meta decks.
 - Use coverage to divide work by behavior family and ruling risk.
 

@@ -1,5 +1,10 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Energy Switch Item Behavior
+- Added: Energy Switch `MEG-115` now has a DSL card-effect manifest entry and an executable reducer action that moves a Basic Energy from one of the player's Pokémon to another
+- Updated: `mix brock.cards.coverage` now reports Energy Switch as implemented across Raging Bolt Ogerpon 27599 and Rocket's Mewtwo 27459
+- Verified: focused reducer smoke check, targeted registry test, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | All-Deck Coverage Report
 - Added: `mix brock.cards.coverage` now reports all six known deck modules from the TCGdex deck pool instead of only the two fixed supported decks
 - Added: coverage rows now include all 101 cached known-deck cards, with imported cards falling back to cached metadata and surfacing `behavior_missing` or `generic_damage_only` status when no registry overlay exists

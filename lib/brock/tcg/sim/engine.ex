@@ -550,6 +550,38 @@ defmodule Brock.Tcg.Sim.Engine do
   end
 
   defp reduce(state, %Action{
+         type: :energy_switch,
+         player_id: player_id,
+         params: %{
+           instance_id: energy_switch_id,
+           source_id: source_id,
+           target_id: target_id,
+           attachment_id: attachment_id
+         }
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         :ok <- require_different_in_play_targets(source_id, target_id),
+         {:ok, energy_switch} <- find_in_player_zone(state, player_id, :hand, energy_switch_id),
+         :ok <- require_item_cards_playable(state, player_id),
+         :ok <- require_card_id(energy_switch, "MEG-115"),
+         {:ok, source} <- find_in_play(state, player_id, source_id),
+         {:ok, _target} <- find_in_play(state, player_id, target_id),
+         {:ok, attachment} <- find_attachment(source, attachment_id),
+         {:ok, attachment_metadata} <- CardRegistry.fetch(attachment.card_id),
+         :ok <- require_basic_energy(attachment_metadata),
+         {:ok, state} <- discard_card_from_hand(state, player_id, energy_switch, %{}) do
+      move_attached_card_between_own_pokemon(
+        state,
+        player_id,
+        source_id,
+        target_id,
+        attachment_id
+      )
+    end
+  end
+
+  defp reduce(state, %Action{
          type: :night_stretcher,
          player_id: player_id,
          params: %{instance_id: stretcher_id, target_id: target_id}
@@ -1595,6 +1627,30 @@ defmodule Brock.Tcg.Sim.Engine do
     with {:ok, state} <- discard_attached_card(state, player_id, target, attachment),
          {:ok, updated_target} <- find_in_play(state, player_id, target.instance_id) do
       discard_attached_cards(state, player_id, updated_target, rest)
+    end
+  end
+
+  defp move_attached_card_between_own_pokemon(
+         state,
+         player_id,
+         source_id,
+         target_id,
+         attachment_id
+       ) do
+    with {:ok, player} <- fetch_player(state, player_id),
+         {:ok, source} <- find_in_play(state, player_id, source_id),
+         {:ok, target} <- find_in_play(state, player_id, target_id),
+         {:ok, attachment} <- find_attachment(source, attachment_id) do
+      moved_attachment = %{attachment | zone: :attached, lifecycle: :attached}
+      updated_source = %{source | attachments: reject_instance(source.attachments, attachment_id)}
+      updated_target = %{target | attachments: [moved_attachment | target.attachments]}
+
+      player =
+        player
+        |> replace_in_play(updated_source)
+        |> replace_in_play(updated_target)
+
+      {:ok, put_player(state, player)}
     end
   end
 
@@ -2677,6 +2733,11 @@ defmodule Brock.Tcg.Sim.Engine do
 
   defp require_card_id(card, expected),
     do: {:error, {:wrong_card_for_action, expected, card.card_id}}
+
+  defp require_different_in_play_targets(instance_id, instance_id),
+    do: {:error, {:energy_switch_requires_different_targets, instance_id}}
+
+  defp require_different_in_play_targets(_source_id, _target_id), do: :ok
 
   defp require_rare_candy_evolves_from(%{evolves_from: stage_1_id} = metadata, target) do
     with {:ok, stage_1_metadata} <- CardRegistry.fetch(stage_1_id),
