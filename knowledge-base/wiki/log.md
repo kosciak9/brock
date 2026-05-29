@@ -1,5 +1,12 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Deck Macro Foundation
+- Added: `Brock.Tcg.Sim.Decklist` macro for generated/static deck modules with compile-time source identity and 60-card validation
+- Updated: Dragapult 27431 and Alakazam/Dudunsparce 27147 deck modules to use the macro while preserving `source_url/0`, `counts/0`, and `card_ids/0`
+- Verified: `mix test test/brock/tcg/sim` passes with 75 tests
+- Verified: `mix brock.cards.coverage` still reports both fixed decks as 60 cards with no unsupported IDs
+- Verified: `mix precommit` passes with 80 tests
+
 ## [2026-05-29] implementation | Current Registry Coverage Report
 - Added: `mix brock.cards.coverage` Phase 0 report for the current hand-written TCG registry and two fixed Limitless deck modules
 - Verified: `mix brock.cards.coverage` reports 44 fixed-deck cards, legacy-registry metadata coverage, implemented behavior coverage, and generic-damage-only attack coverage
