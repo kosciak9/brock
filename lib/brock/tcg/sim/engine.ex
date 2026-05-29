@@ -2656,9 +2656,9 @@ defmodule Brock.Tcg.Sim.Engine do
   defp require_item_cards_playable_if_item(_metadata, _state, _player_id), do: :ok
 
   defp require_item_cards_playable(state, player_id) do
-    with {:ok, player} <- fetch_player(state, player_id) do
-      if player.item_cards_locked?, do: {:error, :item_cards_locked_this_turn}, else: :ok
-    end
+    state
+    |> Hooks.run(:before_play_trainer, %{player_id: player_id, metadata: %{trainer_type: :item}})
+    |> require_hook_success()
   end
 
   defp require_ace_spec_cards_playable_if_ace_spec(%{ace_spec?: true}, state, player_id) do

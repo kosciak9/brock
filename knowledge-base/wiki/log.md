@@ -1,5 +1,10 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Budew Item-Lock Before-Play-Trainer Hook
+- Added: `Brock.Tcg.Sim.Hooks` now handles Item-card prevention for players marked by Budew `Itchy Pollen` through the `:before_play_trainer` phase
+- Migrated: Item lock checks in trainer reducers now call the hook path instead of reading `item_cards_locked?` directly in the engine helper
+- Verified: targeted Budew scenario, `mix test test/brock/tcg/sim`, `mix brock.cards.coverage`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | ACE Nullifier Before-Play-Trainer Hook
 - Added: `Brock.Tcg.Sim.Hooks` as the first hook phase runner with `:before_play_trainer` returning `{:ok, state}` or `{:halt, reason}`
 - Migrated: Genesect `ACE Nullifier` ACE SPEC prevention now runs through the hook path instead of an engine-local reducer-specific check

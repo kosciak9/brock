@@ -8,12 +8,26 @@ defmodule Brock.Tcg.Sim.Hooks do
   """
 
   def run(state, :before_play_trainer, context) do
-    with {:ok, state} <- prevent_ace_spec_if_nullified(state, context) do
+    with {:ok, state} <- prevent_item_if_locked(state, context),
+         {:ok, state} <- prevent_ace_spec_if_nullified(state, context) do
       {:ok, state}
     end
   end
 
   def run(state, _phase, _context), do: {:ok, state}
+
+  defp prevent_item_if_locked(state, %{
+         player_id: player_id,
+         metadata: %{trainer_type: :item}
+       }) do
+    with {:ok, player} <- fetch_player(state, player_id) do
+      if player.item_cards_locked?, do: {:halt, :item_cards_locked_this_turn}, else: {:ok, state}
+    else
+      {:error, reason} -> {:halt, reason}
+    end
+  end
+
+  defp prevent_item_if_locked(state, _context), do: {:ok, state}
 
   defp prevent_ace_spec_if_nullified(state, %{
          player_id: player_id,
