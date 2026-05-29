@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Genesect Plain-Damage Attack Behavior
+- Added: Genesect `SFA-040` now has an SFA DSL manifest entry and registry overlay for `Magnetic Blast`, explicitly marking the attack as exact plain-damage behavior instead of generic damage
+- Preserved: cached TCGdex metadata remains the source of truth for static Pokémon metadata, attack cost, and damage; `MCC Magnetic Blast 100` was cross-checked against Limitless before coding
+- Updated: `mix brock.cards.coverage` now reports one fewer `generic_damage_only` behavior family across Alakazam/Dudunsparce 27147 and Festival Lead 27445
+- Verified: focused manifest/registry smoke check, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Psyduck Plain-Damage Attack Behavior
 - Added: Psyduck `ASC-039` now has ASC DSL manifest entries for `Damp` and `Ram`, and the registry overlay marks `Ram` as explicit exact plain-damage behavior instead of generic damage
 - Preserved: cached TCGdex metadata remains the source of truth for static Pokémon metadata, Ability text, attack cost, and damage; the `Ram 20` attack text was cross-checked against Limitless before coding

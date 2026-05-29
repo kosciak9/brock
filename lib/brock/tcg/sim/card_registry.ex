@@ -455,7 +455,8 @@ defmodule Brock.Tcg.Sim.CardRegistry do
         magnetic_blast: %{
           name: "Magnetic Blast",
           cost: [:metal, :colorless, :colorless],
-          damage: 100
+          damage: 100,
+          effect: nil
         }
       }
     },

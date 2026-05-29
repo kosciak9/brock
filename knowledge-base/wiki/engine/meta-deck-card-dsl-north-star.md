@@ -331,6 +331,7 @@ Cards may exist as `metadata_cached` before their deck is supported. This is exp
 - Implemented Abra `TWM-080` as an imported-deck Active-only shuffle Ability/plain-damage attack behavior slice, with TWM DSL manifest entries, a registry overlay for `Teleporter` and `Beam`, and a reducer Ability path that shuffles Abra plus attached cards into the deck while keeping static facts in the TCGdex cache.
 - Implemented Shaymin `DRI-010` as an imported-deck bench-protection Ability/plain-damage attack behavior slice, with a DRI DSL manifest entry, registry overlay for `Flower Curtain` and `Smash Kick`, and a `:before_damage` hook that prevents attack damage to the player's non-rule-box Benched Pokémon while preserving damage-counter effects.
 - Ported Psyduck `ASC-039` to explicit ASC DSL manifest entries for `Damp` and plain-damage `Ram`, keeping static Ability text, attack cost, and damage facts in the TCGdex cache while reducing imported-deck generic-damage coverage.
+- Ported Genesect `SFA-040` `Magnetic Blast` to an explicit SFA DSL manifest entry and registry overlay, keeping static attack cost and damage facts in the TCGdex cache while reducing imported-deck generic-damage coverage.
 - Implement missing behavior families for the four imported meta decks.
 - Use coverage to divide work by behavior family and ruling risk.
 
