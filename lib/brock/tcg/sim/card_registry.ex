@@ -27,6 +27,11 @@ defmodule Brock.Tcg.Sim.CardRegistry do
   }
 
   @cards %{
+    "DRI-019" => %{
+      attacks: %{
+        take_down: %{effect: %{type: :self_damage, damage: 10}}
+      }
+    },
     "TWM-014" => %{
       attacks: %{
         smash_kick: %{effect: nil},

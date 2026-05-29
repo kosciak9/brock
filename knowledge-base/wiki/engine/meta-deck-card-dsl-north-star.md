@@ -321,6 +321,7 @@ Cards may exist as `metadata_cached` before their deck is supported. This is exp
 - Implemented Kieran `TWM-154` as a choose-one Supporter behavior slice, with a TWM DSL manifest entry, reducer choices for switching the player's Active Pokémon or granting +30 turn-wide attack damage, and a `:modify_damage` hook that applies the bonus before Weakness/Resistance to the opponent's Active Pokémon ex/V.
 - Implemented Grookey `TWM-014` as an explicit imported-deck plain-damage behavior slice, with TWM DSL manifest entries and registry overlays for `Smash Kick` and `Branch Poke` that keep static cost/damage facts in the TCGdex cache.
 - Implemented Applin `SCR-012` as an explicit imported-deck plain-damage behavior slice, with an SCR DSL manifest entry and registry overlay for `Spray Fluid` that keeps static cost/damage facts in the TCGdex cache.
+- Implemented Team Rocket's Tarountula `DRI-019` as an imported-deck self-damage attack behavior slice, with a DRI DSL manifest entry and registry overlay for `Take Down` that keeps static attack damage/cost facts in the TCGdex cache.
 - Implement missing behavior families for the four imported meta decks.
 - Use coverage to divide work by behavior family and ruling risk.
 
