@@ -1,5 +1,10 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Ability DSL Manifest Entry
+- Added: Drakloak `Recon Directive` to `Brock.Tcg.Cards.Behaviors.TWM` as the first representative Ability behavior manifest entry
+- Preserved: cached TCGdex Ability name and raw effect remain the static source of truth; the DSL entry only declares the executable effect overlay
+- Verified: manifest check with `MIX_ENV=test mix run --no-start -e ...`, `mix test test/brock/tcg/cards/metadata_test.exs test/brock/tcg/sim/card_registry_test.exs`, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Plain-Damage DSL Manifest Entry
 - Added: Dragapult ex `Jet Headbutt` to `Brock.Tcg.Cards.Behaviors.TWM` as the first representative plain-damage behavior manifest entry
 - Preserved: static attack cost and damage continue to come from cached TCGdex metadata; the DSL entry adds no hand-written static fields
