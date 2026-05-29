@@ -710,6 +710,32 @@ defmodule Brock.Tcg.Sim.Engine do
   end
 
   defp reduce(state, %Action{
+         type: :ciphermaniacs_codebreaking,
+         player_id: player_id,
+         params: %{instance_id: ciphermaniac_id, target_ids: target_ids}
+       })
+       when is_list(target_ids) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, ciphermaniac} <- find_in_player_zone(state, player_id, :hand, ciphermaniac_id),
+         {:ok, ciphermaniac_metadata} <- CardRegistry.fetch(ciphermaniac.card_id),
+         :ok <- require_card_id(ciphermaniac, "TEF-145"),
+         :ok <- require_supporter_available_if_supporter(ciphermaniac_metadata, state, player_id),
+         :ok <-
+           require_exact_target_ids(
+             target_ids,
+             ciphermaniac_metadata.effect.count,
+             :ciphermaniacs_codebreaking
+           ),
+         :ok <- require_unique_target_ids(target_ids, :ciphermaniacs_codebreaking),
+         {:ok, targets} <- fetch_deck_cards(state, player_id, target_ids),
+         {:ok, state} <-
+           discard_card_from_hand(state, player_id, ciphermaniac, ciphermaniac_metadata) do
+      move_deck_cards_to_top(state, player_id, targets)
+    end
+  end
+
+  defp reduce(state, %Action{
          type: :dawn,
          player_id: player_id,
          params: %{
@@ -1541,6 +1567,19 @@ defmodule Brock.Tcg.Sim.Engine do
   defp move_deck_cards_to_hand(state, player_id, [card | rest]) do
     with {:ok, state} <- move_deck_card_to_hand(state, player_id, card) do
       move_deck_cards_to_hand(state, player_id, rest)
+    end
+  end
+
+  defp move_deck_cards_to_top(state, player_id, cards) do
+    with {:ok, player} <- fetch_player(state, player_id) do
+      chosen_instance_ids = MapSet.new(cards, & &1.instance_id)
+
+      remaining_deck =
+        Enum.reject(player.deck, &MapSet.member?(chosen_instance_ids, &1.instance_id))
+
+      player = %{player | deck: cards ++ remaining_deck}
+
+      {:ok, put_player(state, player)}
     end
   end
 
@@ -3135,6 +3174,13 @@ defmodule Brock.Tcg.Sim.Engine do
 
   defp require_max_target_ids(target_ids, max_targets, action),
     do: {:error, {:too_many_targets, action, length(target_ids), max_targets}}
+
+  defp require_exact_target_ids(target_ids, target_count, _action)
+       when length(target_ids) == target_count,
+       do: :ok
+
+  defp require_exact_target_ids(target_ids, target_count, action),
+    do: {:error, {:wrong_target_count, action, length(target_ids), target_count}}
 
   defp require_unique_target_ids(target_ids, _action) do
     if length(target_ids) == length(Enum.uniq(target_ids)) do

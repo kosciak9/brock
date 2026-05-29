@@ -12,4 +12,8 @@ defmodule Brock.Tcg.Cards.Behaviors.TEF do
       effect: %{type: :bonus_damage_per_energy_attached_to_defender, bonus_damage: 30}
     )
   end
+
+  card "TEF-145" do
+    card_effect(effect: %{type: :search_deck_for_cards_to_top, count: 2})
+  end
 end

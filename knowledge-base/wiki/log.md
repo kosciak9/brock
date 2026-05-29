@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Ciphermaniac's Codebreaking Supporter Behavior
+- Added: Ciphermaniac's Codebreaking `TEF-145` now has a DSL card-effect manifest entry and an executable reducer action that searches two chosen deck cards and places them on top in the chosen order
+- Preserved: static Supporter text and metadata continue to come from the committed TCGdex cache; the registry overlay only declares executable behavior
+- Updated: `mix brock.cards.coverage` now reports Ciphermaniac's Codebreaking as implemented for Raging Bolt Ogerpon 27599, reducing imported-deck `behavior_missing` card count by one
+- Verified: focused reducer smoke check, targeted registry test, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Team Rocket's Transceiver Item Behavior
 - Added: Team Rocket's Transceiver `DRI-178` now has a DSL card-effect manifest entry and an executable reducer action that can reveal a Supporter with "Team Rocket" in its name from the player's deck and put it into hand
 - Preserved: target eligibility uses cached TCGdex static facts, so the search can find metadata-cached Team Rocket Supporters before those Supporters have executable behavior overlays
