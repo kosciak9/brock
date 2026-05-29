@@ -1,19 +1,15 @@
 defmodule Brock.Tcg.Sim.RegistryCoverage do
   @moduledoc """
-  Coverage report for the current metadata-backed simulator registry facade.
+  Coverage report for the known metadata-backed simulator deck pool.
 
-  This is the Phase 2 bridge report while executable card behavior remains in
-  local overlays and static metadata comes from the committed TCGdex cache.
+  This is the Phase 5 bridge report while executable card behavior remains in
+  local overlays and static metadata comes from the committed TCGdex cache for
+  every known deck card.
   """
 
+  alias Brock.Tcg.Cards.Metadata
+  alias Brock.Tcg.Data.TCGdex
   alias Brock.Tcg.Sim.CardRegistry
-  alias Brock.Tcg.Sim.Decks.Alakazam27147
-  alias Brock.Tcg.Sim.Decks.Dragapult27431
-
-  @decks [
-    %{id: "27431", name: "Dragapult", module: Dragapult27431},
-    %{id: "27147", name: "Alakazam/Dudunsparce", module: Alakazam27147}
-  ]
 
   @implemented_card_behaviors %{
     "MEG-119" => :lillies_determination,
@@ -68,11 +64,11 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
     deck_index = deck_index()
 
     cards =
-      CardRegistry.supported_card_ids()
+      TCGdex.known_card_ids()
       |> Enum.map(&card_report(&1, deck_index))
 
     %{
-      source: :metadata_backed_registry,
+      source: :metadata_cache_with_registry_overlays,
       decks: deck_reports(),
       cards: cards,
       summary: summary(cards)
@@ -80,7 +76,7 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
   end
 
   def deck_reports do
-    Enum.map(@decks, fn deck ->
+    Enum.map(known_decks(), fn deck ->
       counts = deck.module.counts()
       card_ids = Enum.map(counts, &elem(&1, 0))
 
@@ -97,24 +93,63 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
   end
 
   defp card_report(card_id, deck_index) do
-    metadata = CardRegistry.fetch!(card_id)
-    families = behavior_families(card_id, metadata)
+    decks = Map.get(deck_index, card_id, [])
 
+    case CardRegistry.fetch(card_id) do
+      {:ok, card} ->
+        card_report(card_id, card.name, decks, :metadata_cached, behavior_families(card_id, card))
+
+      {:error, {:unsupported_card, ^card_id}} ->
+        metadata_card_report(card_id, decks)
+
+      {:error, {:metadata_not_cached, ^card_id}} ->
+        missing_metadata_card_report(card_id, decks)
+    end
+  end
+
+  defp metadata_card_report(card_id, decks) do
+    case Metadata.fetch(card_id) do
+      {:ok, metadata} ->
+        card_report(
+          card_id,
+          metadata.name,
+          decks,
+          :metadata_cached,
+          behavior_families(card_id, metadata)
+        )
+
+      {:error, {:metadata_not_cached, ^card_id}} ->
+        missing_metadata_card_report(card_id, decks)
+    end
+  end
+
+  defp missing_metadata_card_report(card_id, decks) do
+    card_report(card_id, card_id, decks, :metadata_missing, [
+      %{family: :card, id: nil, name: card_id, status: :behavior_missing}
+    ])
+  end
+
+  defp card_report(card_id, name, decks, metadata_status, families) do
     %{
       card_id: card_id,
-      name: metadata.name,
-      decks: Map.get(deck_index, card_id, []),
-      metadata_status: :metadata_cached,
+      name: name,
+      decks: decks,
+      metadata_status: metadata_status,
       behavior_status: aggregate_behavior_status(families),
       behavior_families: families
     }
   end
 
-  defp behavior_families(card_id, %{supertype: :pokemon} = metadata) do
-    ability_families(metadata) ++ attack_families(card_id, metadata)
+  defp behavior_families(card_id, metadata) do
+    case card_supertype(metadata) do
+      :pokemon -> ability_families(metadata) ++ attack_families(card_id, metadata)
+      :trainer -> trainer_families(card_id, metadata)
+      :energy -> energy_families(metadata)
+      _supertype -> []
+    end
   end
 
-  defp behavior_families(card_id, %{supertype: :trainer} = metadata) do
+  defp trainer_families(card_id, metadata) do
     family = Map.fetch!(metadata, :trainer_type)
 
     case Map.fetch(@implemented_card_behaviors, card_id) do
@@ -122,11 +157,11 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
         [%{family: family, id: behavior, name: metadata.name, status: :implemented}]
 
       :error ->
-        [%{family: family, id: nil, name: metadata.name, status: :behavior_missing}]
+        [%{family: family, id: nil, name: metadata.name, status: card_effect_status(metadata)}]
     end
   end
 
-  defp behavior_families(_card_id, %{supertype: :energy} = metadata) do
+  defp energy_families(metadata) do
     effect = Map.get(metadata, :effect)
 
     [
@@ -134,7 +169,7 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
         family: :energy,
         id: Map.get(effect || %{}, :type, :energy_attachment),
         name: metadata.name,
-        status: effect_status(effect)
+        status: card_effect_status(metadata)
       }
     ]
   end
@@ -147,7 +182,7 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
         family: :ability,
         id: ability_id,
         name: ability.name,
-        status: effect_status(Map.get(ability, :effect))
+        status: card_effect_status(ability)
       }
     end)
   end
@@ -167,10 +202,36 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
 
   defp attack_status(_card_id, %{effect: effect}), do: effect_status(effect)
 
-  defp attack_status(_card_id, %{damage: damage}) when is_integer(damage) and damage > 0,
-    do: :generic_damage_only
+  defp attack_status(_card_id, attack) do
+    cond do
+      raw_effect?(attack) -> :behavior_missing
+      plain_damage?(Map.get(attack, :damage)) -> :generic_damage_only
+      true -> :behavior_missing
+    end
+  end
 
-  defp attack_status(_card_id, _attack), do: :behavior_missing
+  defp card_effect_status(%{effect: effect}), do: effect_status(effect)
+
+  defp card_effect_status(entry),
+    do: if(raw_effect?(entry), do: :behavior_missing, else: :implemented)
+
+  defp plain_damage?(damage) when is_integer(damage), do: damage > 0
+
+  defp plain_damage?(damage) when is_binary(damage) do
+    case Integer.parse(damage) do
+      {parsed_damage, ""} -> parsed_damage > 0
+      _other -> false
+    end
+  end
+
+  defp plain_damage?(_damage), do: false
+
+  defp raw_effect?(entry) do
+    case Map.get(entry, :raw_effect) do
+      raw_effect when raw_effect in [nil, ""] -> false
+      _raw_effect -> true
+    end
+  end
 
   defp effect_status(nil), do: :implemented
 
@@ -223,13 +284,21 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
   end
 
   defp deck_index do
-    @decks
+    known_decks()
     |> Enum.flat_map(fn deck ->
       Enum.map(deck.module.counts(), fn {card_id, _count} -> {card_id, deck.id} end)
     end)
     |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
     |> Map.new(fn {card_id, deck_ids} -> {card_id, Enum.sort(deck_ids)} end)
   end
+
+  defp known_decks do
+    Enum.map(TCGdex.known_deck_modules(), fn module ->
+      %{id: module.id(), name: module.name(), module: module}
+    end)
+  end
+
+  defp card_supertype(metadata), do: Map.get(metadata, :supertype) || Map.get(metadata, :category)
 
   defp supported_card?(card_id), do: match?({:ok, _card}, CardRegistry.fetch(card_id))
 end

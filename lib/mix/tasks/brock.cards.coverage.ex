@@ -1,13 +1,13 @@
 defmodule Mix.Tasks.Brock.Cards.Coverage do
-  @shortdoc "Reports coverage for the current TCG card registry"
+  @shortdoc "Reports coverage for the known TCG deck pool"
 
   @moduledoc """
-  Reports current metadata-backed registry facade behavior coverage.
+  Reports current metadata-cache and registry-overlay behavior coverage.
 
       mix brock.cards.coverage
 
-  The report is offline and covers the current fixed-deck registry facade while
-  behavior overlays are migrated toward the meta-deck north-star plan.
+  The report is offline and covers the known meta-deck pool while behavior
+  overlays are migrated toward the meta-deck north-star plan.
   """
 
   use Mix.Task
@@ -23,7 +23,7 @@ defmodule Mix.Tasks.Brock.Cards.Coverage do
 
   defp format_report(report) do
     [
-      "Current TCG registry coverage",
+      "Known TCG deck coverage",
       "Source: #{report.source}",
       "",
       "Decks:",
@@ -31,7 +31,7 @@ defmodule Mix.Tasks.Brock.Cards.Coverage do
       "",
       "Summary:",
       "  cards: #{report.summary.card_count}",
-      "  cards in fixed decks: #{report.summary.deck_card_count}",
+      "  cards in known decks: #{report.summary.deck_card_count}",
       "  metadata: #{format_counts(report.summary.metadata_statuses)}",
       "  behavior: #{format_counts(report.summary.behavior_statuses)}",
       "  behavior families: #{format_counts(report.summary.behavior_family_statuses)}",

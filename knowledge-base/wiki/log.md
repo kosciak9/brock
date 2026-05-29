@@ -1,5 +1,10 @@
 # Wiki Log
 
+## [2026-05-29] implementation | All-Deck Coverage Report
+- Added: `mix brock.cards.coverage` now reports all six known deck modules from the TCGdex deck pool instead of only the two fixed supported decks
+- Added: coverage rows now include all 101 cached known-deck cards, with imported cards falling back to cached metadata and surfacing `behavior_missing` or `generic_damage_only` status when no registry overlay exists
+- Verified: `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Rabsca Psychic Variable-Damage Attack
 - Added: Rabsca `Psychic` now has an executable variable-damage overlay for `10 + 30` damage per Energy attached to the opponent's Active Pokémon
 - Added: `Brock.Tcg.Cards.Behaviors.TEF` manifest coverage for Rabsca `Spherical Shield` and `Psychic` without adding static card metadata to the DSL
