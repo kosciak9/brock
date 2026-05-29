@@ -309,6 +309,7 @@ Cards may exist as `metadata_cached` before their deck is supported. This is exp
 - Expanded `mix brock.cards.coverage` to report all six known deck modules and all 101 cached cards, exposing imported-deck `behavior_missing` and `generic_damage_only` gaps for Phase 5 prioritization.
 - Implemented Energy Switch `MEG-115` as the first new imported-deck Item behavior slice, with a DSL manifest entry and reducer action for moving a Basic Energy between the player's Pokémon.
 - Registered all deck-pool Basic Energy cards through metadata-only registry overlays, allowing `MEE-001`, `MEE-003`, `MEE-004`, and `MEE-006` to use cache-derived static facts and inferred provided Energy types.
+- Implemented Pokégear 3.0 `SVI-186` as a top-seven Supporter search Item behavior slice, with a DSL manifest entry and reducer action that keeps static Trainer text in the TCGdex cache.
 - Implement missing behavior families for the four imported meta decks.
 - Use coverage to divide work by behavior family and ruling risk.
 

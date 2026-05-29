@@ -1,5 +1,10 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Pokégear 3.0 Item Behavior
+- Added: Pokégear 3.0 `SVI-186` now has a DSL card-effect manifest entry and an executable reducer action that can reveal a Supporter from the top 7 cards of the player's deck and put it into hand
+- Updated: `mix brock.cards.coverage` now reports Pokégear 3.0 as implemented for Lopunny Dudunsparce 27514, reducing imported-deck `behavior_missing` card count by one
+- Verified: focused reducer smoke check, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Imported Basic Energy Registry Support
 - Added: all deck-pool Basic Energy IDs now resolve through metadata-only registry overlays, including imported-deck Grass, Water, Lightning, and Fighting Energy
 - Preserved: static Energy names/types continue to come from the committed TCGdex cache, with provided Energy types inferred by the existing registry facade

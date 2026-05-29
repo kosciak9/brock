@@ -618,6 +618,38 @@ defmodule Brock.Tcg.Sim.Engine do
   end
 
   defp reduce(state, %Action{
+         type: :pokegear_3_0,
+         player_id: player_id,
+         params: %{instance_id: pokegear_id} = params
+       }) do
+    target_id = Map.get(params, :target_id)
+
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, pokegear} <- find_in_player_zone(state, player_id, :hand, pokegear_id),
+         {:ok, pokegear_metadata} <- CardRegistry.fetch(pokegear.card_id),
+         :ok <- require_item_cards_playable(state, player_id),
+         :ok <- require_card_id(pokegear, "SVI-186"),
+         {:ok, target} <- optional_deck_card(state, player_id, target_id),
+         :ok <-
+           require_optional_card_in_top_deck(
+             state,
+             player_id,
+             target,
+             pokegear_metadata.effect.count,
+             :pokegear_3_0
+           ),
+         {:ok, target_metadata} <- optional_card_metadata(target),
+         :ok <- require_optional_supporter(target_metadata),
+         {:ok, state} <- discard_card_from_hand(state, player_id, pokegear, %{}) do
+      case target do
+        nil -> {:ok, state}
+        target -> move_deck_card_to_hand(state, player_id, target)
+      end
+    end
+  end
+
+  defp reduce(state, %Action{
          type: :dawn,
          player_id: player_id,
          params: %{
@@ -2665,6 +2697,9 @@ defmodule Brock.Tcg.Sim.Engine do
   defp require_supporter(%{supertype: :trainer, trainer_type: :supporter}), do: :ok
   defp require_supporter(metadata), do: {:error, {:not_supporter, metadata}}
 
+  defp require_optional_supporter(nil), do: :ok
+  defp require_optional_supporter(metadata), do: require_supporter(metadata)
+
   defp require_stadium(%{supertype: :trainer, trainer_type: :stadium}), do: :ok
   defp require_stadium(metadata), do: {:error, {:not_stadium, metadata}}
 
@@ -3000,6 +3035,20 @@ defmodule Brock.Tcg.Sim.Engine do
 
   defp require_top_two_choice(_player, chosen_id),
     do: {:error, {:chosen_card_not_in_top_two, chosen_id}}
+
+  defp require_optional_card_in_top_deck(_state, _player_id, nil, _count, _action), do: :ok
+
+  defp require_optional_card_in_top_deck(state, player_id, card, count, action) do
+    with {:ok, player} <- fetch_player(state, player_id) do
+      top_cards = Enum.take(player.deck, count)
+
+      if Enum.any?(top_cards, &(&1.instance_id == card.instance_id)) do
+        :ok
+      else
+        {:error, {:card_not_in_top_deck, action, card.instance_id, count}}
+      end
+    end
+  end
 
   defp require_evolved_this_turn(%{turn_number: turn_number}, %{turn_entered_play: turn_number}),
     do: :ok

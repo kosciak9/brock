@@ -20,6 +20,7 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
     "POR-071" => :crushing_hammer,
     "TEF-144" => :buddy_buddy_poffin,
     "POR-081" => :poke_pad,
+    "SVI-186" => :pokegear_3_0,
     "MEG-131" => :ultra_ball,
     "ASC-196" => :night_stretcher,
     "TWM-165" => :unfair_stamp,
@@ -59,6 +60,7 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
                               :search_supporter_when_benched_from_hand,
                               :self_damage,
                               :switch_self_with_bench,
+                              :top_n_choose_supporter_to_hand,
                               :top_two_choose_one_to_hand_other_to_bottom
                             ])
 
