@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Current Registry Coverage Report
+- Added: `mix brock.cards.coverage` Phase 0 report for the current hand-written TCG registry and two fixed Limitless deck modules
+- Verified: `mix brock.cards.coverage` reports 44 fixed-deck cards, legacy-registry metadata coverage, implemented behavior coverage, and generic-damage-only attack coverage
+- Verified: `mix test test/brock/tcg/sim` passes with 75 tests
+- Verified: `mix precommit` passes with 80 tests
+
 ## [2026-05-29] planning | Meta Deck, TCGdex, Card DSL, and LiveView Play North Star
 - Added: North-star implementation plan for metadata-backed meta deck support, behavior DSL overlays, hook migration, coverage, pairwise smoke tests, and basic LiveView hotseat play
 - Updated: Engine index with north-star entry

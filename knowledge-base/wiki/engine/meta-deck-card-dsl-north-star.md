@@ -251,7 +251,7 @@ Cards may exist as `metadata_cached` before their deck is supported. This is exp
 ### Phase 0: freeze baseline
 
 - Keep Dragapult 27431 vs Alakazam/Dudunsparce 27147 green.
-- Add a coverage report for the current registry.
+- Added `mix brock.cards.coverage` for the current registry: reports the two fixed decks, legacy-registry metadata status, behavior status, and generic-damage-only attack coverage.
 
 ### Phase 1: import decks and metadata
 
@@ -357,6 +357,7 @@ Agent workflow rules:
 ## Validation
 
 - `mix test test/brock/tcg/sim`
+- `mix brock.cards.coverage`
 - `mix precommit`
 - Importer/cache tests are offline by default.
 - External/network tests are tagged `:external`.
