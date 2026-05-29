@@ -285,6 +285,7 @@ Cards may exist as `metadata_cached` before their deck is supported. This is exp
 - Ported Drakloak `Recon Directive` as the first representative Ability DSL manifest entry, relying on cached TCGdex Ability metadata and adding only the executable effect overlay.
 - Ported Unfair Stamp as the first representative Item card-effect DSL manifest entry, relying on cached TCGdex Trainer metadata and adding only the executable shuffle/draw eligibility overlay.
 - Ported Lana's Aid as the first representative Supporter card-effect DSL manifest entry, relying on cached TCGdex Trainer metadata and adding only the executable discard-recovery overlay.
+- Ported Air Balloon as the first representative Tool card-effect DSL manifest entry, relying on cached TCGdex Trainer metadata and adding only the executable retreat-cost reduction overlay.
 - Port representative existing cards before broad migration.
 - Start with cards that demonstrate different behavior families: plain damage, attack effect, Ability, Item, Supporter, Tool, Stadium, and Special Energy.
 
