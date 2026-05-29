@@ -2114,7 +2114,12 @@ defmodule Brock.Tcg.Sim.Engine do
         player
         | active: moved_target,
           bench: [moved_active | reject_instance(player.bench, target.instance_id)],
-          retreated?: opts[:retreated?] || player.retreated?
+          retreated?: opts[:retreated?] || player.retreated?,
+          markers:
+            MapSet.put(
+              player.markers,
+              {:moved_from_bench_to_active_this_turn, moved_target.instance_id}
+            )
       }
 
       {:ok, put_player(state, player)}
@@ -2949,6 +2954,24 @@ defmodule Brock.Tcg.Sim.Engine do
     damage + heads_count * bonus_damage
   end
 
+  defp base_attack_damage(state, %{
+         attack: %{
+           damage: damage,
+           effect: %{
+             type: :bonus_damage_if_moved_from_bench_to_active_this_turn,
+             bonus_damage: bonus_damage
+           }
+         },
+         player_id: player_id,
+         attacker_id: attacker_id
+       }) do
+    if moved_from_bench_to_active_this_turn?(state, player_id, attacker_id) do
+      damage + bonus_damage
+    else
+      damage
+    end
+  end
+
   defp base_attack_damage(%{stadium: nil}, %{
          attack: %{effect: %{type: :damage_only_if_stadium_in_play}}
        }) do
@@ -3013,6 +3036,16 @@ defmodule Brock.Tcg.Sim.Engine do
       {:ok, %Metadata{category: :pokemon, name: "Team Rocket's " <> _name}},
       Metadata.fetch(pokemon.card_id)
     )
+  end
+
+  defp moved_from_bench_to_active_this_turn?(state, player_id, pokemon_id) do
+    case fetch_player(state, player_id) do
+      {:ok, player} ->
+        MapSet.member?(player.markers, {:moved_from_bench_to_active_this_turn, pokemon_id})
+
+      {:error, _reason} ->
+        false
+    end
   end
 
   defp require_team_rocket_pokemon_for_giovanni(pokemon, position) do

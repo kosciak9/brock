@@ -117,6 +117,19 @@ defmodule Brock.Tcg.Sim.CardRegistry do
         kick: %{effect: nil}
       }
     },
+    "PFL-084" => %{
+      evolves_from: "PFL-083",
+      attacks: %{
+        gale_thrust: %{
+          damage: 60,
+          effect: %{
+            type: :bonus_damage_if_moved_from_bench_to_active_this_turn,
+            bonus_damage: 170
+          }
+        },
+        spiky_hopper: %{effect: %{type: :damage_unaffected_by_effects_on_opponent_active}}
+      }
+    },
     "PFL-085" => %{
       effect: %{type: :prevent_damage_counters_to_bench_from_opponent_pokemon_effects}
     },

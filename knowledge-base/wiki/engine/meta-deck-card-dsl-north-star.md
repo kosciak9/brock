@@ -352,6 +352,7 @@ Cards may exist as `metadata_cached` before their deck is supported. This is exp
 - Implemented Mist Energy `TEF-161` as an imported-deck Special Energy prevention behavior slice, with a TEF DSL manifest entry, registry overlay for `{C}` Energy provision, and hook-backed prevention of opponent attack effects and damage-counter effects done to the attached Pokémon while preserving static Special Energy text in the TCGdex cache.
 - Implemented Mega Kangaskhan ex `MEG-104` as an imported-deck Active-only draw Ability and coin-count variable-damage attack behavior slice, with a MEG DSL manifest entry, registry overlay, reducer Ability path, and explicit `heads_count` attack parameter while keeping static Ability and attack text in the TCGdex cache.
 - Implemented Festival Grounds `TWM-149` as an imported-deck Stadium special-condition recovery/immunity behavior slice, with a TWM DSL manifest entry, registry overlay, and engine wiring that clears Special Conditions from Pokémon with Energy attached and prevents new Special Conditions while keeping static Stadium text in the TCGdex cache.
+- Implemented Mega Lopunny ex `PFL-084` as an imported-deck moved-from-Bench variable-damage attack slice, with a PFL DSL manifest entry, registry overlay, and turn marker for Pokémon that move from Bench to Active while keeping static attack text and damage facts in the TCGdex cache.
 - Implement missing behavior families for the four imported meta decks.
 - Use coverage to divide work by behavior family and ruling risk.
 
