@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Cyrano Supporter Behavior
+- Added: Cyrano `SSP-170` now has a DSL card-effect manifest entry and an executable reducer action that searches up to three chosen Pokémon ex from the player's deck and puts them into hand
+- Preserved: target eligibility uses cached TCGdex static facts and the registry overlay declares only executable behavior, while exact card text was checked against the committed cache and Limitless
+- Updated: `mix brock.cards.coverage` now reports Cyrano as implemented for Raging Bolt Ogerpon 27599, reducing imported-deck `behavior_missing` card count by one
+- Verified: targeted registry test, Cyrano reducer smoke check, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Ciphermaniac's Codebreaking Supporter Behavior
 - Added: Ciphermaniac's Codebreaking `TEF-145` now has a DSL card-effect manifest entry and an executable reducer action that searches two chosen deck cards and places them on top in the chosen order
 - Preserved: static Supporter text and metadata continue to come from the committed TCGdex cache; the registry overlay only declares executable behavior

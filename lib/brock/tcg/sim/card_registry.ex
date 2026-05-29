@@ -217,6 +217,9 @@ defmodule Brock.Tcg.Sim.CardRegistry do
       trainer_type: :item,
       effect: %{type: :top_n_choose_supporter_to_hand, count: 7}
     },
+    "SSP-170" => %{
+      effect: %{type: :search_pokemon_ex_to_hand, max_targets: 3}
+    },
     "TEF-145" => %{
       effect: %{type: :search_deck_for_cards_to_top, count: 2}
     },

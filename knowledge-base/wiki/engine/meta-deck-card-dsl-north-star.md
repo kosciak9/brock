@@ -313,6 +313,7 @@ Cards may exist as `metadata_cached` before their deck is supported. This is exp
 - Implemented Bug Catching Set `TWM-143` as a top-seven Grass Pokémon / Basic Grass Energy search Item behavior slice, with a DSL manifest entry and reducer action that validates target eligibility from cached TCGdex static facts.
 - Implemented Team Rocket's Transceiver `DRI-178` as a Team Rocket Supporter search Item behavior slice, with a DSL manifest entry and reducer action that validates target eligibility from cached TCGdex static facts even before those Supporters have executable overlays.
 - Implemented Ciphermaniac's Codebreaking `TEF-145` as a two-card deck search/top-deck ordering Supporter behavior slice, with a DSL manifest entry and reducer action while keeping static Supporter text in the TCGdex cache.
+- Implemented Cyrano `SSP-170` as a Pokémon ex deck-search Supporter behavior slice, with an SSP DSL manifest entry and reducer action that validates target eligibility from cached TCGdex static facts.
 - Implement missing behavior families for the four imported meta decks.
 - Use coverage to divide work by behavior family and ruling risk.
 

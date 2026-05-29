@@ -736,6 +736,29 @@ defmodule Brock.Tcg.Sim.Engine do
   end
 
   defp reduce(state, %Action{
+         type: :cyrano,
+         player_id: player_id,
+         params: %{instance_id: cyrano_id} = params
+       }) do
+    target_ids = Map.get(params, :target_ids, [])
+
+    with true <- is_list(target_ids) || {:error, :cyrano_targets_must_be_list},
+         :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, cyrano} <- find_in_player_zone(state, player_id, :hand, cyrano_id),
+         {:ok, cyrano_metadata} <- CardRegistry.fetch(cyrano.card_id),
+         :ok <- require_card_id(cyrano, "SSP-170"),
+         :ok <- require_supporter_available_if_supporter(cyrano_metadata, state, player_id),
+         :ok <- require_max_target_ids(target_ids, cyrano_metadata.effect.max_targets, :cyrano),
+         :ok <- require_unique_target_ids(target_ids, :cyrano),
+         {:ok, targets} <- fetch_deck_cards(state, player_id, target_ids),
+         :ok <- require_pokemon_ex_targets(targets),
+         {:ok, state} <- discard_card_from_hand(state, player_id, cyrano, cyrano_metadata) do
+      move_deck_cards_to_hand(state, player_id, targets)
+    end
+  end
+
+  defp reduce(state, %Action{
          type: :dawn,
          player_id: player_id,
          params: %{
@@ -3242,6 +3265,23 @@ defmodule Brock.Tcg.Sim.Engine do
 
   defp require_team_rocket_supporter_target(metadata),
     do: {:error, {:invalid_team_rockets_transceiver_target, metadata.id}}
+
+  defp require_pokemon_ex_targets(targets) do
+    Enum.reduce_while(targets, :ok, fn target, :ok ->
+      with {:ok, metadata} <- Metadata.fetch(target.card_id),
+           :ok <- require_pokemon_ex_target(metadata) do
+        {:cont, :ok}
+      else
+        {:error, reason} -> {:halt, {:error, reason}}
+      end
+    end)
+  end
+
+  defp require_pokemon_ex_target(%Metadata{category: :pokemon, rule_box?: true, suffix: "ex"}),
+    do: :ok
+
+  defp require_pokemon_ex_target(metadata),
+    do: {:error, {:invalid_pokemon_ex_target, metadata.id}}
 
   defp require_evolved_this_turn(%{turn_number: turn_number}, %{turn_entered_play: turn_number}),
     do: :ok
