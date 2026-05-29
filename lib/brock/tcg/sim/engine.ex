@@ -779,6 +779,43 @@ defmodule Brock.Tcg.Sim.Engine do
   end
 
   defp reduce(state, %Action{
+         type: :kieran,
+         player_id: player_id,
+         params: %{instance_id: kieran_id, choice: :switch, bench_id: bench_id}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, kieran} <- find_in_player_zone(state, player_id, :hand, kieran_id),
+         {:ok, kieran_metadata} <- CardRegistry.fetch(kieran.card_id),
+         :ok <- require_card_id(kieran, "TWM-154"),
+         :ok <- require_supporter_available_if_supporter(kieran_metadata, state, player_id),
+         {:ok, bench_card} <- find_in_player_zone(state, player_id, :bench, bench_id),
+         {:ok, state} <- discard_card_from_hand(state, player_id, kieran, kieran_metadata) do
+      switch_own_bench_to_active(state, player_id, bench_card, retreated?: false)
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :kieran,
+         player_id: player_id,
+         params: %{instance_id: kieran_id, choice: :damage_bonus}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, kieran} <- find_in_player_zone(state, player_id, :hand, kieran_id),
+         {:ok, kieran_metadata} <- CardRegistry.fetch(kieran.card_id),
+         :ok <- require_card_id(kieran, "TWM-154"),
+         :ok <- require_supporter_available_if_supporter(kieran_metadata, state, player_id),
+         {:ok, state} <- discard_card_from_hand(state, player_id, kieran, kieran_metadata) do
+      put_player_marker(
+        state,
+        player_id,
+        {:damage_bonus_to_opponent_active_pokemon_ex_or_v, :kieran}
+      )
+    end
+  end
+
+  defp reduce(state, %Action{
          type: :wallys_compassion,
          player_id: player_id,
          params: %{instance_id: wally_id, target_id: target_id}

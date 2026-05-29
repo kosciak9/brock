@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Kieran Supporter Behavior
+- Added: Kieran `TWM-154` now has a DSL card-effect manifest entry and executable Supporter reducer choices for switching the player's Active Pokémon with a Benched Pokémon or granting +30 attack damage to the opponent's Active Pokémon ex/V for the turn
+- Preserved: static Supporter text and metadata continue to come from the committed TCGdex cache; the card text was cross-checked against Limitless before coding
+- Updated: `mix brock.cards.coverage` now reports Kieran as implemented for Festival Lead 27445, reducing imported-deck `behavior_missing` card count by one
+- Verified: focused reducer/hook smoke check, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Black Belt's Training Supporter Behavior
 - Added: Black Belt's Training `JTG-143` now has a DSL card-effect manifest entry and an executable Supporter reducer action that marks the player's turn for +40 attack damage to the opponent's Active Pokémon ex
 - Preserved: static Supporter text and metadata continue to come from the committed TCGdex cache; the card text was cross-checked against Limitless before coding

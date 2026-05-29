@@ -31,6 +31,11 @@ defmodule Brock.Tcg.Sim.Hooks do
            modify_attack_damage_if_black_belts_training_active(
              state,
              %{context | damage: damage}
+           ),
+         {:ok, damage} <-
+           modify_attack_damage_if_kieran_active(
+             state,
+             %{context | damage: damage}
            ) do
       {:ok, damage}
     end
@@ -116,6 +121,39 @@ defmodule Brock.Tcg.Sim.Hooks do
 
   defp modify_attack_damage_if_black_belts_training_active(_state, %{damage: damage}),
     do: {:ok, damage}
+
+  defp modify_attack_damage_if_kieran_active(
+         state,
+         %{
+           source: :attack,
+           damage: damage,
+           attacking_player_id: attacking_player_id,
+           target_player_id: target_player_id,
+           target_id: target_id,
+           target_zone: :active
+         }
+       )
+       when is_integer(damage) and damage > 0 do
+    with true <- attacking_player_id != target_player_id,
+         {:ok, attacking_player} <- fetch_player(state, attacking_player_id),
+         true <-
+           MapSet.member?(
+             attacking_player.markers,
+             {:damage_bonus_to_opponent_active_pokemon_ex_or_v, :kieran}
+           ),
+         {:ok, target} <- find_in_play(state, target_player_id, target_id),
+         true <- active_target?(state, target_player_id, target),
+         {:ok, target_metadata} <- CardRegistry.fetch(target.card_id),
+         true <- pokemon_ex_or_v?(target_metadata) do
+      {:ok, damage + 30}
+    else
+      false -> {:ok, damage}
+      true -> {:ok, damage}
+      {:error, reason} -> {:halt, reason}
+    end
+  end
+
+  defp modify_attack_damage_if_kieran_active(_state, %{damage: damage}), do: {:ok, damage}
 
   defp draw_cards_if_lucky_helmet_active(
          state,
@@ -404,6 +442,14 @@ defmodule Brock.Tcg.Sim.Hooks do
   end
 
   defp pokemon_ex?(_metadata), do: false
+
+  defp pokemon_ex_or_v?(metadata), do: pokemon_ex?(metadata) || pokemon_v?(metadata)
+
+  defp pokemon_v?(%{supertype: :pokemon, name: name}) when is_binary(name) do
+    String.ends_with?(name, [" V", " VMAX", " VSTAR", " V-UNION"])
+  end
+
+  defp pokemon_v?(_metadata), do: false
 
   defp card_in_play?(state, player_id, card_id) do
     case fetch_player(state, player_id) do

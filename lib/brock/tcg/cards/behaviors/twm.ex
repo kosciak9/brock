@@ -27,6 +27,16 @@ defmodule Brock.Tcg.Cards.Behaviors.TWM do
     )
   end
 
+  card "TWM-154" do
+    card_effect(
+      effect: %{
+        type:
+          :choose_switch_active_or_turn_bonus_attack_damage_to_opponent_active_pokemon_ex_or_v,
+        bonus_damage: 30
+      }
+    )
+  end
+
   card "TWM-155" do
     card_effect(
       effect: %{

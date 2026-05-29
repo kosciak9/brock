@@ -318,6 +318,7 @@ Cards may exist as `metadata_cached` before their deck is supported. This is exp
 - Implemented Brave Bangle `WHT-080` as a Tool damage-modifier behavior slice, with a WHT DSL manifest entry and `:modify_damage` hook that adds damage before Weakness/Resistance only for non-rule-box attackers hitting the opponent's Active Pokémon ex.
 - Implemented Lucky Helmet `TWM-158` as a Tool after-damage draw behavior slice, with a TWM DSL manifest entry and `:after_damage` hook that draws 2 cards when the attached Active Pokémon is damaged by an opponent's attack.
 - Implemented Black Belt's Training `JTG-143` as a Supporter turn-wide damage-modifier behavior slice, with a JTG DSL manifest entry and `:modify_damage` hook that adds 40 damage before Weakness/Resistance to attacks hitting the opponent's Active Pokémon ex.
+- Implemented Kieran `TWM-154` as a choose-one Supporter behavior slice, with a TWM DSL manifest entry, reducer choices for switching the player's Active Pokémon or granting +30 turn-wide attack damage, and a `:modify_damage` hook that applies the bonus before Weakness/Resistance to the opponent's Active Pokémon ex/V.
 - Implement missing behavior families for the four imported meta decks.
 - Use coverage to divide work by behavior family and ruling risk.
 

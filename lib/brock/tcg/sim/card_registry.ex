@@ -475,6 +475,13 @@ defmodule Brock.Tcg.Sim.CardRegistry do
       trainer_type: :item,
       effect: %{type: :search_team_rocket_supporter_to_hand}
     },
+    "TWM-154" => %{
+      effect: %{
+        type:
+          :choose_switch_active_or_turn_bonus_attack_damage_to_opponent_active_pokemon_ex_or_v,
+        bonus_damage: 30
+      }
+    },
     "JTG-143" => %{
       effect: %{
         type: :turn_bonus_attack_damage_to_opponent_active_pokemon_ex,
