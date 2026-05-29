@@ -477,6 +477,12 @@ defmodule Brock.Tcg.Sim.CardRegistry do
     },
     "TWM-150" => %{name: "Handheld Fan", supertype: :trainer, trainer_type: :tool},
     "ASC-181" => %{name: "Air Balloon", supertype: :trainer, trainer_type: :tool},
+    "WHT-080" => %{
+      effect: %{
+        type: :bonus_attack_damage_to_pokemon_ex_if_attacker_has_no_rule_box,
+        bonus_damage: 30
+      }
+    },
     "MEG-117" => %{name: "Forest of Vitality", supertype: :trainer, trainer_type: :stadium},
     "POR-088" => %{
       name: "Telepathic Psychic Energy",

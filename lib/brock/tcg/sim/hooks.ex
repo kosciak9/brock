@@ -2,9 +2,10 @@ defmodule Brock.Tcg.Sim.Hooks do
   @moduledoc """
   Hook phase runner for card effects that modify or block generic engine actions.
 
-  Hooks return `{:ok, state}` when play should continue or `{:halt, reason}`
-  when a card effect prevents the action. Reducers decide whether a halted hook
-  is an error or a legal prevention/no-op for the active phase.
+  Hooks return `{:ok, state}` when a stateful phase should continue, `{:ok, value}`
+  for value-modifying phases such as `:modify_damage`, or `{:halt, reason}` when
+  a card effect prevents the action. Reducers decide whether a halted hook is an
+  error or a legal prevention/no-op for the active phase.
   """
 
   alias Brock.Tcg.Sim.CardRegistry
@@ -22,6 +23,12 @@ defmodule Brock.Tcg.Sim.Hooks do
     end
   end
 
+  def run(state, :modify_damage, context) do
+    with {:ok, damage} <- modify_attack_damage_if_brave_bangle_active(state, context) do
+      {:ok, damage}
+    end
+  end
+
   def run(state, :before_damage, context) do
     with {:ok, state} <- prevent_bench_attack_damage_if_spherical_shield(state, context) do
       {:ok, state}
@@ -35,6 +42,38 @@ defmodule Brock.Tcg.Sim.Hooks do
   end
 
   def run(state, _phase, _context), do: {:ok, state}
+
+  defp modify_attack_damage_if_brave_bangle_active(
+         state,
+         %{
+           source: :attack,
+           damage: damage,
+           attacking_player_id: attacking_player_id,
+           attacker_id: attacker_id,
+           target_player_id: target_player_id,
+           target_id: target_id,
+           target_zone: :active
+         }
+       )
+       when is_integer(damage) and damage > 0 do
+    with true <- attacking_player_id != target_player_id,
+         {:ok, attacker} <- find_in_play(state, attacking_player_id, attacker_id),
+         true <- equipped_tool?(attacker, "WHT-080"),
+         {:ok, attacker_metadata} <- CardRegistry.fetch(attacker.card_id),
+         false <- rule_box?(attacker_metadata),
+         {:ok, target} <- find_in_play(state, target_player_id, target_id),
+         true <- active_target?(state, target_player_id, target),
+         {:ok, target_metadata} <- CardRegistry.fetch(target.card_id),
+         true <- pokemon_ex?(target_metadata) do
+      {:ok, damage + 30}
+    else
+      false -> {:ok, damage}
+      true -> {:ok, damage}
+      {:error, reason} -> {:halt, reason}
+    end
+  end
+
+  defp modify_attack_damage_if_brave_bangle_active(_state, %{damage: damage}), do: {:ok, damage}
 
   defp move_attack_energy_if_handheld_fan_active(
          state,
@@ -251,6 +290,24 @@ defmodule Brock.Tcg.Sim.Hooks do
     do: Enum.reject(cards, &(&1.instance_id == instance_id))
 
   defp in_play_cards(player), do: [player.active | player.bench] |> Enum.reject(&is_nil/1)
+
+  defp equipped_tool?(%{tool: %{card_id: card_id}}, card_id), do: true
+  defp equipped_tool?(_pokemon, _card_id), do: false
+
+  defp active_target?(state, player_id, target) do
+    case fetch_player(state, player_id) do
+      {:ok, %{active: %{instance_id: instance_id}}} -> instance_id == target.instance_id
+      _other -> false
+    end
+  end
+
+  defp rule_box?(metadata), do: Map.get(metadata, :rule_box?, false)
+
+  defp pokemon_ex?(%{supertype: :pokemon, name: name}) when is_binary(name) do
+    String.ends_with?(name, " ex")
+  end
+
+  defp pokemon_ex?(_metadata), do: false
 
   defp card_in_play?(state, player_id, card_id) do
     case fetch_player(state, player_id) do

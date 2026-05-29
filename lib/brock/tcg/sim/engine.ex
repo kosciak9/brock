@@ -1199,9 +1199,8 @@ defmodule Brock.Tcg.Sim.Engine do
          {:ok, turn_lifecycle} <- TurnLifecycle.transition(state.turn_lifecycle, :resolve_attack) do
       case resolve_confusion_check(state, pending_attack) do
         {:ok, state} ->
-          damage = attack_damage(state, pending_attack)
-
-          with {:ok, state} <-
+          with {:ok, damage} <- attack_damage(state, pending_attack),
+               {:ok, state} <-
                  damage_pokemon(
                    state,
                    pending_attack.target_player_id,
@@ -2286,9 +2285,47 @@ defmodule Brock.Tcg.Sim.Engine do
   defp resolve_confusion_check(state, _pending_attack), do: {:ok, state}
 
   defp attack_damage(state, pending_attack) do
-    state
-    |> base_attack_damage(pending_attack)
-    |> apply_weakness_and_resistance(state, pending_attack)
+    base_damage = base_attack_damage(state, pending_attack)
+
+    with {:ok, modified_damage} <- modify_attack_damage(state, pending_attack, base_damage) do
+      {:ok, apply_weakness_and_resistance(modified_damage, state, pending_attack)}
+    end
+  end
+
+  defp modify_attack_damage(
+         state,
+         %{
+           attack: attack,
+           player_id: player_id,
+           attacker_id: attacker_id,
+           target_player_id: target_player_id,
+           target_id: target_id,
+           params: params
+         },
+         damage
+       ) do
+    context = %{
+      source: :attack,
+      attack: attack,
+      attacking_player_id: player_id,
+      attacker_id: attacker_id,
+      target_player_id: target_player_id,
+      target_id: target_id,
+      target_zone: :active,
+      damage: damage,
+      params: params
+    }
+
+    case Hooks.run(state, :modify_damage, context) do
+      {:ok, modified_damage} when is_integer(modified_damage) and modified_damage >= 0 ->
+        {:ok, modified_damage}
+
+      {:ok, modified_damage} ->
+        {:error, {:invalid_modified_damage, modified_damage}}
+
+      {:halt, reason} ->
+        {:error, reason}
+    end
   end
 
   defp base_attack_damage(state, %{

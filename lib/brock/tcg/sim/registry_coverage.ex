@@ -36,6 +36,7 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
     "SSP-170" => :cyrano,
     "TEF-145" => :ciphermaniacs_codebreaking,
     "MEG-115" => :energy_switch,
+    "WHT-080" => :brave_bangle,
     "TWM-150" => :handheld_fan,
     "ASC-181" => :air_balloon,
     "MEG-117" => :forest_of_vitality,
@@ -45,6 +46,7 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
   @implemented_effect_types MapSet.new([
                               :active_damage_counters_per_hand_card,
                               :bench_basic_psychic_from_deck_when_attached_to_psychic,
+                              :bonus_attack_damage_to_pokemon_ex_if_attacker_has_no_rule_box,
                               :bonus_damage_if_defender_pokemon_ex,
                               :bonus_damage_per_energy_attached_to_defender,
                               :confuse_defender_active,

@@ -315,6 +315,7 @@ Cards may exist as `metadata_cached` before their deck is supported. This is exp
 - Implemented Ciphermaniac's Codebreaking `TEF-145` as a two-card deck search/top-deck ordering Supporter behavior slice, with a DSL manifest entry and reducer action while keeping static Supporter text in the TCGdex cache.
 - Implemented Cyrano `SSP-170` as a Pokémon ex deck-search Supporter behavior slice, with an SSP DSL manifest entry and reducer action that validates target eligibility from cached TCGdex static facts.
 - Implemented Wally's Compassion `MEG-132` as a Mega Evolution Pokémon ex healing Supporter behavior slice, with a DSL manifest entry and reducer action that validates target eligibility from cached TCGdex static facts and returns attached Energy only when damage was healed.
+- Implemented Brave Bangle `WHT-080` as a Tool damage-modifier behavior slice, with a WHT DSL manifest entry and `:modify_damage` hook that adds damage before Weakness/Resistance only for non-rule-box attackers hitting the opponent's Active Pokémon ex.
 - Implement missing behavior families for the four imported meta decks.
 - Use coverage to divide work by behavior family and ruling risk.
 
