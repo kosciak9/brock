@@ -449,6 +449,16 @@ defmodule Brock.Tcg.Sim.CardRegistry do
     "TWM-155" => %{name: "Lana's Aid", supertype: :trainer, trainer_type: :supporter},
     "MEG-125" => %{name: "Rare Candy", supertype: :trainer, trainer_type: :item},
     "TWM-148" => %{name: "Enhanced Hammer", supertype: :trainer, trainer_type: :item},
+    "TWM-143" => %{
+      name: "Bug Catching Set",
+      supertype: :trainer,
+      trainer_type: :item,
+      effect: %{
+        type: :top_n_choose_grass_pokemon_or_basic_grass_energy_to_hand,
+        count: 7,
+        max_targets: 2
+      }
+    },
     "DRI-168" => %{name: "Sacred Ash", supertype: :trainer, trainer_type: :item},
     "TWM-150" => %{name: "Handheld Fan", supertype: :trainer, trainer_type: :tool},
     "ASC-181" => %{name: "Air Balloon", supertype: :trainer, trainer_type: :tool},

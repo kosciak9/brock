@@ -6,6 +6,7 @@ defmodule Brock.Tcg.Sim.Engine do
   top of these transitions after lifecycle semantics are stable.
   """
 
+  alias Brock.Tcg.Cards.Metadata
   alias Brock.Tcg.Sim.Action
   alias Brock.Tcg.Sim.CardInstance
   alias Brock.Tcg.Sim.CardRegistry
@@ -646,6 +647,43 @@ defmodule Brock.Tcg.Sim.Engine do
         nil -> {:ok, state}
         target -> move_deck_card_to_hand(state, player_id, target)
       end
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :bug_catching_set,
+         player_id: player_id,
+         params: %{instance_id: bug_catching_set_id} = params
+       }) do
+    target_ids = Map.get(params, :target_ids, [])
+
+    with true <- is_list(target_ids) || {:error, :bug_catching_set_targets_must_be_list},
+         :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, bug_catching_set} <-
+           find_in_player_zone(state, player_id, :hand, bug_catching_set_id),
+         {:ok, bug_catching_set_metadata} <- CardRegistry.fetch(bug_catching_set.card_id),
+         :ok <- require_item_cards_playable(state, player_id),
+         :ok <- require_card_id(bug_catching_set, "TWM-143"),
+         :ok <-
+           require_max_target_ids(
+             target_ids,
+             bug_catching_set_metadata.effect.max_targets,
+             :bug_catching_set
+           ),
+         :ok <- require_unique_target_ids(target_ids, :bug_catching_set),
+         {:ok, targets} <- fetch_deck_cards(state, player_id, target_ids),
+         :ok <-
+           require_cards_in_top_deck(
+             state,
+             player_id,
+             targets,
+             bug_catching_set_metadata.effect.count,
+             :bug_catching_set
+           ),
+         :ok <- require_bug_catching_set_targets(targets),
+         {:ok, state} <- discard_card_from_hand(state, player_id, bug_catching_set, %{}) do
+      move_deck_cards_to_hand(state, player_id, targets)
     end
   end
 
@@ -3049,6 +3087,70 @@ defmodule Brock.Tcg.Sim.Engine do
       end
     end
   end
+
+  defp require_cards_in_top_deck(_state, _player_id, [], _count, _action), do: :ok
+
+  defp require_cards_in_top_deck(state, player_id, cards, count, action) do
+    with {:ok, player} <- fetch_player(state, player_id) do
+      top_card_ids =
+        player.deck
+        |> Enum.take(count)
+        |> MapSet.new(& &1.instance_id)
+
+      Enum.reduce_while(cards, :ok, fn card, :ok ->
+        if MapSet.member?(top_card_ids, card.instance_id) do
+          {:cont, :ok}
+        else
+          {:halt, {:error, {:card_not_in_top_deck, action, card.instance_id, count}}}
+        end
+      end)
+    end
+  end
+
+  defp require_max_target_ids(target_ids, max_targets, _action)
+       when length(target_ids) <= max_targets,
+       do: :ok
+
+  defp require_max_target_ids(target_ids, max_targets, action),
+    do: {:error, {:too_many_targets, action, length(target_ids), max_targets}}
+
+  defp require_unique_target_ids(target_ids, _action) do
+    if length(target_ids) == length(Enum.uniq(target_ids)) do
+      :ok
+    else
+      {:error, {:duplicate_target_ids, target_ids}}
+    end
+  end
+
+  defp require_bug_catching_set_targets(targets) do
+    Enum.reduce_while(targets, :ok, fn target, :ok ->
+      with {:ok, metadata} <- Metadata.fetch(target.card_id),
+           :ok <- require_bug_catching_set_target(metadata) do
+        {:cont, :ok}
+      else
+        {:error, reason} -> {:halt, {:error, reason}}
+      end
+    end)
+  end
+
+  defp require_bug_catching_set_target(%Metadata{category: :pokemon, types: types} = metadata) do
+    if :grass in types do
+      :ok
+    else
+      {:error, {:invalid_bug_catching_set_target, metadata.id}}
+    end
+  end
+
+  defp require_bug_catching_set_target(%Metadata{category: :energy, raw_effect: nil} = metadata) do
+    if String.contains?(metadata.name, "Grass") do
+      :ok
+    else
+      {:error, {:invalid_bug_catching_set_target, metadata.id}}
+    end
+  end
+
+  defp require_bug_catching_set_target(metadata),
+    do: {:error, {:invalid_bug_catching_set_target, metadata.id}}
 
   defp require_evolved_this_turn(%{turn_number: turn_number}, %{turn_entered_play: turn_number}),
     do: :ok

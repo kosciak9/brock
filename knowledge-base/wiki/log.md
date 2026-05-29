@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Bug Catching Set Item Behavior
+- Added: Bug Catching Set `TWM-143` now has a DSL card-effect manifest entry and an executable reducer action that can reveal up to two valid cards from the top 7 cards of the player's deck and put them into hand
+- Preserved: target eligibility uses cached TCGdex static facts for `{G}` Pokémon and Basic `{G}` Energy, so the search can find metadata-cached imported-deck cards before those cards have executable behavior overlays
+- Updated: `mix brock.cards.coverage` now reports Bug Catching Set as implemented for Festival Lead 27445 and Rocket's Mewtwo 27459, reducing imported-deck `behavior_missing` card count by one
+- Verified: focused reducer smoke check, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Pokégear 3.0 Item Behavior
 - Added: Pokégear 3.0 `SVI-186` now has a DSL card-effect manifest entry and an executable reducer action that can reveal a Supporter from the top 7 cards of the player's deck and put it into hand
 - Updated: `mix brock.cards.coverage` now reports Pokégear 3.0 as implemented for Lopunny Dudunsparce 27514, reducing imported-deck `behavior_missing` card count by one

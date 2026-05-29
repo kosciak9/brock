@@ -17,6 +17,16 @@ defmodule Brock.Tcg.Cards.Behaviors.TWM do
     )
   end
 
+  card "TWM-143" do
+    card_effect(
+      effect: %{
+        type: :top_n_choose_grass_pokemon_or_basic_grass_energy_to_hand,
+        count: 7,
+        max_targets: 2
+      }
+    )
+  end
+
   card "TWM-155" do
     card_effect(
       effect: %{

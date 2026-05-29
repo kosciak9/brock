@@ -30,6 +30,7 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
     "TWM-155" => :lanas_aid,
     "MEG-125" => :rare_candy,
     "TWM-148" => :enhanced_hammer,
+    "TWM-143" => :bug_catching_set,
     "DRI-168" => :sacred_ash,
     "MEG-115" => :energy_switch,
     "TWM-150" => :handheld_fan,
@@ -60,6 +61,7 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
                               :search_supporter_when_benched_from_hand,
                               :self_damage,
                               :switch_self_with_bench,
+                              :top_n_choose_grass_pokemon_or_basic_grass_energy_to_hand,
                               :top_n_choose_supporter_to_hand,
                               :top_two_choose_one_to_hand_other_to_bottom
                             ])
