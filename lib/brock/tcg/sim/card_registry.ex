@@ -50,18 +50,9 @@ defmodule Brock.Tcg.Sim.CardRegistry do
       }
     },
     "TWM-128" => %{
-      name: "Dreepy",
-      supertype: :pokemon,
-      type: :dragon,
-      stage: :basic,
-      hp: 70,
-      prize_count: 1,
-      retreat_cost: [:colorless],
-      weakness: nil,
-      resistance: nil,
       attacks: %{
-        petty_grudge: %{name: "Petty Grudge", cost: [:psychic], damage: 10},
-        bite: %{name: "Bite", cost: [:fire, :psychic], damage: 40}
+        petty_grudge: %{effect: nil},
+        bite: %{effect: nil}
       }
     },
     "TWM-129" => %{

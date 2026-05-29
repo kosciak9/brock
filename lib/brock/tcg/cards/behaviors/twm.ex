@@ -8,6 +8,11 @@ defmodule Brock.Tcg.Cards.Behaviors.TWM do
     attack(:branch_poke, effect: nil)
   end
 
+  card "TWM-128" do
+    attack(:petty_grudge, effect: nil)
+    attack(:bite, effect: nil)
+  end
+
   card "TWM-129" do
     ability(:recon_directive,
       effect: %{type: :top_two_choose_one_to_hand_other_to_bottom}

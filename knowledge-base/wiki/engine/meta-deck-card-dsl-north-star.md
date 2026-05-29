@@ -323,6 +323,7 @@ Cards may exist as `metadata_cached` before their deck is supported. This is exp
 - Implemented Applin `SCR-012` as an explicit imported-deck plain-damage behavior slice, with an SCR DSL manifest entry and registry overlay for `Spray Fluid` that keeps static cost/damage facts in the TCGdex cache.
 - Implemented Team Rocket's Tarountula `DRI-019` as an imported-deck self-damage attack behavior slice, with a DRI DSL manifest entry and registry overlay for `Take Down` that keeps static attack damage/cost facts in the TCGdex cache.
 - Implemented Buneary `PFL-083` as an imported-deck switch/plain-damage attack behavior slice, with a PFL DSL manifest entry and registry overlay for `Run Around` and `Kick` that keeps static attack damage/cost facts in the TCGdex cache.
+- Ported Dreepy `TWM-128` from the legacy generic-damage overlay to explicit TWM DSL manifest entries for `Petty Grudge` and `Bite`, keeping static attack damage/cost facts in the TCGdex cache.
 - Implement missing behavior families for the four imported meta decks.
 - Use coverage to divide work by behavior family and ruling risk.
 
