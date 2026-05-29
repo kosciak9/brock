@@ -1,5 +1,10 @@
 # Wiki Log
 
+## [2026-05-29] implementation | ACE Nullifier Before-Play-Trainer Hook
+- Added: `Brock.Tcg.Sim.Hooks` as the first hook phase runner with `:before_play_trainer` returning `{:ok, state}` or `{:halt, reason}`
+- Migrated: Genesect `ACE Nullifier` ACE SPEC prevention now runs through the hook path instead of an engine-local reducer-specific check
+- Verified: targeted ACE Nullifier scenario, `mix test test/brock/tcg/sim`, `mix brock.cards.coverage`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Special Energy Card-Effect DSL Manifest Entry
 - Added: Telepathic Psychic Energy `POR-088` to `Brock.Tcg.Cards.Behaviors.POR` as the first representative Special Energy card-effect behavior manifest entry
 - Preserved: cached TCGdex Energy type and raw effect remain the static source of truth; the DSL entry only declares the executable attach/search overlay

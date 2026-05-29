@@ -11,6 +11,7 @@ defmodule Brock.Tcg.Sim.Engine do
   alias Brock.Tcg.Sim.CardRegistry
   alias Brock.Tcg.Sim.GameState
   alias Brock.Tcg.Sim.History
+  alias Brock.Tcg.Sim.Hooks
   alias Brock.Tcg.Sim.PlayerState
   alias Brock.Tcg.Sim.StateMachines.CardLifecycle
   alias Brock.Tcg.Sim.StateMachines.GameLifecycle
@@ -2239,18 +2240,6 @@ defmodule Brock.Tcg.Sim.Engine do
     end
   end
 
-  defp ace_nullifier_active?(state, player_id) do
-    case fetch_player(state, player_id) do
-      {:ok, player} ->
-        player
-        |> in_play_cards()
-        |> Enum.any?(fn pokemon -> pokemon.card_id == "SFA-040" && not is_nil(pokemon.tool) end)
-
-      {:error, _reason} ->
-        false
-    end
-  end
-
   defp damp_active?(state) do
     state.players
     |> Map.values()
@@ -2679,12 +2668,13 @@ defmodule Brock.Tcg.Sim.Engine do
   defp require_ace_spec_cards_playable_if_ace_spec(_metadata, _state, _player_id), do: :ok
 
   defp require_ace_spec_cards_playable(state, player_id) do
-    with {:ok, opponent_id} <- opponent_id(state, player_id) do
-      if ace_nullifier_active?(state, opponent_id),
-        do: {:error, :ace_spec_cards_blocked_by_ace_nullifier},
-        else: :ok
-    end
+    state
+    |> Hooks.run(:before_play_trainer, %{player_id: player_id, metadata: %{ace_spec?: true}})
+    |> require_hook_success()
   end
+
+  defp require_hook_success({:ok, _state}), do: :ok
+  defp require_hook_success({:halt, reason}), do: {:error, reason}
 
   defp require_card_id(%{card_id: card_id}, card_id), do: :ok
 
