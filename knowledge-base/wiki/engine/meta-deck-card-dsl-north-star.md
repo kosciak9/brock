@@ -269,11 +269,12 @@ Cards may exist as `metadata_cached` before their deck is supported. This is exp
 ### Phase 2: metadata-backed registry facade
 
 - Added `Brock.Tcg.Cards.Metadata` to read normalized static facts from the committed TCGdex cache for representative Pokémon, Trainer, and Energy cards without changing engine behavior yet.
-- Convert `CardRegistry.fetch/1` into a compatibility facade.
-- Serve static card data from normalized cached TCGdex metadata.
-- Overlay existing authored behavior.
-- Keep old hand-written entries only as temporary behavior overlays or migration shims.
-- Add tests proving fetched card metadata comes from cache for representative Pokémon, Trainer, and Energy cards.
+- Converted `CardRegistry.fetch/1` into a compatibility facade for the existing supported registry IDs.
+- Static card data now comes from normalized cached TCGdex metadata in the facade, including raw printed attack, Ability, Trainer, and Energy text.
+- Existing authored attack, Ability, and Energy behavior is overlaid onto the metadata-backed base.
+- The old hand-written registry entries are now temporary behavior overlays plus explicit compatibility shims for current reducer gaps such as Brock-ID evolution links and weakness/resistance cache gaps.
+- Added tests proving fetched registry metadata comes from cache for representative Pokémon, Trainer, and Energy cards, and that cached raw attack text without an executable overlay fails explicitly.
+- Updated `mix brock.cards.coverage` to report `metadata_backed_registry` and `metadata_cached` for the 44 current fixed-deck cards.
 
 ### Phase 3: behavior DSL foundation
 

@@ -1,10 +1,30 @@
 defmodule Brock.Tcg.Sim.CardRegistry do
   @moduledoc """
-  Static registry for the first simulator slice.
+  Compatibility registry facade for the first simulator slice.
 
-  The registry is intentionally explicit. Unsupported cards fail loudly instead
-  of being approximated.
+  Static card facts are loaded from the committed TCGdex cache. The local table
+  below is now treated as an authored behavior overlay plus temporary migration
+  shims for engine fields that the cache cannot yet express directly.
+
+  Unsupported cards and unsupported cached attack text fail loudly instead of
+  being approximated.
   """
+
+  alias Brock.Tcg.Cards.Metadata
+
+  @energy_name_types %{
+    "Colorless" => :colorless,
+    "Darkness" => :darkness,
+    "Dragon" => :dragon,
+    "Fairy" => :fairy,
+    "Fighting" => :fighting,
+    "Fire" => :fire,
+    "Grass" => :grass,
+    "Lightning" => :lightning,
+    "Metal" => :metal,
+    "Psychic" => :psychic,
+    "Water" => :water
+  }
 
   @cards %{
     "TWM-128" => %{
@@ -442,9 +462,12 @@ defmodule Brock.Tcg.Sim.CardRegistry do
   }
 
   def fetch(card_id) do
-    case Map.fetch(@cards, card_id) do
-      {:ok, card} -> {:ok, Map.put(card, :id, card_id)}
+    with {:ok, overlay} <- Map.fetch(@cards, card_id),
+         {:ok, metadata} <- Metadata.fetch(card_id) do
+      {:ok, metadata |> metadata_card() |> apply_behavior_overlay(overlay)}
+    else
       :error -> {:error, {:unsupported_card, card_id}}
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -461,7 +484,8 @@ defmodule Brock.Tcg.Sim.CardRegistry do
 
   def fetch_attack(card_id, attack_id) do
     with {:ok, %{attacks: attacks}} <- fetch(card_id),
-         {:ok, attack} <- Map.fetch(attacks, attack_id) do
+         {:ok, attack} <- Map.fetch(attacks, attack_id),
+         :ok <- require_executable_attack(card_id, attack_id, attack) do
       {:ok, Map.put(attack, :id, attack_id)}
     else
       {:ok, _card_without_attacks} -> {:error, {:unsupported_attack, card_id, attack_id}}
@@ -471,4 +495,194 @@ defmodule Brock.Tcg.Sim.CardRegistry do
   end
 
   def supported_card_ids, do: Map.keys(@cards) |> Enum.sort()
+
+  defp metadata_card(%Metadata{} = metadata) do
+    %{
+      abilities: registry_abilities(metadata.abilities),
+      ace_spec?: metadata.ace_spec?,
+      attacks: registry_attacks(metadata.attacks),
+      category: metadata.category,
+      energy_type: registry_energy_type(metadata),
+      evolves_from: metadata.evolves_from,
+      evolves_from_name: metadata.evolves_from,
+      hp: metadata.hp,
+      id: metadata.id,
+      image: metadata.image,
+      legal: metadata.legal,
+      name: metadata.name,
+      raw_effect: metadata.raw_effect,
+      regulation_mark: metadata.regulation_mark,
+      resistance: first_resistance(metadata.resistances),
+      resistances: metadata.resistances,
+      retreat_cost: metadata.retreat_cost,
+      retreat_count: metadata.retreat_count,
+      rule_box?: metadata.rule_box?,
+      rarity: metadata.rarity,
+      set: metadata.set,
+      stage: metadata.stage,
+      suffix: metadata.suffix,
+      supertype: metadata.category,
+      tcgdex_energy_type: metadata.energy_type,
+      tcgdex_id: metadata.tcgdex_id,
+      trainer_type: metadata.trainer_type,
+      type: primary_type(metadata),
+      types: metadata.types,
+      weakness: first_weakness(metadata.weaknesses),
+      weaknesses: metadata.weaknesses
+    }
+  end
+
+  defp apply_behavior_overlay(card, overlay) do
+    card
+    |> merge_attack_overlays(Map.get(overlay, :attacks, %{}))
+    |> merge_ability_overlays(Map.get(overlay, :abilities, %{}))
+    |> maybe_put_overlay(:effect, Map.get(overlay, :effect))
+    |> maybe_put_overlay(:provides, Map.get(overlay, :provides, inferred_provides(card)))
+    |> apply_metadata_gap_shims(overlay)
+  end
+
+  defp merge_attack_overlays(card, overlays) do
+    attacks = merge_entry_overlays(card.attacks, overlays, &executable_attack_fields/2)
+    %{card | attacks: attacks}
+  end
+
+  defp merge_ability_overlays(card, overlays) do
+    abilities =
+      merge_entry_overlays(card.abilities, overlays, fn _entry, overlay ->
+        Map.take(overlay, [:effect])
+      end)
+
+    %{card | abilities: abilities}
+  end
+
+  defp merge_entry_overlays(entries, overlays, fields_fun) do
+    Enum.reduce(overlays, entries, fn {id, overlay}, entries ->
+      entry = Map.get(entries, id, %{name: Map.get(overlay, :name)})
+      Map.put(entries, id, Map.merge(entry, fields_fun.(entry, overlay)))
+    end)
+  end
+
+  defp executable_attack_fields(entry, overlay) do
+    overlay
+    |> Map.take([:effect])
+    |> maybe_put_executable_damage(entry, overlay)
+  end
+
+  defp maybe_put_executable_damage(fields, %{damage: damage}, %{damage: executable_damage})
+       when is_integer(damage) and not is_nil(executable_damage) do
+    fields
+  end
+
+  defp maybe_put_executable_damage(fields, _entry, %{damage: executable_damage})
+       when is_integer(executable_damage) do
+    Map.put(fields, :damage, executable_damage)
+  end
+
+  defp maybe_put_executable_damage(fields, _entry, _overlay), do: fields
+
+  # Temporary shims for cache gaps or incompatible static shapes required by
+  # the current reducer. Keep these explicit until the engine no longer needs
+  # Brock-ID evolution links or fallback weakness/resistance maps.
+  defp apply_metadata_gap_shims(card, overlay) do
+    card
+    |> maybe_put_overlay(:evolves_from, Map.get(overlay, :evolves_from))
+    |> maybe_put_gap(:weakness, Map.get(overlay, :weakness))
+    |> maybe_put_gap(:resistance, Map.get(overlay, :resistance))
+  end
+
+  defp maybe_put_gap(card, field, value) do
+    if metadata_gap?(Map.get(card, field)) do
+      maybe_put_overlay(card, field, value)
+    else
+      card
+    end
+  end
+
+  defp metadata_gap?(nil), do: true
+  defp metadata_gap?([]), do: true
+  defp metadata_gap?(_value), do: false
+
+  defp maybe_put_overlay(card, _field, nil), do: card
+  defp maybe_put_overlay(card, field, value), do: Map.put(card, field, value)
+
+  defp registry_attacks(attacks) do
+    Map.new(attacks, fn {id, attack} ->
+      {String.to_atom(id),
+       %{
+         cost: attack.cost,
+         damage: attack.damage,
+         name: attack.name,
+         raw_effect: attack.raw_effect
+       }}
+    end)
+  end
+
+  defp registry_abilities(abilities) do
+    Map.new(abilities, fn {id, ability} ->
+      {String.to_atom(id),
+       %{
+         name: ability.name,
+         raw_effect: ability.raw_effect,
+         type: ability.type
+       }}
+    end)
+  end
+
+  defp registry_energy_type(%Metadata{category: :energy, raw_effect: nil}), do: :basic
+  defp registry_energy_type(%Metadata{category: :energy}), do: :special
+  defp registry_energy_type(%Metadata{} = metadata), do: metadata.energy_type
+
+  defp inferred_provides(%{supertype: :energy, energy_type: :basic, name: name}) do
+    Enum.find_value(@energy_name_types, [], fn {label, type} ->
+      if String.contains?(name, label), do: [type]
+    end)
+  end
+
+  defp inferred_provides(_card), do: nil
+
+  defp primary_type(%Metadata{types: [type | _types]}), do: type
+  defp primary_type(%Metadata{}), do: nil
+
+  defp first_weakness([%{type: type, value: value} | _weaknesses]) do
+    %{type: type, multiplier: multiplier_value(value)}
+  end
+
+  defp first_weakness(_weaknesses), do: nil
+
+  defp first_resistance([%{type: type, value: value} | _resistances]) do
+    %{type: type, value: signed_value(value)}
+  end
+
+  defp first_resistance(_resistances), do: nil
+
+  defp multiplier_value(value) when is_integer(value), do: value
+
+  defp multiplier_value(value) do
+    case Regex.run(~r/\d+/, to_string(value)) do
+      [digits] -> String.to_integer(digits)
+      _none -> 2
+    end
+  end
+
+  defp signed_value(value) when is_integer(value), do: value
+
+  defp signed_value(value) do
+    case Regex.run(~r/-?\d+/, to_string(value)) do
+      [digits] -> String.to_integer(digits)
+      _none -> 0
+    end
+  end
+
+  defp require_executable_attack(_card_id, _attack_id, %{effect: %{type: _type}}), do: :ok
+
+  defp require_executable_attack(card_id, attack_id, %{raw_effect: raw_effect})
+       when raw_effect not in [nil, ""] do
+    {:error, {:missing_executable_attack_behavior, card_id, attack_id}}
+  end
+
+  defp require_executable_attack(_card_id, _attack_id, %{damage: damage}) when is_integer(damage),
+    do: :ok
+
+  defp require_executable_attack(card_id, attack_id, _attack),
+    do: {:error, {:missing_executable_attack_behavior, card_id, attack_id}}
 end

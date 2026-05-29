@@ -1,9 +1,9 @@
 defmodule Brock.Tcg.Sim.RegistryCoverage do
   @moduledoc """
-  Coverage report for the current hand-written simulator registry.
+  Coverage report for the current metadata-backed simulator registry facade.
 
-  This is the Phase 0 bridge report before card metadata moves to the TCGdex
-  cache and executable card behavior moves to behavior overlays.
+  This is the Phase 2 bridge report while executable card behavior remains in
+  local overlays and static metadata comes from the committed TCGdex cache.
   """
 
   alias Brock.Tcg.Sim.CardRegistry
@@ -70,7 +70,12 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
       CardRegistry.supported_card_ids()
       |> Enum.map(&card_report(&1, deck_index))
 
-    %{source: :current_registry, decks: deck_reports(), cards: cards, summary: summary(cards)}
+    %{
+      source: :metadata_backed_registry,
+      decks: deck_reports(),
+      cards: cards,
+      summary: summary(cards)
+    }
   end
 
   def deck_reports do
@@ -98,7 +103,7 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
       card_id: card_id,
       name: metadata.name,
       decks: Map.get(deck_index, card_id, []),
-      metadata_status: :legacy_registry,
+      metadata_status: :metadata_cached,
       behavior_status: aggregate_behavior_status(families),
       behavior_families: families
     }

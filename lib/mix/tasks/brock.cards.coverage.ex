@@ -2,13 +2,12 @@ defmodule Mix.Tasks.Brock.Cards.Coverage do
   @shortdoc "Reports coverage for the current TCG card registry"
 
   @moduledoc """
-  Reports current hand-written registry metadata and behavior coverage.
+  Reports current metadata-backed registry facade behavior coverage.
 
       mix brock.cards.coverage
 
-  The report is offline and covers the current fixed-deck registry. It is meant
-  to be replaced incrementally by the metadata-cache and behavior-overlay
-  coverage described in the meta-deck north-star plan.
+  The report is offline and covers the current fixed-deck registry facade while
+  behavior overlays are migrated toward the meta-deck north-star plan.
   """
 
   use Mix.Task

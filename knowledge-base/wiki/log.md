@@ -1,5 +1,12 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Metadata-Backed Registry Facade
+- Added: `Brock.Tcg.Sim.CardRegistry.fetch/1` now builds supported card entries from cached `Brock.Tcg.Cards.Metadata` and overlays existing authored executable behavior
+- Preserved: temporary compatibility shims for current reducer requirements, including Brock-ID evolution links, basic/special Energy classification, inferred basic Energy provides, and fallback weakness/resistance maps for cache gaps
+- Guarded: `CardRegistry.fetch_attack/2` now rejects cached raw attack text with no executable overlay instead of exposing it as playable behavior
+- Updated: `mix brock.cards.coverage` now reports `metadata_backed_registry` with `metadata_cached=44` for the fixed deck pool
+- Verified: `mix test test/brock/tcg/sim/card_registry_test.exs test/brock/tcg/cards/metadata_test.exs`, `mix test test/brock/tcg/sim`, `mix brock.cards.coverage`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | TCGdex Metadata Normalization
 - Added: `Brock.Tcg.Cards.Metadata` offline reader for normalized metadata from committed TCGdex cache payloads
 - Covered: representative Pokémon (`TWM-130`), Trainer (`TWM-165`), and Energy (`POR-088`) static fields while preserving raw printed effects for later behavior overlays
