@@ -522,6 +522,9 @@ defmodule Brock.Tcg.Sim.CardRegistry do
       }
     },
     "DRI-168" => %{name: "Sacred Ash", supertype: :trainer, trainer_type: :item},
+    "DRI-177" => %{
+      effect: %{type: :search_basic_team_rocket_pokemon_to_hand, max_targets: 3}
+    },
     "DRI-178" => %{
       name: "Team Rocket's Transceiver",
       supertype: :trainer,

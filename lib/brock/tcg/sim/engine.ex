@@ -710,6 +710,35 @@ defmodule Brock.Tcg.Sim.Engine do
   end
 
   defp reduce(state, %Action{
+         type: :team_rockets_proton,
+         player_id: player_id,
+         params: %{instance_id: proton_id} = params
+       }) do
+    target_ids = Map.get(params, :target_ids, [])
+
+    with true <- is_list(target_ids) || {:error, :team_rockets_proton_targets_must_be_list},
+         :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, proton} <- find_in_player_zone(state, player_id, :hand, proton_id),
+         {:ok, proton_metadata} <- CardRegistry.fetch(proton.card_id),
+         :ok <- require_card_id(proton, "DRI-177"),
+         :ok <-
+           require_team_rockets_proton_supporter_available(proton_metadata, state, player_id),
+         :ok <-
+           require_max_target_ids(
+             target_ids,
+             proton_metadata.effect.max_targets,
+             :team_rockets_proton
+           ),
+         :ok <- require_unique_target_ids(target_ids, :team_rockets_proton),
+         {:ok, targets} <- fetch_deck_cards(state, player_id, target_ids),
+         :ok <- require_basic_team_rocket_pokemon_targets(targets),
+         {:ok, state} <- discard_card_from_hand(state, player_id, proton, proton_metadata) do
+      move_deck_cards_to_hand(state, player_id, targets)
+    end
+  end
+
+  defp reduce(state, %Action{
          type: :ciphermaniacs_codebreaking,
          player_id: player_id,
          params: %{instance_id: ciphermaniac_id, target_ids: target_ids}
@@ -3186,6 +3215,23 @@ defmodule Brock.Tcg.Sim.Engine do
 
   defp require_first_player_can_play_supporter(_state, _player_id), do: :ok
 
+  defp require_team_rockets_proton_supporter_available(
+         %{trainer_type: :supporter},
+         %{first_player: player_id, turn_number: 1} = state,
+         player_id
+       ) do
+    with {:ok, player} <- fetch_player(state, player_id) do
+      if player.supporter_played? do
+        {:error, :supporter_already_played_this_turn}
+      else
+        :ok
+      end
+    end
+  end
+
+  defp require_team_rockets_proton_supporter_available(metadata, state, player_id),
+    do: require_supporter_available_if_supporter(metadata, state, player_id)
+
   defp require_item_cards_playable_if_item(%{trainer_type: :item}, state, player_id) do
     require_item_cards_playable(state, player_id)
   end
@@ -3592,6 +3638,32 @@ defmodule Brock.Tcg.Sim.Engine do
 
   defp require_team_rocket_supporter_target(metadata),
     do: {:error, {:invalid_team_rockets_transceiver_target, metadata.id}}
+
+  defp require_basic_team_rocket_pokemon_targets(targets) do
+    Enum.reduce_while(targets, :ok, fn target, :ok ->
+      with {:ok, metadata} <- Metadata.fetch(target.card_id),
+           :ok <- require_basic_team_rocket_pokemon_target(metadata) do
+        {:cont, :ok}
+      else
+        {:error, reason} -> {:halt, {:error, reason}}
+      end
+    end)
+  end
+
+  defp require_basic_team_rocket_pokemon_target(%Metadata{
+         category: :pokemon,
+         stage: :basic,
+         name: name
+       }) do
+    if String.contains?(name, "Team Rocket") do
+      :ok
+    else
+      {:error, {:invalid_team_rockets_proton_target, name}}
+    end
+  end
+
+  defp require_basic_team_rocket_pokemon_target(metadata),
+    do: {:error, {:invalid_team_rockets_proton_target, metadata.id}}
 
   defp require_pokemon_ex_targets(targets) do
     Enum.reduce_while(targets, :ok, fn target, :ok ->

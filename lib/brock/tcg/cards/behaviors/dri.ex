@@ -15,6 +15,10 @@ defmodule Brock.Tcg.Cards.Behaviors.DRI do
     attack(:take_down, effect: %{type: :self_damage, damage: 10})
   end
 
+  card "DRI-177" do
+    card_effect(effect: %{type: :search_basic_team_rocket_pokemon_to_hand, max_targets: 3})
+  end
+
   card "DRI-178" do
     card_effect(effect: %{type: :search_team_rocket_supporter_to_hand})
   end
