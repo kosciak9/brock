@@ -418,7 +418,12 @@ defmodule Brock.Tcg.Sim.CardRegistry do
         }
       },
       attacks: %{
-        land_crush: %{name: "Land Crush", cost: [:colorless, :colorless, :colorless], damage: 90}
+        land_crush: %{
+          name: "Land Crush",
+          cost: [:colorless, :colorless, :colorless],
+          damage: 90,
+          effect: nil
+        }
       }
     },
     "TEF-023" => %{

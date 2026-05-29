@@ -13,6 +13,14 @@ defmodule Brock.Tcg.Cards.Behaviors.TEF do
     )
   end
 
+  card "TEF-129" do
+    ability(:run_away_draw,
+      effect: %{type: :draw_then_shuffle_self_into_deck, count: 3}
+    )
+
+    attack(:land_crush, effect: nil)
+  end
+
   card "TEF-145" do
     card_effect(effect: %{type: :search_deck_for_cards_to_top, count: 2})
   end

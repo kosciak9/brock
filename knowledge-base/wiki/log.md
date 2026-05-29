@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | TEF Dudunsparce Plain-Damage Attack Behavior
+- Added: Dudunsparce `TEF-129` now has a TEF DSL manifest entry for `Run Away Draw` and `Land Crush`, and the registry overlay marks `Land Crush` as explicit exact plain-damage behavior instead of generic damage
+- Preserved: cached TCGdex metadata remains the source of truth for static Pokémon metadata, Ability text, attack cost, and damage; `CCC Land Crush 90` was cross-checked against Limitless before coding
+- Updated: `mix brock.cards.coverage` now reports one fewer `generic_damage_only` behavior family across Alakazam/Dudunsparce 27147 and Lopunny Dudunsparce 27514
+- Verified: focused manifest/registry smoke check, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | TWM Drakloak Plain-Damage Attack Behavior
 - Added: Drakloak `TWM-129` now has a TWM DSL manifest entry and registry overlay for `Dragon Headbutt`, explicitly marking the attack as exact plain-damage behavior instead of generic damage
 - Preserved: cached TCGdex metadata remains the source of truth for static Pokémon metadata, attack cost, and damage; `RP Dragon Headbutt 70` was cross-checked against the committed TCGdex cache before coding
