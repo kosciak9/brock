@@ -460,6 +460,12 @@ defmodule Brock.Tcg.Sim.CardRegistry do
       }
     },
     "DRI-168" => %{name: "Sacred Ash", supertype: :trainer, trainer_type: :item},
+    "DRI-178" => %{
+      name: "Team Rocket's Transceiver",
+      supertype: :trainer,
+      trainer_type: :item,
+      effect: %{type: :search_team_rocket_supporter_to_hand}
+    },
     "TWM-150" => %{name: "Handheld Fan", supertype: :trainer, trainer_type: :tool},
     "ASC-181" => %{name: "Air Balloon", supertype: :trainer, trainer_type: :tool},
     "MEG-117" => %{name: "Forest of Vitality", supertype: :trainer, trainer_type: :stadium},

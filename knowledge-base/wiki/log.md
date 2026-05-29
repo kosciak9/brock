@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Team Rocket's Transceiver Item Behavior
+- Added: Team Rocket's Transceiver `DRI-178` now has a DSL card-effect manifest entry and an executable reducer action that can reveal a Supporter with "Team Rocket" in its name from the player's deck and put it into hand
+- Preserved: target eligibility uses cached TCGdex static facts, so the search can find metadata-cached Team Rocket Supporters before those Supporters have executable behavior overlays
+- Updated: `mix brock.cards.coverage` now reports Team Rocket's Transceiver as implemented for Rocket's Mewtwo 27459, reducing imported-deck `behavior_missing` card count by one
+- Verified: focused reducer smoke check, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Bug Catching Set Item Behavior
 - Added: Bug Catching Set `TWM-143` now has a DSL card-effect manifest entry and an executable reducer action that can reveal up to two valid cards from the top 7 cards of the player's deck and put them into hand
 - Preserved: target eligibility uses cached TCGdex static facts for `{G}` Pokémon and Basic `{G}` Energy, so the search can find metadata-cached imported-deck cards before those cards have executable behavior overlays

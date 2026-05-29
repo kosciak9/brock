@@ -688,6 +688,28 @@ defmodule Brock.Tcg.Sim.Engine do
   end
 
   defp reduce(state, %Action{
+         type: :team_rockets_transceiver,
+         player_id: player_id,
+         params: %{instance_id: transceiver_id} = params
+       }) do
+    target_id = Map.get(params, :target_id)
+
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, transceiver} <- find_in_player_zone(state, player_id, :hand, transceiver_id),
+         :ok <- require_item_cards_playable(state, player_id),
+         :ok <- require_card_id(transceiver, "DRI-178"),
+         {:ok, target} <- optional_deck_card(state, player_id, target_id),
+         :ok <- require_optional_team_rocket_supporter_target(target),
+         {:ok, state} <- discard_card_from_hand(state, player_id, transceiver, %{}) do
+      case target do
+        nil -> {:ok, state}
+        target -> move_deck_card_to_hand(state, player_id, target)
+      end
+    end
+  end
+
+  defp reduce(state, %Action{
          type: :dawn,
          player_id: player_id,
          params: %{
@@ -3151,6 +3173,29 @@ defmodule Brock.Tcg.Sim.Engine do
 
   defp require_bug_catching_set_target(metadata),
     do: {:error, {:invalid_bug_catching_set_target, metadata.id}}
+
+  defp require_optional_team_rocket_supporter_target(nil), do: :ok
+
+  defp require_optional_team_rocket_supporter_target(target) do
+    with {:ok, metadata} <- Metadata.fetch(target.card_id) do
+      require_team_rocket_supporter_target(metadata)
+    end
+  end
+
+  defp require_team_rocket_supporter_target(%Metadata{
+         category: :trainer,
+         trainer_type: :supporter,
+         name: name
+       }) do
+    if String.contains?(name, "Team Rocket") do
+      :ok
+    else
+      {:error, {:invalid_team_rockets_transceiver_target, name}}
+    end
+  end
+
+  defp require_team_rocket_supporter_target(metadata),
+    do: {:error, {:invalid_team_rockets_transceiver_target, metadata.id}}
 
   defp require_evolved_this_turn(%{turn_number: turn_number}, %{turn_entered_play: turn_number}),
     do: :ok
