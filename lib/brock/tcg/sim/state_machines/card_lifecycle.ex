@@ -37,7 +37,12 @@ defmodule Brock.Tcg.Sim.StateMachines.CardLifecycle do
     },
     attached: %{discard: :discarded, return_to_hand: :in_hand, shuffle_into_deck: :in_deck},
     in_stadium: %{discard: :discarded},
-    discarded: %{recover_to_hand: :in_hand, shuffle_into_deck: :in_deck, lost_zone: :lost_zone},
+    discarded: %{
+      attach: :attached,
+      recover_to_hand: :in_hand,
+      shuffle_into_deck: :in_deck,
+      lost_zone: :lost_zone
+    },
     prized: %{take_prize: :in_hand},
     lost_zone: %{}
   }

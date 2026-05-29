@@ -49,6 +49,7 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
 
   @implemented_effect_types MapSet.new([
                               :active_damage_counters_per_hand_card,
+                              :attach_basic_energy_from_discard_to_self,
                               :bench_basic_psychic_from_deck_when_attached_to_psychic,
                               :bonus_attack_damage_to_pokemon_ex_if_attacker_has_no_rule_box,
                               :bonus_damage_if_defender_pokemon_ex,
@@ -58,6 +59,7 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
                               :confuse_defender_active,
                               :damage_per_own_basic_pokemon_in_play,
                               :damage_one_opponent_pokemon,
+                              :damage_per_own_team_rocket_pokemon_in_play,
                               :draw_if_own_pokemon_knocked_out_last_turn,
                               :draw_cards_if_damaged_as_active_by_attack,
                               :draw_then_shuffle_self_into_deck,

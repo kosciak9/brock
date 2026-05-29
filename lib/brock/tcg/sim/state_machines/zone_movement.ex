@@ -9,7 +9,7 @@ defmodule Brock.Tcg.Sim.StateMachines.ZoneMovement do
     deck: [:hand, :prizes, :discard, :bench, :active],
     hand: [:deck, :discard, :bench, :active, :attached, :stadium],
     prizes: [:hand],
-    discard: [:hand, :deck, :lost_zone],
+    discard: [:hand, :deck, :lost_zone, :attached],
     active: [:discard, :hand, :deck, :bench],
     bench: [:discard, :hand, :deck, :active],
     attached: [:discard, :hand, :deck],

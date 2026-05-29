@@ -1229,6 +1229,31 @@ defmodule Brock.Tcg.Sim.Engine do
     end
   end
 
+  defp reduce(state, %Action{
+         type: :use_ability,
+         player_id: player_id,
+         params: %{source_id: source_id, ability_id: :charging_up, target_id: target_id}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, source} <- find_in_play(state, player_id, source_id),
+         {:ok, _ability} <- require_ability(state, source, :charging_up),
+         {:ok, player} <- fetch_player(state, player_id),
+         :ok <- require_marker_available(player, {:ability_used, source_id, :charging_up}),
+         {:ok, target} <- find_in_player_zone(state, player_id, :discard, target_id),
+         {:ok, target_metadata} <- CardRegistry.fetch(target.card_id),
+         :ok <- require_basic_energy(target_metadata),
+         {:ok, state} <- attach_discard_energy_to_pokemon(state, player_id, target, source),
+         {:ok, player} <- fetch_player(state, player_id) do
+      player = %{
+        player
+        | markers: MapSet.put(player.markers, {:ability_used, source_id, :charging_up})
+      }
+
+      {:ok, put_player(state, player)}
+    end
+  end
+
   defp reduce(state, %Action{type: :draw_cards, player_id: player_id, params: %{count: count}})
        when is_integer(count) and count >= 0 do
     with :ok <- require_active_player(state, player_id),
@@ -1606,6 +1631,22 @@ defmodule Brock.Tcg.Sim.Engine do
         player
         |> replace_in_play(updated_target)
         |> Map.update!(:deck, &reject_instance(&1, energy.instance_id))
+
+      {:ok, put_player(state, player)}
+    end
+  end
+
+  defp attach_discard_energy_to_pokemon(state, player_id, energy, target) do
+    with {:ok, player} <- fetch_player(state, player_id),
+         {:ok, :attached} <- ZoneMovement.transition(:discard, :attached),
+         {:ok, :attached} <- CardLifecycle.transition(energy.lifecycle, :attach) do
+      moved_energy = %{energy | zone: :attached, lifecycle: :attached}
+      updated_target = %{target | attachments: [moved_energy | target.attachments]}
+
+      player =
+        player
+        |> replace_in_play(updated_target)
+        |> Map.update!(:discard, &reject_instance(&1, energy.instance_id))
 
       {:ok, put_player(state, player)}
     end
@@ -2487,6 +2528,18 @@ defmodule Brock.Tcg.Sim.Engine do
     basic_pokemon_in_play_count(state, player_id) * damage_per_pokemon
   end
 
+  defp base_attack_damage(state, %{
+         attack: %{
+           effect: %{
+             type: :damage_per_own_team_rocket_pokemon_in_play,
+             damage_per_pokemon: damage_per_pokemon
+           }
+         },
+         player_id: player_id
+       }) do
+    team_rocket_pokemon_in_play_count(state, player_id) * damage_per_pokemon
+  end
+
   defp base_attack_damage(_state, %{
          attack: %{
            damage: damage,
@@ -2514,6 +2567,23 @@ defmodule Brock.Tcg.Sim.Engine do
         |> Enum.count(fn pokemon ->
           match?(
             {:ok, %{supertype: :pokemon, stage: :basic}},
+            CardRegistry.fetch(pokemon.card_id)
+          )
+        end)
+
+      {:error, _reason} ->
+        0
+    end
+  end
+
+  defp team_rocket_pokemon_in_play_count(state, player_id) do
+    case fetch_player(state, player_id) do
+      {:ok, player} ->
+        player
+        |> in_play_pokemon()
+        |> Enum.count(fn pokemon ->
+          match?(
+            {:ok, %{supertype: :pokemon, name: "Team Rocket's " <> _}},
             CardRegistry.fetch(pokemon.card_id)
           )
         end)

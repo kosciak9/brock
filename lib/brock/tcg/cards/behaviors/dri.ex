@@ -15,6 +15,17 @@ defmodule Brock.Tcg.Cards.Behaviors.DRI do
     attack(:take_down, effect: %{type: :self_damage, damage: 10})
   end
 
+  card "DRI-020" do
+    ability(:charging_up,
+      effect: %{type: :attach_basic_energy_from_discard_to_self}
+    )
+
+    attack(:rocket_rush,
+      damage: 0,
+      effect: %{type: :damage_per_own_team_rocket_pokemon_in_play, damage_per_pokemon: 30}
+    )
+  end
+
   card "DRI-177" do
     card_effect(effect: %{type: :search_basic_team_rocket_pokemon_to_hand, max_targets: 3})
   end

@@ -42,6 +42,18 @@ defmodule Brock.Tcg.Sim.CardRegistry do
         take_down: %{effect: %{type: :self_damage, damage: 10}}
       }
     },
+    "DRI-020" => %{
+      evolves_from: "DRI-019",
+      abilities: %{
+        charging_up: %{effect: %{type: :attach_basic_energy_from_discard_to_self}}
+      },
+      attacks: %{
+        rocket_rush: %{
+          damage: 0,
+          effect: %{type: :damage_per_own_team_rocket_pokemon_in_play, damage_per_pokemon: 30}
+        }
+      }
+    },
     "TWM-014" => %{
       attacks: %{
         smash_kick: %{effect: nil},
