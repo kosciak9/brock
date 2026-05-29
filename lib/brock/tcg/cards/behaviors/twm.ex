@@ -8,6 +8,14 @@ defmodule Brock.Tcg.Cards.Behaviors.TWM do
     attack(:branch_poke, effect: nil)
   end
 
+  card "TWM-015" do
+    ability(:boom_boom_groove,
+      effect: %{type: :search_deck_for_card_to_hand_if_active_has_festival_lead}
+    )
+
+    attack(:beat, effect: nil)
+  end
+
   card "TWM-017" do
     attack(:tumbling_attack,
       damage: 10,

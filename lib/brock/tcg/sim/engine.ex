@@ -1079,6 +1079,32 @@ defmodule Brock.Tcg.Sim.Engine do
   defp reduce(state, %Action{
          type: :use_ability,
          player_id: player_id,
+         params: %{source_id: source_id, ability_id: :boom_boom_groove} = params
+       }) do
+    target_id = Map.get(params, :target_id)
+
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, source} <- find_in_play(state, player_id, source_id),
+         {:ok, _ability} <- require_ability(state, source, :boom_boom_groove),
+         {:ok, player} <- fetch_player(state, player_id),
+         :ok <- require_marker_available(player, {:ability_used, source_id, :boom_boom_groove}),
+         :ok <- require_active_pokemon_has_festival_lead_ability(state, player_id),
+         {:ok, target} <- optional_deck_card(state, player_id, target_id),
+         {:ok, state} <- move_optional_deck_card_to_hand(state, player_id, target),
+         {:ok, player} <- fetch_player(state, player_id) do
+      player = %{
+        player
+        | markers: MapSet.put(player.markers, {:ability_used, source_id, :boom_boom_groove})
+      }
+
+      {:ok, put_player(state, player)}
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :use_ability,
+         player_id: player_id,
          params: %{source_id: source_id, ability_id: :psychic_draw}
        }) do
     with :ok <- require_active_player(state, player_id),
@@ -1758,6 +1784,11 @@ defmodule Brock.Tcg.Sim.Engine do
       {:ok, put_player(state, player)}
     end
   end
+
+  defp move_optional_deck_card_to_hand(state, _player_id, nil), do: {:ok, state}
+
+  defp move_optional_deck_card_to_hand(state, player_id, card),
+    do: move_deck_card_to_hand(state, player_id, card)
 
   defp move_deck_cards_to_hand(state, _player_id, []), do: {:ok, state}
 
@@ -3600,6 +3631,23 @@ defmodule Brock.Tcg.Sim.Engine do
 
   defp require_top_two_choice(_player, chosen_id),
     do: {:error, {:chosen_card_not_in_top_two, chosen_id}}
+
+  defp require_active_pokemon_has_festival_lead_ability(state, player_id) do
+    with {:ok, player} <- fetch_player(state, player_id),
+         active when not is_nil(active) <- player.active,
+         {:ok, active_metadata} <- Metadata.fetch(active.card_id) do
+      active_metadata
+      |> Map.get(:abilities, %{})
+      |> Map.has_key?("festival_lead")
+      |> case do
+        true -> :ok
+        false -> {:error, {:active_pokemon_missing_ability, active.instance_id, :festival_lead}}
+      end
+    else
+      nil -> {:error, {:missing_active_pokemon, player_id}}
+      {:error, reason} -> {:error, reason}
+    end
+  end
 
   defp require_optional_card_in_top_deck(_state, _player_id, nil, _count, _action), do: :ok
 

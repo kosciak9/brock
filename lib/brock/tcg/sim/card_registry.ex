@@ -60,6 +60,17 @@ defmodule Brock.Tcg.Sim.CardRegistry do
         branch_poke: %{effect: nil}
       }
     },
+    "TWM-015" => %{
+      evolves_from: "TWM-014",
+      abilities: %{
+        boom_boom_groove: %{
+          effect: %{type: :search_deck_for_card_to_hand_if_active_has_festival_lead}
+        }
+      },
+      attacks: %{
+        beat: %{effect: nil}
+      }
+    },
     "TWM-017" => %{
       attacks: %{
         tumbling_attack: %{

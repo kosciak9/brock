@@ -80,6 +80,7 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
                               :search_pokemon_to_hand,
                               :search_pokemon_ex_to_hand,
                               :search_basic_team_rocket_pokemon_to_hand,
+                              :search_deck_for_card_to_hand_if_active_has_festival_lead,
                               :search_team_rocket_supporter_to_hand,
                               :search_supporter_when_benched_from_hand,
                               :self_damage,

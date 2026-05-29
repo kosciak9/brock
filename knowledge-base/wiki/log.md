@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Thwackey Conditional Search Ability Behavior
+- Added: Thwackey `TWM-015` now has a TWM DSL manifest entry and registry overlay for `Boom Boom Groove` and `Beat`, mapping the Ability to a once-per-turn deck search that requires the player's Active Pokémon to have the cached `Festival Lead` Ability and marking `GG Beat 50` as explicit plain-damage behavior
+- Preserved: static Pokémon metadata, Ability text, attack cost, and damage continue to come from the committed TCGdex cache; the `Boom Boom Groove` and `GG Beat 50` text were cross-checked against Limitless before coding
+- Updated: `mix brock.cards.coverage` now reports Thwackey as implemented for Festival Lead 27445, reducing imported-deck `behavior_missing` card count by one, behavior-family missing count by one, and generic-damage-only family count by one
+- Verified: focused registry/DSL and reducer smoke check, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Team Rocket's Spidops Ability and Variable-Damage Attack
 - Added: Team Rocket's Spidops `DRI-020` now has DRI DSL manifest entries and registry overlays for `Charging Up` and `Rocket Rush`, mapping the Ability to a once-per-turn Basic Energy attach from discard to itself and the attack to 30 damage per own Team Rocket's Pokémon in play
 - Preserved: static Pokémon metadata, Ability text, attack cost, and variable-damage text continue to come from the committed TCGdex cache; `Charging Up` and `GC Rocket Rush 30×` were cross-checked against Limitless before coding
