@@ -1001,14 +1001,16 @@ defmodule Brock.Tcg.Sim.Engine do
          {:ok, turn_lifecycle} <- TurnLifecycle.transition(state.turn_lifecycle, :resolve_attack) do
       case resolve_confusion_check(state, pending_attack) do
         {:ok, state} ->
+          damage = attack_damage(state, pending_attack)
+
           with {:ok, state} <-
                  damage_pokemon(
                    state,
                    pending_attack.target_player_id,
                    pending_attack.target_id,
-                   attack_damage(state, pending_attack)
+                   damage
                  ),
-               {:ok, state} <- apply_handheld_fan_if_needed(state, pending_attack),
+               {:ok, state} <- run_after_attack_damage_hooks(state, pending_attack, damage),
                {:ok, state} <-
                  resolve_knock_outs_after_damage(
                    state,
@@ -1584,69 +1586,6 @@ defmodule Brock.Tcg.Sim.Engine do
         |> Map.update!(:discard, &[discarded | &1])
 
       {:ok, put_player(state, player)}
-    end
-  end
-
-  defp move_attached_card(
-         state,
-         from_player_id,
-         from_pokemon,
-         attachment,
-         to_player_id,
-         to_pokemon
-       ) do
-    with {:ok, from_player} <- fetch_player(state, from_player_id),
-         {:ok, to_player} <- fetch_player(state, to_player_id) do
-      updated_from = %{
-        from_pokemon
-        | attachments: reject_instance(from_pokemon.attachments, attachment.instance_id)
-      }
-
-      updated_to = %{to_pokemon | attachments: [attachment | to_pokemon.attachments]}
-
-      state = put_player(state, replace_in_play(from_player, updated_from))
-      {:ok, put_player(state, replace_in_play(to_player, updated_to))}
-    end
-  end
-
-  defp apply_handheld_fan_if_needed(state, %{
-         attack: attack,
-         player_id: attacking_player_id,
-         attacker_id: attacker_id,
-         target_player_id: defending_player_id,
-         target_id: target_id,
-         params: params
-       }) do
-    with true <- Map.get(attack, :damage, 0) > 0,
-         {:ok, defender} <- find_in_play(state, defending_player_id, target_id),
-         %{card_id: "TWM-150"} <- defender.tool do
-      with {:ok, attacker} <- find_in_play(state, attacking_player_id, attacker_id),
-           attachment_id when not is_nil(attachment_id) <-
-             Map.get(params, :handheld_fan_attachment_id),
-           target_bench_id when not is_nil(target_bench_id) <-
-             Map.get(params, :handheld_fan_target_id),
-           {:ok, attachment} <- find_attachment(attacker, attachment_id),
-           {:ok, attachment_metadata} <- CardRegistry.fetch(attachment.card_id),
-           :ok <- require_energy(attachment_metadata),
-           {:ok, bench_target} <-
-             find_in_player_zone(state, defending_player_id, :bench, target_bench_id) do
-        move_attached_card(
-          state,
-          attacking_player_id,
-          attacker,
-          attachment,
-          defending_player_id,
-          bench_target
-        )
-      else
-        nil -> {:error, :handheld_fan_requires_energy_and_bench_target}
-        {:error, reason} -> {:error, reason}
-      end
-    else
-      false -> {:ok, state}
-      {:ok, _defender_without_fan} -> {:ok, state}
-      nil -> {:ok, state}
-      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -2227,6 +2166,25 @@ defmodule Brock.Tcg.Sim.Engine do
   end
 
   defp resolve_attack_effect(state, _pending_attack), do: {:ok, state}
+
+  defp run_after_attack_damage_hooks(state, pending_attack, damage) do
+    context = %{
+      source: :attack,
+      attack: pending_attack.attack,
+      attacking_player_id: pending_attack.player_id,
+      attacker_id: pending_attack.attacker_id,
+      target_player_id: pending_attack.target_player_id,
+      target_id: pending_attack.target_id,
+      target_zone: :active,
+      damage: damage,
+      params: pending_attack.params
+    }
+
+    case Hooks.run(state, :after_damage, context) do
+      {:ok, state} -> {:ok, state}
+      {:halt, reason} -> {:error, reason}
+    end
+  end
 
   defp damage_bench_pokemon_from_attack_effect(
          state,

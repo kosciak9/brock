@@ -298,6 +298,7 @@ Cards may exist as `metadata_cached` before their deck is supported. This is exp
 - Migrated Budew `Itchy Pollen` Item-card prevention into the `:before_play_trainer` hook path while preserving existing reducer error behavior.
 - Migrated Team Rocket's Watchtower Colorless Ability prevention into the `:before_ability` hook path while preserving existing reducer error behavior.
 - Migrated Rabsca `Spherical Shield` opponent attack-effect bench damage prevention into the `:before_damage` hook path while preserving the existing Phantom Dive prevention behavior.
+- Migrated Handheld Fan attack-triggered Energy movement into the `:after_damage` hook path while preserving existing declared-attack resolution behavior.
 - Add the first hook system.
 - Migrate hook-sensitive current effects one by one.
 - Avoid card-specific checks embedded in generic reducers.

@@ -7,6 +7,8 @@ defmodule Brock.Tcg.Sim.Hooks do
   is an error or a legal prevention/no-op for the active phase.
   """
 
+  alias Brock.Tcg.Sim.CardRegistry
+
   def run(state, :before_play_trainer, context) do
     with {:ok, state} <- prevent_item_if_locked(state, context),
          {:ok, state} <- prevent_ace_spec_if_nullified(state, context) do
@@ -26,7 +28,62 @@ defmodule Brock.Tcg.Sim.Hooks do
     end
   end
 
+  def run(state, :after_damage, context) do
+    with {:ok, state} <- move_attack_energy_if_handheld_fan_active(state, context) do
+      {:ok, state}
+    end
+  end
+
   def run(state, _phase, _context), do: {:ok, state}
+
+  defp move_attack_energy_if_handheld_fan_active(
+         state,
+         %{
+           source: :attack,
+           attack: attack,
+           attacking_player_id: attacking_player_id,
+           attacker_id: attacker_id,
+           target_player_id: defending_player_id,
+           target_id: target_id,
+           target_zone: :active,
+           params: params
+         }
+       ) do
+    with true <- Map.get(attack, :damage, 0) > 0,
+         {:ok, defender} <- find_in_play(state, defending_player_id, target_id),
+         %{card_id: "TWM-150"} <- defender.tool do
+      with {:ok, attacker} <- find_in_play(state, attacking_player_id, attacker_id),
+           attachment_id when not is_nil(attachment_id) <-
+             Map.get(params, :handheld_fan_attachment_id),
+           target_bench_id when not is_nil(target_bench_id) <-
+             Map.get(params, :handheld_fan_target_id),
+           {:ok, attachment} <- find_attachment(attacker, attachment_id),
+           {:ok, attachment_metadata} <- CardRegistry.fetch(attachment.card_id),
+           :ok <- require_energy(attachment_metadata),
+           {:ok, bench_target} <-
+             find_in_player_zone(state, defending_player_id, :bench, target_bench_id) do
+        move_attached_card(
+          state,
+          attacking_player_id,
+          attacker,
+          attachment,
+          defending_player_id,
+          bench_target
+        )
+      else
+        nil -> {:halt, :handheld_fan_requires_energy_and_bench_target}
+        {:error, reason} -> {:halt, reason}
+      end
+    else
+      false -> {:ok, state}
+      {:ok, _defender_without_fan} -> {:ok, state}
+      nil -> {:ok, state}
+      {:error, reason} -> {:halt, reason}
+      _other_tool -> {:ok, state}
+    end
+  end
+
+  defp move_attack_energy_if_handheld_fan_active(state, _context), do: {:ok, state}
 
   defp prevent_bench_attack_damage_if_spherical_shield(
          state,
@@ -109,6 +166,89 @@ defmodule Brock.Tcg.Sim.Hooks do
       :error -> {:error, {:unknown_player, player_id}}
     end
   end
+
+  defp find_in_player_zone(state, player_id, zone, instance_id) do
+    with {:ok, player} <- fetch_player(state, player_id) do
+      player
+      |> Map.fetch!(zone)
+      |> Enum.find(&(&1.instance_id == instance_id))
+      |> case do
+        nil -> {:error, {:card_not_found, player_id, zone, instance_id}}
+        card -> {:ok, card}
+      end
+    end
+  end
+
+  defp find_in_play(state, player_id, instance_id) do
+    with {:ok, player} <- fetch_player(state, player_id) do
+      player
+      |> in_play_cards()
+      |> Enum.find(&(&1.instance_id == instance_id))
+      |> case do
+        nil -> {:error, {:pokemon_not_in_play, player_id, instance_id}}
+        card -> {:ok, card}
+      end
+    end
+  end
+
+  defp find_attachment(target, attachment_id) do
+    target.attachments
+    |> Enum.find(&(&1.instance_id == attachment_id))
+    |> case do
+      nil -> {:error, {:attachment_not_found, target.instance_id, attachment_id}}
+      attachment -> {:ok, attachment}
+    end
+  end
+
+  defp move_attached_card(
+         state,
+         from_player_id,
+         from_pokemon,
+         attachment,
+         to_player_id,
+         to_pokemon
+       ) do
+    with {:ok, from_player} <- fetch_player(state, from_player_id),
+         {:ok, to_player} <- fetch_player(state, to_player_id) do
+      updated_from = %{
+        from_pokemon
+        | attachments: reject_instance(from_pokemon.attachments, attachment.instance_id)
+      }
+
+      updated_to = %{to_pokemon | attachments: [attachment | to_pokemon.attachments]}
+
+      state = put_player(state, replace_in_play(from_player, updated_from))
+      {:ok, put_player(state, replace_in_play(to_player, updated_to))}
+    end
+  end
+
+  defp replace_in_play(player, card) do
+    cond do
+      player.active && player.active.instance_id == card.instance_id ->
+        %{player | active: card}
+
+      Enum.any?(player.bench, &(&1.instance_id == card.instance_id)) ->
+        %{
+          player
+          | bench:
+              Enum.map(player.bench, fn bench_card ->
+                if bench_card.instance_id == card.instance_id, do: card, else: bench_card
+              end)
+        }
+
+      true ->
+        player
+    end
+  end
+
+  defp put_player(state, player),
+    do: %{state | players: Map.put(state.players, player.id, player)}
+
+  defp require_energy(%{supertype: :energy}), do: :ok
+  defp require_energy(metadata), do: {:error, {:not_energy, metadata}}
+
+  defp reject_instance(cards, instance_id),
+    do: Enum.reject(cards, &(&1.instance_id == instance_id))
 
   defp in_play_cards(player), do: [player.active | player.bench] |> Enum.reject(&is_nil/1)
 

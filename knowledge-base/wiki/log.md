@@ -1,5 +1,10 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Handheld Fan After-Damage Hook
+- Added: `Brock.Tcg.Sim.Hooks` now handles Handheld Fan `TWM-150` attack-triggered Energy movement through the `:after_damage` phase
+- Migrated: declared attack resolution now routes post-damage hook checks through `Brock.Tcg.Sim.Hooks` instead of using the engine-local Handheld Fan helper
+- Verified: targeted Handheld Fan scenario, `mix test test/brock/tcg/sim`, `mix brock.cards.coverage`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Rabsca Before-Damage Hook
 - Added: `Brock.Tcg.Sim.Hooks` now handles Rabsca `Spherical Shield` opponent attack-effect bench damage prevention through the `:before_damage` phase
 - Migrated: Phantom Dive bench damage now routes through the hook path instead of using a Rabsca-specific engine helper
