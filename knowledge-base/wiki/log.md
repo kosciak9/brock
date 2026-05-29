@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Team Rocket's Archer Supporter Behavior
+- Added: Team Rocket's Archer `DRI-170` now has a DRI DSL manifest entry and registry overlay, mapping the Supporter to a reducer action that requires a Team Rocket's Pokémon KO during the opponent's last turn, shuffles both players' hands into their decks, then draws 5 cards for the player and 3 for the opponent
+- Preserved: static Supporter metadata and printed text continue to come from the committed TCGdex cache; the exact effect text was cross-checked against Limitless before coding
+- Updated: `mix brock.cards.coverage` now reports Team Rocket's Archer as implemented for Rocket's Mewtwo 27459, reducing behavior-missing cards to 25 and behavior-missing families to 40
+- Verified: focused Archer runtime smoke, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Team Rocket's Giovanni Supporter Behavior
 - Added: Team Rocket's Giovanni `DRI-174` now has a DRI DSL manifest entry and registry overlay, mapping the Supporter to a reducer action that switches the player's Active Team Rocket's Pokémon with a chosen Benched Team Rocket's Pokémon, then switches a chosen opponent Benched Pokémon into the Active Spot
 - Preserved: static Supporter metadata and printed text continue to come from the committed TCGdex cache; the exact effect text was cross-checked against Limitless before coding

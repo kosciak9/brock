@@ -345,6 +345,7 @@ Cards may exist as `metadata_cached` before their deck is supported. This is exp
 - Implemented Dunsparce `TEF-128` `Dig` as a coin-gated next-turn attack damage/effect prevention behavior slice, with a TEF DSL manifest entry, registry overlay, and hook-backed prevention marker while keeping static attack cost, damage, and text in the TCGdex cache.
 - Implemented Counter Gain `SSP-169` as an imported-deck Tool attack-cost reduction behavior slice, with an SSP DSL manifest entry, registry overlay, and attack-cost validation that removes one Colorless requirement only while the attached Pokémon's player has more Prize cards remaining than the opponent.
 - Implemented Team Rocket's Giovanni `DRI-174` as an imported-deck Supporter switch/gust behavior slice, with a DRI DSL manifest entry, registry overlay, and reducer action that requires switching the player's Active Team Rocket's Pokémon with a Benched Team Rocket's Pokémon before gusting an opponent's Benched Pokémon.
+- Implemented Team Rocket's Archer `DRI-170` as an imported-deck Supporter comeback-hand-refresh behavior slice, with a DRI DSL manifest entry, registry overlay, Team Rocket-specific last-turn KO eligibility marker, and reducer action that shuffles both players' hands into their decks before drawing 5 cards for the player and 3 for the opponent.
 - Implement missing behavior families for the four imported meta decks.
 - Use coverage to divide work by behavior family and ruling risk.
 

@@ -564,6 +564,13 @@ defmodule Brock.Tcg.Sim.CardRegistry do
       }
     },
     "DRI-168" => %{name: "Sacred Ash", supertype: :trainer, trainer_type: :item},
+    "DRI-170" => %{
+      effect: %{
+        type: :shuffle_each_player_hand_into_deck_then_draw_if_team_rocket_knocked_out,
+        player_draw: 5,
+        opponent_draw: 3
+      }
+    },
     "DRI-171" => %{
       effect: %{
         type: :draw_until_hand_size_or_more_if_all_own_pokemon_are_team_rocket,

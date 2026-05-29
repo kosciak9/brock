@@ -21,6 +21,7 @@ defmodule Brock.Tcg.Sim.PlayerState do
     item_cards_locked?: false,
     energy_attached?: false,
     retreated?: false,
-    pokemon_knocked_out_during_opponents_last_turn?: false
+    pokemon_knocked_out_during_opponents_last_turn?: false,
+    team_rocket_pokemon_knocked_out_during_opponents_last_turn?: false
   ]
 end

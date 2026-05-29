@@ -26,6 +26,16 @@ defmodule Brock.Tcg.Cards.Behaviors.DRI do
     )
   end
 
+  card "DRI-170" do
+    card_effect(
+      effect: %{
+        type: :shuffle_each_player_hand_into_deck_then_draw_if_team_rocket_knocked_out,
+        player_draw: 5,
+        opponent_draw: 3
+      }
+    )
+  end
+
   card "DRI-171" do
     card_effect(
       effect: %{

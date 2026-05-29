@@ -762,6 +762,28 @@ defmodule Brock.Tcg.Sim.Engine do
   end
 
   defp reduce(state, %Action{
+         type: :team_rockets_archer,
+         player_id: player_id,
+         params: %{instance_id: archer_id}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, player} <- fetch_player(state, player_id),
+         :ok <- require_team_rocket_pokemon_knocked_out_during_opponents_last_turn(player),
+         {:ok, archer} <- find_in_player_zone(state, player_id, :hand, archer_id),
+         {:ok, archer_metadata} <- CardRegistry.fetch(archer.card_id),
+         :ok <- require_card_id(archer, "DRI-170"),
+         :ok <- require_supporter_available_if_supporter(archer_metadata, state, player_id),
+         {:ok, opponent_id} <- opponent_id(state, player_id),
+         {:ok, state} <- discard_card_from_hand(state, player_id, archer, archer_metadata),
+         {:ok, state} <- shuffle_hand_into_deck(state, player_id),
+         {:ok, state} <- shuffle_hand_into_deck(state, opponent_id),
+         {:ok, state} <- draw_cards(state, player_id, archer_metadata.effect.player_draw) do
+      draw_cards(state, opponent_id, archer_metadata.effect.opponent_draw)
+    end
+  end
+
+  defp reduce(state, %Action{
          type: :team_rockets_giovanni,
          player_id: player_id,
          params: %{instance_id: giovanni_id, bench_id: bench_id, target_id: target_id}
@@ -1527,6 +1549,7 @@ defmodule Brock.Tcg.Sim.Engine do
       player = %{
         player
         | pokemon_knocked_out_during_opponents_last_turn?: false,
+          team_rocket_pokemon_knocked_out_during_opponents_last_turn?: false,
           item_cards_locked?: false
       }
 
@@ -2220,7 +2243,11 @@ defmodule Brock.Tcg.Sim.Engine do
       if target.damage >= Map.fetch!(metadata, :hp) do
         state
         |> knock_out_pokemon(defending_player_id, target)
-        |> mark_knock_out_for_unfair_stamp(attacking_player_id, defending_player_id)
+        |> mark_knock_out_for_previous_turn_effects(
+          attacking_player_id,
+          defending_player_id,
+          target
+        )
         |> award_prizes(
           attacking_player_id,
           defending_player_id,
@@ -2256,25 +2283,40 @@ defmodule Brock.Tcg.Sim.Engine do
     end
   end
 
-  defp mark_knock_out_for_unfair_stamp(
+  defp mark_knock_out_for_previous_turn_effects(
          {:error, reason},
          _attacking_player_id,
-         _defending_player_id
+         _defending_player_id,
+         _target
        ),
        do: {:error, reason}
 
-  defp mark_knock_out_for_unfair_stamp({:ok, state}, same_player_id, same_player_id),
-    do: {:ok, state}
+  defp mark_knock_out_for_previous_turn_effects(
+         {:ok, state},
+         same_player_id,
+         same_player_id,
+         _target
+       ),
+       do: {:ok, state}
 
-  defp mark_knock_out_for_unfair_stamp({:ok, state}, attacking_player_id, defending_player_id) do
+  defp mark_knock_out_for_previous_turn_effects(
+         {:ok, state},
+         attacking_player_id,
+         defending_player_id,
+         target
+       ) do
     if state.active_player == attacking_player_id do
-      update_in(
-        state.players[defending_player_id].pokemon_knocked_out_during_opponents_last_turn?,
-        fn _ ->
-          true
-        end
-      )
-      |> then(&{:ok, &1})
+      defending_player = state.players[defending_player_id]
+
+      defending_player = %{
+        defending_player
+        | pokemon_knocked_out_during_opponents_last_turn?: true,
+          team_rocket_pokemon_knocked_out_during_opponents_last_turn?:
+            defending_player.team_rocket_pokemon_knocked_out_during_opponents_last_turn? ||
+              team_rocket_pokemon?(target)
+      }
+
+      {:ok, put_player(state, defending_player)}
     else
       {:ok, state}
     end
@@ -3744,6 +3786,14 @@ defmodule Brock.Tcg.Sim.Engine do
 
   defp require_pokemon_knocked_out_during_opponents_last_turn(_player),
     do: {:error, :unfair_stamp_requires_ko_during_opponents_last_turn}
+
+  defp require_team_rocket_pokemon_knocked_out_during_opponents_last_turn(%{
+         team_rocket_pokemon_knocked_out_during_opponents_last_turn?: true
+       }),
+       do: :ok
+
+  defp require_team_rocket_pokemon_knocked_out_during_opponents_last_turn(_player),
+    do: {:error, :team_rockets_archer_requires_team_rocket_ko_during_opponents_last_turn}
 
   defp require_different_energy_types(_hand_energy_metadata, nil), do: :ok
 
