@@ -343,6 +343,7 @@ Cards may exist as `metadata_cached` before their deck is supported. This is exp
 - Ported Dragapult ex `TWM-130` `Jet Headbutt` to an explicit TWM DSL manifest entry and registry overlay, keeping cached attack cost and damage as the static source of truth while reducing Dragapult 27431 generic-damage coverage.
 - Ported Dunsparce `TEF-128` `Gnaw` to an explicit TEF DSL manifest entry and registry overlay, keeping cached attack cost and damage as the static source of truth while eliminating the last generic-damage-only coverage family for that attack.
 - Implemented Dunsparce `TEF-128` `Dig` as a coin-gated next-turn attack damage/effect prevention behavior slice, with a TEF DSL manifest entry, registry overlay, and hook-backed prevention marker while keeping static attack cost, damage, and text in the TCGdex cache.
+- Implemented Counter Gain `SSP-169` as an imported-deck Tool attack-cost reduction behavior slice, with an SSP DSL manifest entry, registry overlay, and attack-cost validation that removes one Colorless requirement only while the attached Pokémon's player has more Prize cards remaining than the opponent.
 - Implement missing behavior families for the four imported meta decks.
 - Use coverage to divide work by behavior family and ruling risk.
 

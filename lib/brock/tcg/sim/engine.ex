@@ -1345,7 +1345,7 @@ defmodule Brock.Tcg.Sim.Engine do
          :ok <- require_can_attack(player.active),
          :ok <- require_first_player_can_attack(state, player_id),
          {:ok, attack} <- CardRegistry.fetch_attack(player.active.card_id, attack_id),
-         :ok <- require_attack_cost(player.active, attack),
+         :ok <- require_attack_cost(state, player_id, player.active, attack),
          :ok <- require_confusion_result(player.active, params),
          {:ok, defender_id} <- opponent_id(state, player_id),
          {:ok, defender} <- fetch_player(state, defender_id),
@@ -3180,7 +3180,7 @@ defmodule Brock.Tcg.Sim.Engine do
 
   defp require_attack_effect_params(_attack, _params, _defender), do: :ok
 
-  defp require_attack_cost(attacker, attack) do
+  defp require_attack_cost(state, player_id, attacker, attack) do
     provided_types =
       attacker.attachments
       |> Enum.flat_map(fn attachment ->
@@ -3189,12 +3189,35 @@ defmodule Brock.Tcg.Sim.Engine do
         |> Map.get(:provides, [])
       end)
 
-    if can_pay_cost?(attack.cost, provided_types) do
-      :ok
-    else
-      {:error, {:cannot_pay_attack_cost, attack.id, attack.cost, provided_types}}
+    with {:ok, cost} <- effective_attack_cost(state, player_id, attacker, attack.cost) do
+      if can_pay_cost?(cost, provided_types) do
+        :ok
+      else
+        {:error, {:cannot_pay_attack_cost, attack.id, cost, provided_types}}
+      end
     end
   end
+
+  defp effective_attack_cost(state, player_id, attacker, cost) do
+    with {:ok, player} <- fetch_player(state, player_id),
+         {:ok, opponent_id} <- opponent_id(state, player_id),
+         {:ok, opponent} <- fetch_player(state, opponent_id) do
+      cost =
+        if counter_gain_active?(player, opponent, attacker) do
+          drop_colorless_cost(cost, 1)
+        else
+          cost
+        end
+
+      {:ok, cost}
+    end
+  end
+
+  defp counter_gain_active?(player, opponent, %{tool: %{card_id: "SSP-169"}}) do
+    length(player.prizes) > length(opponent.prizes)
+  end
+
+  defp counter_gain_active?(_player, _opponent, _attacker), do: false
 
   defp require_confusion_result(%{status: :confused}, %{confusion_result: result})
        when result in [:heads, :tails],

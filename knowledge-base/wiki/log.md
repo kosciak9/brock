@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Counter Gain Tool Attack-Cost Behavior
+- Added: Counter Gain `SSP-169` now has an SSP DSL manifest entry and registry overlay, mapping the Tool to attack-cost validation that removes one `{C}` requirement from attacks used by the attached Pokémon only while that Pokémon's player has more Prize cards remaining than the opponent
+- Preserved: static Tool metadata and printed effect text continue to come from the committed TCGdex cache; the overlay declares only executable behavior and the reducer uses current Prize counts at attack declaration time
+- Updated: `mix brock.cards.coverage` now reports Counter Gain as implemented for Rocket's Mewtwo 27459, reducing behavior-missing cards to 27 and behavior-missing families to 42
+- Verified: focused Counter Gain runtime smoke, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | TEF Dunsparce Dig Prevention Attack Behavior
 - Added: Dunsparce `TEF-128` now has a TEF DSL manifest entry and registry overlay for `Dig`, mapping heads to a next-turn marker that prevents opponent attack damage and attack effects done to that Pokémon
 - Preserved: cached TCGdex metadata remains the source of truth for static Pokémon metadata, attack cost, damage, and raw attack text; `CC Dig 30` and its prevention text were cross-checked against the committed cache and Limitless before coding

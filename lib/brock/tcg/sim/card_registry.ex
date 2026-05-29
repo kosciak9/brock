@@ -597,6 +597,9 @@ defmodule Brock.Tcg.Sim.CardRegistry do
     "TWM-158" => %{
       effect: %{type: :draw_cards_if_damaged_as_active_by_attack, count: 2}
     },
+    "SSP-169" => %{
+      effect: %{type: :reduce_attack_cost_by_colorless_if_more_prizes_remaining, amount: 1}
+    },
     "ASC-181" => %{name: "Air Balloon", supertype: :trainer, trainer_type: :tool},
     "WHT-080" => %{
       effect: %{

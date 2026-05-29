@@ -18,6 +18,12 @@ defmodule Brock.Tcg.Cards.Behaviors.SSP do
     )
   end
 
+  card "SSP-169" do
+    card_effect(
+      effect: %{type: :reduce_attack_cost_by_colorless_if_more_prizes_remaining, amount: 1}
+    )
+  end
+
   card "SSP-170" do
     card_effect(effect: %{type: :search_pokemon_ex_to_hand, max_targets: 3})
   end
