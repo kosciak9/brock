@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Grookey Plain-Damage Attack Behavior
+- Added: Grookey `TWM-014` now has DSL attack manifest entries and registry overlays for `Smash Kick` and `Branch Poke`, explicitly marking both attacks as exact plain-damage behavior while keeping cost, damage, and static facts in the TCGdex cache
+- Preserved: cached TCGdex metadata remains the source of truth, and the attack text was cross-checked against Limitless before coding
+- Updated: `mix brock.cards.coverage` now reports Grookey as implemented for Festival Lead 27445, reducing imported-deck `generic_damage_only` card count by one
+- Verified: focused manifest/registry smoke checks, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Kieran Supporter Behavior
 - Added: Kieran `TWM-154` now has a DSL card-effect manifest entry and executable Supporter reducer choices for switching the player's Active Pokémon with a Benched Pokémon or granting +30 attack damage to the opponent's Active Pokémon ex/V for the turn
 - Preserved: static Supporter text and metadata continue to come from the committed TCGdex cache; the card text was cross-checked against Limitless before coding

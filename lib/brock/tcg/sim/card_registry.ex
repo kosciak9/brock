@@ -27,6 +27,12 @@ defmodule Brock.Tcg.Sim.CardRegistry do
   }
 
   @cards %{
+    "TWM-014" => %{
+      attacks: %{
+        smash_kick: %{effect: nil},
+        branch_poke: %{effect: nil}
+      }
+    },
     "TWM-128" => %{
       name: "Dreepy",
       supertype: :pokemon,
