@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | TWM Drakloak Plain-Damage Attack Behavior
+- Added: Drakloak `TWM-129` now has a TWM DSL manifest entry and registry overlay for `Dragon Headbutt`, explicitly marking the attack as exact plain-damage behavior instead of generic damage
+- Preserved: cached TCGdex metadata remains the source of truth for static Pokémon metadata, attack cost, and damage; `RP Dragon Headbutt 70` was cross-checked against the committed TCGdex cache before coding
+- Updated: `mix brock.cards.coverage` now reports one fewer `generic_damage_only` behavior family for Dragapult 27431
+- Verified: targeted registry test, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Team Rocket's Ariana Supporter Behavior
 - Added: Team Rocket's Ariana `DRI-171` now has a DRI DSL manifest entry and registry overlay, mapping the Supporter to a reducer action that draws until the player has 5 cards in hand, or 8 cards if all of their Pokémon in play are Team Rocket's Pokémon
 - Preserved: static Supporter metadata and printed text continue to come from the committed TCGdex cache; the effect text was cross-checked against Limitless before coding

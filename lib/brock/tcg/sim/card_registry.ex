@@ -128,7 +128,12 @@ defmodule Brock.Tcg.Sim.CardRegistry do
         }
       },
       attacks: %{
-        dragon_headbutt: %{name: "Dragon Headbutt", cost: [:fire, :psychic], damage: 70}
+        dragon_headbutt: %{
+          name: "Dragon Headbutt",
+          cost: [:fire, :psychic],
+          damage: 70,
+          effect: nil
+        }
       }
     },
     "TWM-130" => %{

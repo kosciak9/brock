@@ -46,6 +46,8 @@ defmodule Brock.Tcg.Cards.Behaviors.TWM do
     ability(:recon_directive,
       effect: %{type: :top_two_choose_one_to_hand_other_to_bottom}
     )
+
+    attack(:dragon_headbutt, effect: nil)
   end
 
   card "TWM-130" do
