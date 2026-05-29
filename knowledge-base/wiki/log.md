@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | SCR Applin Plain-Damage Attack Behavior
+- Added: Applin `SCR-012` now has a DSL attack manifest entry and registry overlay for `Spray Fluid`, explicitly marking the attack as exact plain-damage behavior while keeping cost, damage, and static facts in the TCGdex cache
+- Preserved: cached TCGdex metadata remains the source of truth, and the attack text was cross-checked against Limitless before coding
+- Updated: `mix brock.cards.coverage` now reports `SCR-012` as implemented for Festival Lead 27445, reducing imported-deck `generic_damage_only` card count by one
+- Verified: focused manifest/registry smoke check, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Grookey Plain-Damage Attack Behavior
 - Added: Grookey `TWM-014` now has DSL attack manifest entries and registry overlays for `Smash Kick` and `Branch Poke`, explicitly marking both attacks as exact plain-damage behavior while keeping cost, damage, and static facts in the TCGdex cache
 - Preserved: cached TCGdex metadata remains the source of truth, and the attack text was cross-checked against Limitless before coding

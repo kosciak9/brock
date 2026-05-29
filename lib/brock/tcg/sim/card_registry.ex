@@ -33,6 +33,11 @@ defmodule Brock.Tcg.Sim.CardRegistry do
         branch_poke: %{effect: nil}
       }
     },
+    "SCR-012" => %{
+      attacks: %{
+        spray_fluid: %{effect: nil}
+      }
+    },
     "TWM-128" => %{
       name: "Dreepy",
       supertype: :pokemon,
