@@ -27,6 +27,16 @@ defmodule Brock.Tcg.Sim.CardRegistry do
   }
 
   @cards %{
+    "DRI-010" => %{
+      abilities: %{
+        flower_curtain: %{
+          effect: %{type: :prevent_attack_damage_to_non_rule_box_bench}
+        }
+      },
+      attacks: %{
+        smash_kick: %{effect: nil}
+      }
+    },
     "DRI-019" => %{
       attacks: %{
         take_down: %{effect: %{type: :self_damage, damage: 10}}

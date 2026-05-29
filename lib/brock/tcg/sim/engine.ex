@@ -2533,6 +2533,10 @@ defmodule Brock.Tcg.Sim.Engine do
     end
   end
 
+  defp bench_target?(state, player_id, target_id) do
+    match?({:ok, _target}, find_in_player_zone(state, player_id, :bench, target_id))
+  end
+
   defp apply_weakness(damage, type, %{type: type, multiplier: multiplier}),
     do: damage * multiplier
 
@@ -2570,7 +2574,8 @@ defmodule Brock.Tcg.Sim.Engine do
           player_id,
           target_player_id,
           target_id,
-          counters * 10
+          counters * 10,
+          :damage_counters
         )
 
       case result do
@@ -2617,8 +2622,19 @@ defmodule Brock.Tcg.Sim.Engine do
          target_player_id: target_player_id,
          params: %{target_id: target_id}
        }) do
-    with {:ok, state} <- damage_pokemon(state, target_player_id, target_id, damage) do
-      resolve_knock_outs_after_damage(state, player_id, target_player_id, target_id)
+    if bench_target?(state, target_player_id, target_id) do
+      damage_bench_pokemon_from_attack_effect(
+        state,
+        player_id,
+        target_player_id,
+        target_id,
+        damage,
+        :damage
+      )
+    else
+      with {:ok, state} <- damage_pokemon(state, target_player_id, target_id, damage) do
+        resolve_knock_outs_after_damage(state, player_id, target_player_id, target_id)
+      end
     end
   end
 
@@ -2680,7 +2696,8 @@ defmodule Brock.Tcg.Sim.Engine do
          attacking_player_id,
          target_player_id,
          target_id,
-         damage
+         damage,
+         damage_kind
        ) do
     context = %{
       source: :attack_effect,
@@ -2688,7 +2705,8 @@ defmodule Brock.Tcg.Sim.Engine do
       target_player_id: target_player_id,
       target_id: target_id,
       target_zone: :bench,
-      damage: damage
+      damage: damage,
+      damage_kind: damage_kind
     }
 
     case Hooks.run(state, :before_damage, context) do

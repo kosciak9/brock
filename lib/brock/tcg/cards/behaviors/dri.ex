@@ -3,6 +3,14 @@ defmodule Brock.Tcg.Cards.Behaviors.DRI do
 
   use Brock.Tcg.Cards.DSL
 
+  card "DRI-010" do
+    ability(:flower_curtain,
+      effect: %{type: :prevent_attack_damage_to_non_rule_box_bench}
+    )
+
+    attack(:smash_kick, effect: nil)
+  end
+
   card "DRI-019" do
     attack(:take_down, effect: %{type: :self_damage, damage: 10})
   end

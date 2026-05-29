@@ -8,6 +8,7 @@ defmodule Brock.Tcg.Sim.Hooks do
   error or a legal prevention/no-op for the active phase.
   """
 
+  alias Brock.Tcg.Cards.Metadata
   alias Brock.Tcg.Sim.CardRegistry
   alias Brock.Tcg.Sim.StateMachines.CardLifecycle
   alias Brock.Tcg.Sim.StateMachines.ZoneMovement
@@ -42,7 +43,8 @@ defmodule Brock.Tcg.Sim.Hooks do
   end
 
   def run(state, :before_damage, context) do
-    with {:ok, state} <- prevent_bench_attack_damage_if_spherical_shield(state, context) do
+    with {:ok, state} <- prevent_bench_attack_damage_if_spherical_shield(state, context),
+         {:ok, state} <- prevent_bench_attack_damage_if_flower_curtain(state, context) do
       {:ok, state}
     end
   end
@@ -274,6 +276,32 @@ defmodule Brock.Tcg.Sim.Hooks do
   end
 
   defp prevent_bench_attack_damage_if_spherical_shield(state, _context), do: {:ok, state}
+
+  defp prevent_bench_attack_damage_if_flower_curtain(
+         state,
+         %{
+           source: :attack_effect,
+           attacking_player_id: attacking_player_id,
+           target_player_id: target_player_id,
+           target_id: target_id,
+           target_zone: :bench,
+           damage_kind: :damage
+         }
+       )
+       when attacking_player_id != target_player_id do
+    with true <- card_in_play?(state, target_player_id, "DRI-010"),
+         {:ok, target} <- find_in_play(state, target_player_id, target_id),
+         {:ok, target_metadata} <- Metadata.fetch(target.card_id),
+         false <- rule_box?(target_metadata) do
+      {:halt, {:damage_prevented_by_ability, "DRI-010", :flower_curtain}}
+    else
+      false -> {:ok, state}
+      true -> {:ok, state}
+      {:error, reason} -> {:halt, reason}
+    end
+  end
+
+  defp prevent_bench_attack_damage_if_flower_curtain(state, _context), do: {:ok, state}
 
   defp prevent_colorless_ability_if_watchtower(
          %{stadium: %{card_id: "DRI-180"}} = _state,

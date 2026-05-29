@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Shaymin Bench-Protection Ability Behavior
+- Added: Shaymin `DRI-010` now has a DSL Ability/attack manifest entry and registry overlays for `Flower Curtain` and `Smash Kick`, mapping `Flower Curtain` to a `:before_damage` hook that prevents attack damage to the player's non-rule-box Benched Pokémon while allowing damage-counter effects to continue
+- Preserved: static Pokémon metadata, Ability text, attack cost, and damage continue to come from the committed TCGdex cache; the Ability text was cross-checked against Limitless before coding
+- Updated: `mix brock.cards.coverage` now reports Shaymin as implemented for Festival Lead 27445, reducing imported-deck `behavior_missing` card count by one and imported-deck `generic_damage_only` family count by one
+- Verified: focused manifest/registry/hook smoke checks, `mix brock.cards.coverage`, and `mix test test/brock/tcg/sim` pass
+
 ## [2026-05-29] implementation | TWM Applin Search Attack Behavior
 - Added: Applin `TWM-126` now has DSL attack manifest entries and registry overlays for `Find a Friend` and `Rolling Tackle`, mapping `Find a Friend` to an executable deck Pokémon search-to-hand attack primitive and marking `Rolling Tackle` as exact plain-damage behavior while keeping static cost, damage, and printed text in the TCGdex cache
 - Preserved: cached TCGdex metadata remains the source of truth, and the attack text was cross-checked against Limitless before coding
