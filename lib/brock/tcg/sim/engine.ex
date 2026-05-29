@@ -3291,6 +3291,16 @@ defmodule Brock.Tcg.Sim.Engine do
   end
 
   defp resolve_attack_effect(state, %{
+         attack: %{effect: %{type: :discard_hand_then_draw, count: count}},
+         player_id: player_id
+       }) do
+    with {:ok, player} <- fetch_player(state, player_id),
+         {:ok, state} <- discard_hand_cards(state, player_id, player.hand) do
+      draw_cards(state, player_id, count)
+    end
+  end
+
+  defp resolve_attack_effect(state, %{
          attack: %{effect: %{type: :return_attacker_and_attached_to_hand}},
          player_id: player_id,
          attacker_id: attacker_id

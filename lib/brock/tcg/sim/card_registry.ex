@@ -444,6 +444,11 @@ defmodule Brock.Tcg.Sim.CardRegistry do
         ram: %{name: "Ram", cost: [:colorless, :colorless], damage: 20, effect: nil}
       }
     },
+    "TEF-123" => %{
+      attacks: %{
+        burst_roar: %{damage: 0, effect: %{type: :discard_hand_then_draw, count: 6}}
+      }
+    },
     "TEF-128" => %{
       attacks: %{
         gnaw: %{effect: nil},

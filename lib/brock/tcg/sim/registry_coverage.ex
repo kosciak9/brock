@@ -73,6 +73,7 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
                               :damage_only_if_stadium_in_play,
                               :damage_unaffected_by_effects_on_opponent_active,
                               :damage_per_own_team_rocket_pokemon_in_play,
+                              :discard_hand_then_draw,
                               :discard_3_then_search_item_tool_supporter_stadium_to_hand,
                               :draw_until_hand_size_or_more_if_all_own_pokemon_are_team_rocket,
                               :draw_if_own_pokemon_knocked_out_last_turn,

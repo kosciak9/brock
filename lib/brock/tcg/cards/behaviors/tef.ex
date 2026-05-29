@@ -13,6 +13,13 @@ defmodule Brock.Tcg.Cards.Behaviors.TEF do
     )
   end
 
+  card "TEF-123" do
+    attack(:burst_roar,
+      damage: 0,
+      effect: %{type: :discard_hand_then_draw, count: 6}
+    )
+  end
+
   card "TEF-128" do
     attack(:gnaw, effect: nil)
 

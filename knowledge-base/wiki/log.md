@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Raging Bolt ex Burst Roar Attack Behavior
+- Added: Raging Bolt ex `TEF-123` now has a TEF DSL manifest entry and registry overlay for `Burst Roar`, mapping the attack to discard the player's hand and draw 6 cards
+- Preserved: static Pokémon metadata, attack cost, and printed attack text continue to come from the committed TCGdex cache; the overlay declares only executable behavior for `Burst Roar`, while `Bellowing Thunder` remains intentionally behavior-missing
+- Updated: `mix brock.cards.coverage` now reports `TEF-123` as no longer unsupported for Raging Bolt Ogerpon 27599, with behavior-missing cards still at 17 and behavior-missing families reduced to 28
+- Verified: Tidewave project eval is unavailable for Brock validation because the connected app returned `Application.spec(:brock) == nil`; focused `mix run --no-start` runtime smoke for `Burst Roar`, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Team Rocket's Factory Stadium Draw Behavior
 - Added: Team Rocket's Factory `DRI-173` now has a DRI DSL manifest entry and registry overlay, mapping the Stadium to a once-per-turn draw action after the player has played a Supporter with "Team Rocket" in its name from hand that turn
 - Preserved: static Stadium metadata and printed effect text continue to come from the committed TCGdex cache; the overlay declares only executable draw behavior and the engine records the prerequisite with a per-turn marker when Team Rocket Supporters are discarded from hand
