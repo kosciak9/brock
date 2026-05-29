@@ -296,6 +296,7 @@ Cards may exist as `metadata_cached` before their deck is supported. This is exp
 - Added first hook runner, `Brock.Tcg.Sim.Hooks`, with a `:before_play_trainer` phase.
 - Migrated Genesect `ACE Nullifier` ACE SPEC prevention out of the engine reducer-specific check and into the `:before_play_trainer` hook path while preserving existing reducer error behavior.
 - Migrated Budew `Itchy Pollen` Item-card prevention into the `:before_play_trainer` hook path while preserving existing reducer error behavior.
+- Migrated Team Rocket's Watchtower Colorless Ability prevention into the `:before_ability` hook path while preserving existing reducer error behavior.
 - Add the first hook system.
 - Migrate hook-sensitive current effects one by one.
 - Avoid card-specific checks embedded in generic reducers.

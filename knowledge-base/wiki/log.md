@@ -1,5 +1,10 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Team Rocket's Watchtower Before-Ability Hook
+- Added: `Brock.Tcg.Sim.Hooks` now handles Team Rocket's Watchtower Colorless Pokémon Ability prevention through the `:before_ability` phase
+- Migrated: Ability lookup now runs hook checks before resolving executable Ability behavior, removing the Watchtower-specific reducer check from `Brock.Tcg.Sim.Engine`
+- Verified: targeted Watchtower scenario, `mix test test/brock/tcg/sim`, `mix brock.cards.coverage`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Budew Item-Lock Before-Play-Trainer Hook
 - Added: `Brock.Tcg.Sim.Hooks` now handles Item-card prevention for players marked by Budew `Itchy Pollen` through the `:before_play_trainer` phase
 - Migrated: Item lock checks in trainer reducers now call the hook path instead of reading `item_cards_locked?` directly in the engine helper

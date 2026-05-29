@@ -14,7 +14,21 @@ defmodule Brock.Tcg.Sim.Hooks do
     end
   end
 
+  def run(state, :before_ability, context) do
+    with {:ok, state} <- prevent_colorless_ability_if_watchtower(state, context) do
+      {:ok, state}
+    end
+  end
+
   def run(state, _phase, _context), do: {:ok, state}
+
+  defp prevent_colorless_ability_if_watchtower(
+         %{stadium: %{card_id: "DRI-180"}} = _state,
+         %{metadata: %{supertype: :pokemon, type: :colorless, id: card_id}}
+       ),
+       do: {:halt, {:ability_blocked_by_stadium, "DRI-180", card_id}}
+
+  defp prevent_colorless_ability_if_watchtower(state, _context), do: {:ok, state}
 
   defp prevent_item_if_locked(state, %{
          player_id: player_id,

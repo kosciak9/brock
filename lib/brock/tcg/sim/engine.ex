@@ -2837,7 +2837,7 @@ defmodule Brock.Tcg.Sim.Engine do
 
   defp require_ability(state, source, ability_id) do
     with {:ok, metadata} <- CardRegistry.fetch(source.card_id),
-         :ok <- require_ability_not_blocked_by_stadium(state, metadata),
+         :ok <- require_ability_hooks(state, source, metadata, ability_id),
          :ok <- require_ability_not_blocked_by_damp(state, metadata, ability_id),
          {:ok, abilities} <- Map.fetch(metadata, :abilities),
          {:ok, ability} <- Map.fetch(abilities, ability_id) do
@@ -2851,14 +2851,11 @@ defmodule Brock.Tcg.Sim.Engine do
     end
   end
 
-  defp require_ability_not_blocked_by_stadium(%{stadium: %{card_id: "DRI-180"}}, %{
-         supertype: :pokemon,
-         type: :colorless,
-         id: card_id
-       }),
-       do: {:error, {:ability_blocked_by_stadium, "DRI-180", card_id}}
-
-  defp require_ability_not_blocked_by_stadium(_state, _metadata), do: :ok
+  defp require_ability_hooks(state, source, metadata, ability_id) do
+    state
+    |> Hooks.run(:before_ability, %{source: source, metadata: metadata, ability_id: ability_id})
+    |> require_hook_success()
+  end
 
   defp require_ability_not_blocked_by_damp(state, metadata, ability_id) do
     case Map.fetch(metadata, :abilities) do
