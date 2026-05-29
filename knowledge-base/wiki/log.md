@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Team Rocket's Ariana Supporter Behavior
+- Added: Team Rocket's Ariana `DRI-171` now has a DRI DSL manifest entry and registry overlay, mapping the Supporter to a reducer action that draws until the player has 5 cards in hand, or 8 cards if all of their Pokémon in play are Team Rocket's Pokémon
+- Preserved: static Supporter metadata and printed text continue to come from the committed TCGdex cache; the effect text was cross-checked against Limitless before coding
+- Updated: `mix brock.cards.coverage` now reports Team Rocket's Ariana as implemented for Rocket's Mewtwo 27459, reducing imported-deck `behavior_missing` card count by one and behavior-family missing count by one
+- Verified: focused DSL/registry/reducer smoke check, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Thwackey Conditional Search Ability Behavior
 - Added: Thwackey `TWM-015` now has a TWM DSL manifest entry and registry overlay for `Boom Boom Groove` and `Beat`, mapping the Ability to a once-per-turn deck search that requires the player's Active Pokémon to have the cached `Festival Lead` Ability and marking `GG Beat 50` as explicit plain-damage behavior
 - Preserved: static Pokémon metadata, Ability text, attack cost, and damage continue to come from the committed TCGdex cache; the `Boom Boom Groove` and `GG Beat 50` text were cross-checked against Limitless before coding

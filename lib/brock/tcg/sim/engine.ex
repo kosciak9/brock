@@ -739,6 +739,29 @@ defmodule Brock.Tcg.Sim.Engine do
   end
 
   defp reduce(state, %Action{
+         type: :team_rockets_ariana,
+         player_id: player_id,
+         params: %{instance_id: ariana_id}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, ariana} <- find_in_player_zone(state, player_id, :hand, ariana_id),
+         {:ok, ariana_metadata} <- CardRegistry.fetch(ariana.card_id),
+         :ok <- require_card_id(ariana, "DRI-171"),
+         :ok <- require_supporter_available_if_supporter(ariana_metadata, state, player_id),
+         {:ok, state} <- discard_card_from_hand(state, player_id, ariana, ariana_metadata) do
+      hand_size =
+        if all_own_pokemon_in_play_are_team_rocket?(state, player_id) do
+          ariana_metadata.effect.team_rocket_hand_size
+        else
+          ariana_metadata.effect.hand_size
+        end
+
+      draw_until_hand_size(state, player_id, hand_size)
+    end
+  end
+
+  defp reduce(state, %Action{
          type: :ciphermaniacs_codebreaking,
          player_id: player_id,
          params: %{instance_id: ciphermaniac_id, target_ids: target_ids}
@@ -1550,6 +1573,12 @@ defmodule Brock.Tcg.Sim.Engine do
   defp draw_cards(state, player_id, count) when count > 0 do
     with {:ok, state} <- draw_card(state, player_id) do
       draw_cards(state, player_id, count - 1)
+    end
+  end
+
+  defp draw_until_hand_size(state, player_id, hand_size) when is_integer(hand_size) do
+    with {:ok, player} <- fetch_player(state, player_id) do
+      draw_cards(state, player_id, max(hand_size - length(player.hand), 0))
     end
   end
 
@@ -2622,6 +2651,24 @@ defmodule Brock.Tcg.Sim.Engine do
       {:error, _reason} ->
         0
     end
+  end
+
+  defp all_own_pokemon_in_play_are_team_rocket?(state, player_id) do
+    case fetch_player(state, player_id) do
+      {:ok, player} ->
+        pokemon = in_play_pokemon(player)
+        pokemon != [] && Enum.all?(pokemon, &team_rocket_pokemon?/1)
+
+      {:error, _reason} ->
+        false
+    end
+  end
+
+  defp team_rocket_pokemon?(pokemon) do
+    match?(
+      {:ok, %Metadata{category: :pokemon, name: "Team Rocket's " <> _name}},
+      Metadata.fetch(pokemon.card_id)
+    )
   end
 
   defp in_play_pokemon(player) do

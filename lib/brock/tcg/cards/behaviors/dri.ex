@@ -26,6 +26,16 @@ defmodule Brock.Tcg.Cards.Behaviors.DRI do
     )
   end
 
+  card "DRI-171" do
+    card_effect(
+      effect: %{
+        type: :draw_until_hand_size_or_more_if_all_own_pokemon_are_team_rocket,
+        hand_size: 5,
+        team_rocket_hand_size: 8
+      }
+    )
+  end
+
   card "DRI-177" do
     card_effect(effect: %{type: :search_basic_team_rocket_pokemon_to_hand, max_targets: 3})
   end

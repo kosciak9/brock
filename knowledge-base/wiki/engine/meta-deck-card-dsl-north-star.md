@@ -335,6 +335,7 @@ Cards may exist as `metadata_cached` before their deck is supported. This is exp
 - Ported Dunsparce `JTG-120` to an explicit JTG DSL manifest entry for `Trading Places` and plain-damage `Ram`, keeping static attack text, cost, and damage facts in the TCGdex cache while reducing generic-damage coverage shared by Alakazam/Dudunsparce 27147 and Lopunny Dudunsparce 27514.
 - Implemented Team Rocket's Spidops `DRI-020` as an imported-deck discard-Energy attachment Ability and Team Rocket's Pokémon in-play variable-damage attack behavior slice, with a DRI DSL manifest entry, registry overlay, reducer action, and discard-to-attachment lifecycle transition while keeping static Ability and attack text in the TCGdex cache.
 - Implemented Thwackey `TWM-015` as an imported-deck conditional deck-search Ability/plain-damage attack behavior slice, with a TWM DSL manifest entry, registry overlay, and reducer action that checks cached Festival Lead Ability metadata on the player's Active Pokémon while keeping static Ability and attack text in the TCGdex cache.
+- Implemented Team Rocket's Ariana `DRI-171` as an imported-deck Supporter draw behavior slice, with a DRI DSL manifest entry, registry overlay, and reducer action that draws until 5 cards or until 8 cards when all of the player's Pokémon in play are Team Rocket's Pokémon while keeping static Supporter text in the TCGdex cache.
 - Implement missing behavior families for the four imported meta decks.
 - Use coverage to divide work by behavior family and ruling risk.
 
