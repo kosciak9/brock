@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Behavior DSL Foundation
+- Added: `Brock.Tcg.Cards.DSL` compile-time card behavior overlay DSL with manifest helpers
+- Guarded: DSL card, attack, and Ability references validate against committed TCGdex metadata and require executable `:effect` overlays when raw printed text exists
+- Seeded: `Brock.Tcg.Cards.Behaviors.TWM` declares Dragapult ex `Phantom Dive` behavior manifest data without replacing the registry facade yet
+- Verified: `mix test test/brock/tcg/cards/metadata_test.exs test/brock/tcg/sim/card_registry_test.exs`, `mix test test/brock/tcg/sim`, `mix brock.cards.coverage`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Metadata-Backed Registry Facade
 - Added: `Brock.Tcg.Sim.CardRegistry.fetch/1` now builds supported card entries from cached `Brock.Tcg.Cards.Metadata` and overlays existing authored executable behavior
 - Preserved: temporary compatibility shims for current reducer requirements, including Brock-ID evolution links, basic/special Energy classification, inferred basic Energy provides, and fallback weakness/resistance maps for cache gaps

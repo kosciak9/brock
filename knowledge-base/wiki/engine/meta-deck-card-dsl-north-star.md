@@ -278,8 +278,9 @@ Cards may exist as `metadata_cached` before their deck is supported. This is exp
 
 ### Phase 3: behavior DSL foundation
 
-- Build the executable-behavior DSL.
-- Validate DSL references against cached metadata.
+- Added initial `Brock.Tcg.Cards.DSL` executable-behavior manifest foundation.
+- DSL `card` declarations now validate referenced card IDs and attack/Ability IDs against cached TCGdex metadata at compile time.
+- Added first representative behavior manifest module, `Brock.Tcg.Cards.Behaviors.TWM`, declaring Dragapult ex `Phantom Dive` executable effect overlay without moving static facts out of the metadata cache.
 - Port representative existing cards before broad migration.
 - Start with cards that demonstrate different behavior families: plain damage, attack effect, Ability, Item, Supporter, Tool, Stadium, and Special Energy.
 
