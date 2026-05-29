@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | TEF Dunsparce Plain-Damage Attack Behavior
+- Added: Dunsparce `TEF-128` now has a TEF DSL manifest entry for `Gnaw`, and the registry overlay marks `Gnaw` as explicit exact plain-damage behavior instead of generic cached damage
+- Preserved: cached TCGdex metadata remains the source of truth for static Pokémon metadata, attack cost, and damage; `C Gnaw 10` was cross-checked against the committed cache and Limitless before coding
+- Updated: `mix brock.cards.coverage` now reports zero `generic_damage_only` behavior families overall; `TEF-128` remains `behavior_missing` until `Dig` receives executable prevention behavior
+- Verified: focused manifest/registry smoke check, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Dragapult ex Jet Headbutt Plain-Damage Overlay
 - Added: Dragapult ex `TWM-130` now marks `Jet Headbutt` as an explicit exact plain-damage overlay in both the TWM DSL manifest and metadata-backed registry facade instead of leaving it as generic cached damage
 - Preserved: cached TCGdex metadata remains the source of truth for static Pokémon metadata, attack cost, and damage; `C Jet Headbutt 70` was cross-checked against the committed cache and Limitless before coding

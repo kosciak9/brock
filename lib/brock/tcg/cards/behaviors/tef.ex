@@ -13,6 +13,10 @@ defmodule Brock.Tcg.Cards.Behaviors.TEF do
     )
   end
 
+  card "TEF-128" do
+    attack(:gnaw, effect: nil)
+  end
+
   card "TEF-129" do
     ability(:run_away_draw,
       effect: %{type: :draw_then_shuffle_self_into_deck, count: 3}

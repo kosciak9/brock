@@ -400,6 +400,11 @@ defmodule Brock.Tcg.Sim.CardRegistry do
         ram: %{name: "Ram", cost: [:colorless, :colorless], damage: 20, effect: nil}
       }
     },
+    "TEF-128" => %{
+      attacks: %{
+        gnaw: %{effect: nil}
+      }
+    },
     "TEF-129" => %{
       name: "Dudunsparce",
       supertype: :pokemon,
