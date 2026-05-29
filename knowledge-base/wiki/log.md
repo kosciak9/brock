@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Festival Grounds Special-Condition Stadium Behavior
+- Added: Festival Grounds `TWM-149` now has a TWM DSL manifest entry and registry overlay, mapping the Stadium to recovery from Special Conditions for Pokémon with Energy attached and immunity to new Special Conditions while the Stadium remains in play
+- Preserved: static Stadium metadata and printed effect text continue to come from the committed TCGdex cache; the overlay declares only executable behavior and the engine uses existing attached-Energy and status state
+- Updated: `mix brock.cards.coverage` now reports Festival Grounds as implemented for Festival Lead 27445, reducing behavior-missing cards to 19 and behavior-missing families to 32
+- Verified: focused `mix run --no-start` runtime smoke for recovery and Confusion immunity, `mix brock.cards.coverage`, and `mix test test/brock/tcg/sim` pass; Tidewave project eval is unavailable because the MCP endpoint is not connected to the `:brock` app
+
 ## [2026-05-29] implementation | Mega Kangaskhan ex Ability and Variable-Damage Attack
 - Added: Mega Kangaskhan ex `MEG-104` now has a MEG DSL manifest entry and registry overlay for `Run Errand` and `Rapid-Fire Combo`, mapping the Ability to Active-only draw 2 with a once-per-turn Run Errand marker and the attack to explicit heads-count variable damage of `200 + 50×heads`
 - Preserved: static Pokémon metadata, Ability text, attack cost, and printed variable-damage text continue to come from the committed TCGdex cache; the overlay declares only executable behavior and explicit randomness inputs

@@ -68,6 +68,10 @@ defmodule Brock.Tcg.Cards.Behaviors.TWM do
     )
   end
 
+  card "TWM-149" do
+    card_effect(effect: %{type: :special_condition_immunity_for_pokemon_with_energy})
+  end
+
   card "TWM-154" do
     card_effect(
       effect: %{

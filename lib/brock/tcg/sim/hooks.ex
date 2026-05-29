@@ -534,7 +534,10 @@ defmodule Brock.Tcg.Sim.Hooks do
         | attachments: reject_instance(from_pokemon.attachments, attachment.instance_id)
       }
 
-      updated_to = %{to_pokemon | attachments: [attachment | to_pokemon.attachments]}
+      updated_to =
+        to_pokemon
+        |> Map.put(:attachments, [attachment | to_pokemon.attachments])
+        |> recover_special_condition_if_festival_grounds_active(state)
 
       state = put_player(state, replace_in_play(from_player, updated_from))
       {:ok, put_player(state, replace_in_play(to_player, updated_to))}
@@ -562,6 +565,14 @@ defmodule Brock.Tcg.Sim.Hooks do
 
   defp put_player(state, player),
     do: %{state | players: Map.put(state.players, player.id, player)}
+
+  defp recover_special_condition_if_festival_grounds_active(
+         pokemon,
+         %{stadium: %{card_id: "TWM-149"}}
+       ),
+       do: %{pokemon | status: nil}
+
+  defp recover_special_condition_if_festival_grounds_active(pokemon, _state), do: pokemon
 
   defp require_energy(%{supertype: :energy}), do: :ok
   defp require_energy(metadata), do: {:error, {:not_energy, metadata}}

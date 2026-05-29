@@ -594,6 +594,9 @@ defmodule Brock.Tcg.Sim.CardRegistry do
         max_targets: 2
       }
     },
+    "TWM-149" => %{
+      effect: %{type: :special_condition_immunity_for_pokemon_with_energy}
+    },
     "DRI-168" => %{name: "Sacred Ash", supertype: :trainer, trainer_type: :item},
     "DRI-170" => %{
       effect: %{

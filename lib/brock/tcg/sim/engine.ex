@@ -1785,7 +1785,11 @@ defmodule Brock.Tcg.Sim.Engine do
   defp attach_to_pokemon(state, player_id, energy, target, params) do
     with {:ok, player} <- fetch_player(state, player_id) do
       moved_energy = %{energy | zone: :attached, lifecycle: :attached}
-      updated_target = %{target | attachments: [moved_energy | target.attachments]}
+
+      updated_target =
+        target
+        |> Map.put(:attachments, [moved_energy | target.attachments])
+        |> recover_special_condition_if_festival_grounds_active(state)
 
       player =
         player
@@ -1801,7 +1805,11 @@ defmodule Brock.Tcg.Sim.Engine do
   defp attach_deck_energy_to_pokemon(state, player_id, energy, target) do
     with {:ok, player} <- fetch_player(state, player_id) do
       moved_energy = %{energy | zone: :attached, lifecycle: :attached}
-      updated_target = %{target | attachments: [moved_energy | target.attachments]}
+
+      updated_target =
+        target
+        |> Map.put(:attachments, [moved_energy | target.attachments])
+        |> recover_special_condition_if_festival_grounds_active(state)
 
       player =
         player
@@ -1817,7 +1825,11 @@ defmodule Brock.Tcg.Sim.Engine do
          {:ok, :attached} <- ZoneMovement.transition(:discard, :attached),
          {:ok, :attached} <- CardLifecycle.transition(energy.lifecycle, :attach) do
       moved_energy = %{energy | zone: :attached, lifecycle: :attached}
-      updated_target = %{target | attachments: [moved_energy | target.attachments]}
+
+      updated_target =
+        target
+        |> Map.put(:attachments, [moved_energy | target.attachments])
+        |> recover_special_condition_if_festival_grounds_active(state)
 
       player =
         player
@@ -1895,7 +1907,9 @@ defmodule Brock.Tcg.Sim.Engine do
           old_stadium -> discard_stadium(state, old_stadium)
         end
 
-      {:ok, %{state | stadium: stadium}}
+      state = %{state | stadium: stadium}
+
+      {:ok, recover_special_conditions_from_festival_grounds(state)}
     end
   end
 
@@ -2152,7 +2166,11 @@ defmodule Brock.Tcg.Sim.Engine do
          {:ok, attachment} <- find_attachment(source, attachment_id) do
       moved_attachment = %{attachment | zone: :attached, lifecycle: :attached}
       updated_source = %{source | attachments: reject_instance(source.attachments, attachment_id)}
-      updated_target = %{target | attachments: [moved_attachment | target.attachments]}
+
+      updated_target =
+        target
+        |> Map.put(:attachments, [moved_attachment | target.attachments])
+        |> recover_special_condition_if_festival_grounds_active(state)
 
       player =
         player
@@ -2361,11 +2379,62 @@ defmodule Brock.Tcg.Sim.Engine do
     end
   end
 
+  defp set_pokemon_status(
+         %{stadium: %{card_id: "TWM-149"}} = state,
+         player_id,
+         target,
+         status
+       ) do
+    if energy_attached?(target) do
+      {:ok, state}
+    else
+      set_pokemon_status_without_immunity(state, player_id, target, status)
+    end
+  end
+
   defp set_pokemon_status(state, player_id, target, status) do
+    set_pokemon_status_without_immunity(state, player_id, target, status)
+  end
+
+  defp set_pokemon_status_without_immunity(state, player_id, target, status) do
     with {:ok, player} <- fetch_player(state, player_id) do
       {:ok, put_player(state, replace_in_play(player, %{target | status: status}))}
     end
   end
+
+  defp recover_special_conditions_from_festival_grounds(%{stadium: %{card_id: "TWM-149"}} = state) do
+    players =
+      Map.new(state.players, fn {player_id, player} ->
+        player = %{
+          player
+          | active: recover_special_conditions_if_energy_attached(player.active),
+            bench: Enum.map(player.bench, &recover_special_conditions_if_energy_attached/1)
+        }
+
+        {player_id, player}
+      end)
+
+    %{state | players: players}
+  end
+
+  defp recover_special_conditions_from_festival_grounds(state), do: state
+
+  defp recover_special_condition_if_festival_grounds_active(
+         pokemon,
+         %{stadium: %{card_id: "TWM-149"}}
+       ) do
+    recover_special_conditions_if_energy_attached(pokemon)
+  end
+
+  defp recover_special_condition_if_festival_grounds_active(pokemon, _state), do: pokemon
+
+  defp recover_special_conditions_if_energy_attached(nil), do: nil
+
+  defp recover_special_conditions_if_energy_attached(pokemon) do
+    if energy_attached?(pokemon), do: %{pokemon | status: nil}, else: pokemon
+  end
+
+  defp energy_attached?(pokemon), do: attached_energy_count(pokemon) > 0
 
   defp resolve_knock_outs_after_damage(state, attacking_player_id, defending_player_id, target_id) do
     with {:ok, target} <- find_in_play(state, defending_player_id, target_id),
