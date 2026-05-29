@@ -149,7 +149,7 @@ defmodule Brock.Tcg.Sim.CardRegistry do
       weakness: nil,
       resistance: nil,
       attacks: %{
-        jet_headbutt: %{name: "Jet Headbutt", cost: [:colorless], damage: 70},
+        jet_headbutt: %{name: "Jet Headbutt", cost: [:colorless], damage: 70, effect: nil},
         phantom_dive: %{
           name: "Phantom Dive",
           cost: [:fire, :psychic],

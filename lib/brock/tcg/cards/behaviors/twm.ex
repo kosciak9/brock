@@ -51,7 +51,7 @@ defmodule Brock.Tcg.Cards.Behaviors.TWM do
   end
 
   card "TWM-130" do
-    attack(:jet_headbutt)
+    attack(:jet_headbutt, effect: nil)
 
     attack(:phantom_dive,
       effect: %{type: :opponent_bench_damage_counters, total_counters: 6}

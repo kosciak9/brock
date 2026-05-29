@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Dragapult ex Jet Headbutt Plain-Damage Overlay
+- Added: Dragapult ex `TWM-130` now marks `Jet Headbutt` as an explicit exact plain-damage overlay in both the TWM DSL manifest and metadata-backed registry facade instead of leaving it as generic cached damage
+- Preserved: cached TCGdex metadata remains the source of truth for static Pokémon metadata, attack cost, and damage; `C Jet Headbutt 70` was cross-checked against the committed cache and Limitless before coding
+- Updated: `mix brock.cards.coverage` now reports one fewer `generic_damage_only` behavior family for Dragapult 27431, leaving one remaining generic-damage-only family overall
+- Verified: focused manifest/registry smoke check, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | MEG Kadabra Plain-Damage Attack Behavior
 - Added: Kadabra `MEG-055` now has an MEG DSL manifest entry for `Psychic Draw` and `Super Psy Bolt`, and the registry overlay marks `Super Psy Bolt` as explicit exact plain-damage behavior instead of generic damage
 - Preserved: cached TCGdex metadata remains the source of truth for static Pokémon metadata, Ability text, attack cost, and damage; `P Super Psy Bolt 30` was cross-checked against Limitless before coding
