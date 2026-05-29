@@ -54,6 +54,7 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
                               :bonus_damage_per_energy_attached_to_defender,
                               :choose_switch_active_or_turn_bonus_attack_damage_to_opponent_active_pokemon_ex_or_v,
                               :confuse_defender_active,
+                              :damage_per_own_basic_pokemon_in_play,
                               :damage_one_opponent_pokemon,
                               :draw_if_own_pokemon_knocked_out_last_turn,
                               :draw_cards_if_damaged_as_active_by_attack,

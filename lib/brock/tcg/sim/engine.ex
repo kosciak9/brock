@@ -2423,7 +2423,41 @@ defmodule Brock.Tcg.Sim.Engine do
     end
   end
 
+  defp base_attack_damage(state, %{
+         attack: %{
+           effect: %{
+             type: :damage_per_own_basic_pokemon_in_play,
+             damage_per_pokemon: damage_per_pokemon
+           }
+         },
+         player_id: player_id
+       }) do
+    basic_pokemon_in_play_count(state, player_id) * damage_per_pokemon
+  end
+
   defp base_attack_damage(_state, %{attack: attack}), do: Map.fetch!(attack, :damage)
+
+  defp basic_pokemon_in_play_count(state, player_id) do
+    case fetch_player(state, player_id) do
+      {:ok, player} ->
+        player
+        |> in_play_pokemon()
+        |> Enum.count(fn pokemon ->
+          match?(
+            {:ok, %{supertype: :pokemon, stage: :basic}},
+            CardRegistry.fetch(pokemon.card_id)
+          )
+        end)
+
+      {:error, _reason} ->
+        0
+    end
+  end
+
+  defp in_play_pokemon(player) do
+    [player.active | player.bench]
+    |> Enum.reject(&is_nil/1)
+  end
 
   defp attached_energy_count(pokemon) do
     Enum.count(pokemon.attachments, fn attachment ->

@@ -467,6 +467,14 @@ defmodule Brock.Tcg.Sim.CardRegistry do
         gnaw: %{name: "Gnaw", cost: [:psychic], damage: 30}
       }
     },
+    "SSP-111" => %{
+      attacks: %{
+        coordinated_throwing: %{
+          damage: 0,
+          effect: %{type: :damage_per_own_basic_pokemon_in_play, damage_per_pokemon: 20}
+        }
+      }
+    },
     "WHT-084" => %{name: "Hilda", supertype: :trainer, trainer_type: :supporter},
     "TWM-155" => %{name: "Lana's Aid", supertype: :trainer, trainer_type: :supporter},
     "MEG-125" => %{name: "Rare Candy", supertype: :trainer, trainer_type: :item},
