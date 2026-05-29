@@ -315,6 +315,10 @@ defmodule Brock.Tcg.Sim.CardRegistry do
     "TEF-145" => %{
       effect: %{type: :search_deck_for_cards_to_top, count: 2}
     },
+    "TEF-161" => %{
+      provides: [:colorless],
+      effect: %{type: :prevent_opponent_attack_effects_to_attached_pokemon}
+    },
     "MEG-115" => %{
       name: "Energy Switch",
       supertype: :trainer,

@@ -46,13 +46,15 @@ defmodule Brock.Tcg.Sim.Hooks do
     with {:ok, state} <- prevent_damage_if_dig_protected(state, context),
          {:ok, state} <- prevent_bench_attack_damage_if_spherical_shield(state, context),
          {:ok, state} <- prevent_bench_attack_damage_if_flower_curtain(state, context),
-         {:ok, state} <- prevent_bench_damage_counters_if_battle_cage(state, context) do
+         {:ok, state} <- prevent_bench_damage_counters_if_battle_cage(state, context),
+         {:ok, state} <- prevent_attack_damage_counters_if_mist_energy_attached(state, context) do
       {:ok, state}
     end
   end
 
   def run(state, :before_attack_effect, context) do
-    with {:ok, state} <- prevent_attack_effect_if_dig_protected(state, context) do
+    with {:ok, state} <- prevent_attack_effect_if_dig_protected(state, context),
+         {:ok, state} <- prevent_attack_effect_if_mist_energy_attached(state, context) do
       {:ok, state}
     end
   end
@@ -359,6 +361,24 @@ defmodule Brock.Tcg.Sim.Hooks do
 
   defp prevent_damage_if_dig_protected(state, _context), do: {:ok, state}
 
+  defp prevent_attack_damage_counters_if_mist_energy_attached(
+         state,
+         %{
+           source: :attack_effect,
+           attacking_player_id: attacking_player_id,
+           target_player_id: target_player_id,
+           target_id: target_id,
+           damage_kind: :damage_counters
+         }
+       )
+       when attacking_player_id != target_player_id do
+    if mist_energy_attached?(state, target_player_id, target_id),
+      do: {:halt, {:damage_prevented_by_energy, "TEF-161", :mist_energy}},
+      else: {:ok, state}
+  end
+
+  defp prevent_attack_damage_counters_if_mist_energy_attached(state, _context), do: {:ok, state}
+
   defp prevent_attack_effect_if_dig_protected(
          state,
          %{
@@ -375,6 +395,23 @@ defmodule Brock.Tcg.Sim.Hooks do
   end
 
   defp prevent_attack_effect_if_dig_protected(state, _context), do: {:ok, state}
+
+  defp prevent_attack_effect_if_mist_energy_attached(
+         state,
+         %{
+           source: :attack_effect,
+           attacking_player_id: attacking_player_id,
+           target_player_id: target_player_id,
+           target_id: target_id
+         }
+       )
+       when attacking_player_id != target_player_id do
+    if mist_energy_attached?(state, target_player_id, target_id),
+      do: {:halt, {:attack_effect_prevented_by_energy, "TEF-161", :mist_energy}},
+      else: {:ok, state}
+  end
+
+  defp prevent_attack_effect_if_mist_energy_attached(state, _context), do: {:ok, state}
 
   defp prevent_colorless_ability_if_watchtower(
          %{stadium: %{card_id: "DRI-180"}} = _state,
@@ -471,6 +508,14 @@ defmodule Brock.Tcg.Sim.Hooks do
     |> case do
       nil -> {:error, {:attachment_not_found, target.instance_id, attachment_id}}
       attachment -> {:ok, attachment}
+    end
+  end
+
+  defp mist_energy_attached?(state, player_id, target_id) do
+    with {:ok, target} <- find_in_play(state, player_id, target_id) do
+      Enum.any?(target.attachments, &(&1.card_id == "TEF-161"))
+    else
+      {:error, _reason} -> false
     end
   end
 

@@ -32,4 +32,8 @@ defmodule Brock.Tcg.Cards.Behaviors.TEF do
   card "TEF-145" do
     card_effect(effect: %{type: :search_deck_for_cards_to_top, count: 2})
   end
+
+  card "TEF-161" do
+    card_effect(effect: %{type: :prevent_opponent_attack_effects_to_attached_pokemon})
+  end
 end

@@ -2335,6 +2335,9 @@ defmodule Brock.Tcg.Sim.Engine do
       {:halt, {:damage_prevented_by_stadium, _card_id, _effect_id}} ->
         {:ok, state, :prevented}
 
+      {:halt, {:damage_prevented_by_energy, _card_id, _effect_id}} ->
+        {:ok, state, :prevented}
+
       {:halt, reason} ->
         {:error, reason}
     end
@@ -2706,6 +2709,9 @@ defmodule Brock.Tcg.Sim.Engine do
         {:ok, state, :damage_prevented}
 
       {:halt, {:damage_prevented_by_stadium, _card_id, _effect_id}} ->
+        {:ok, state, :damage_prevented}
+
+      {:halt, {:damage_prevented_by_energy, _card_id, _effect_id}} ->
         {:ok, state, :damage_prevented}
 
       {:halt, reason} ->
@@ -3208,6 +3214,9 @@ defmodule Brock.Tcg.Sim.Engine do
       {:halt, {:damage_prevented_by_stadium, _card_id, _effect_id}} ->
         {:ok, state}
 
+      {:halt, {:damage_prevented_by_energy, _card_id, _effect_id}} ->
+        {:ok, state}
+
       {:halt, reason} ->
         {:error, reason}
     end
@@ -3237,6 +3246,9 @@ defmodule Brock.Tcg.Sim.Engine do
         {:ok, state, :continue}
 
       {:halt, {:attack_effect_prevented_by_attack_effect, _card_id, _attack_id}} ->
+        {:ok, state, :prevented}
+
+      {:halt, {:attack_effect_prevented_by_energy, _card_id, _effect_id}} ->
         {:ok, state, :prevented}
 
       {:halt, reason} ->

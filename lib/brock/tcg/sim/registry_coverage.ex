@@ -85,6 +85,7 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
                               :prevent_attack_damage_and_effects_to_bench,
                               :prevent_damage_counters_to_bench_from_opponent_pokemon_effects,
                               :prevent_damage_and_effects_from_attacks_next_turn_on_coin_heads,
+                              :prevent_opponent_attack_effects_to_attached_pokemon,
                               :recover_trainer_from_discard_to_hand,
                               :reduce_attack_cost_by_colorless_if_more_prizes_remaining,
                               :return_attacker_and_attached_to_hand,

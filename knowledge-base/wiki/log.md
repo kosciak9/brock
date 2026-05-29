@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Mist Energy Attack-Effect Prevention Behavior
+- Added: Mist Energy `TEF-161` now has a TEF DSL manifest entry and registry overlay, providing `{C}` Energy and mapping its prevention text to hook-backed protection from opponent attack effects done to the attached Pokémon
+- Preserved: static Special Energy metadata and printed effect text continue to come from the committed TCGdex cache; the overlay declares only executable prevention behavior and the provided Energy type needed by the current engine
+- Updated: `mix brock.cards.coverage` now reports Mist Energy as implemented for Lopunny Dudunsparce 27514, reducing behavior-missing cards to 21 and behavior-missing families to 35
+- Verified: `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass; Tidewave project eval was unavailable because the MCP endpoint is connected to an unrelated project context
+
 ## [2026-05-29] implementation | Secret Box Item Discard/Search Behavior
 - Added: Secret Box `TWM-163` now has a TWM DSL manifest entry and registry overlay, mapping the ACE SPEC Item to a reducer action that requires discarding 3 other cards from hand before searching the deck for up to one Item, Tool, Supporter, and Stadium by cached Trainer subtype
 - Preserved: static Item metadata, ACE SPEC rarity, Trainer subtype, and printed effect text continue to come from the committed TCGdex cache; the overlay declares only executable discard/search behavior
