@@ -625,6 +625,13 @@ defmodule Brock.Tcg.Sim.CardRegistry do
     "TWM-158" => %{
       effect: %{type: :draw_cards_if_damaged_as_active_by_attack, count: 2}
     },
+    "TWM-163" => %{
+      effect: %{
+        type: :discard_3_then_search_item_tool_supporter_stadium_to_hand,
+        discard_count: 3,
+        trainer_types: [:item, :tool, :supporter, :stadium]
+      }
+    },
     "SSP-169" => %{
       effect: %{type: :reduce_attack_cost_by_colorless_if_more_prizes_remaining, amount: 1}
     },

@@ -19,6 +19,8 @@ defmodule Brock.Tcg.Sim.Engine do
   alias Brock.Tcg.Sim.StateMachines.TurnLifecycle
   alias Brock.Tcg.Sim.StateMachines.ZoneMovement
 
+  @secret_box_trainer_types [:item, :tool, :supporter, :stadium]
+
   @type result :: {:ok, GameState.t()} | {:error, term()}
 
   def new_game(opts) do
@@ -706,6 +708,38 @@ defmodule Brock.Tcg.Sim.Engine do
         nil -> {:ok, state}
         target -> move_deck_card_to_hand(state, player_id, target)
       end
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :secret_box,
+         player_id: player_id,
+         params: %{instance_id: secret_box_id, discard_ids: discard_ids} = params
+       })
+       when is_list(discard_ids) do
+    target_ids_by_type = Map.get(params, :target_ids, %{})
+
+    with true <- is_map(target_ids_by_type) || {:error, :secret_box_target_ids_must_be_map},
+         :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         true <-
+           length(discard_ids) == 3 ||
+             {:error, {:wrong_secret_box_discard_count, length(discard_ids)}},
+         :ok <- require_unique_target_ids(discard_ids, :secret_box_discard),
+         {:ok, secret_box} <- find_in_player_zone(state, player_id, :hand, secret_box_id),
+         :ok <- require_item_cards_playable(state, player_id),
+         :ok <- require_card_id(secret_box, "TWM-163"),
+         :ok <- require_secret_box_discards_other_cards(secret_box_id, discard_ids),
+         {:ok, discard_cards} <- fetch_hand_cards(state, player_id, discard_ids),
+         :ok <- require_secret_box_target_keys(target_ids_by_type),
+         :ok <- require_unique_target_ids(secret_box_target_ids(target_ids_by_type), :secret_box),
+         {:ok, targets} <- fetch_secret_box_targets(state, player_id, target_ids_by_type),
+         :ok <- require_secret_box_targets(targets),
+         {:ok, state} <- discard_card_from_hand(state, player_id, secret_box, %{}),
+         {:ok, state} <- discard_hand_cards(state, player_id, discard_cards) do
+      targets
+      |> Enum.map(fn {_trainer_type, card} -> card end)
+      |> then(&move_deck_cards_to_hand(state, player_id, &1))
     end
   end
 
@@ -4208,6 +4242,74 @@ defmodule Brock.Tcg.Sim.Engine do
 
   defp require_team_rocket_supporter_target(metadata),
     do: {:error, {:invalid_team_rockets_transceiver_target, metadata.id}}
+
+  defp require_secret_box_discards_other_cards(secret_box_id, discard_ids) do
+    if secret_box_id in discard_ids do
+      {:error, :secret_box_must_discard_3_other_cards}
+    else
+      :ok
+    end
+  end
+
+  defp require_secret_box_target_keys(target_ids_by_type) do
+    invalid_target_types = Map.keys(target_ids_by_type) -- @secret_box_trainer_types
+
+    case invalid_target_types do
+      [] -> :ok
+      invalid_target_types -> {:error, {:invalid_secret_box_target_types, invalid_target_types}}
+    end
+  end
+
+  defp secret_box_target_ids(target_ids_by_type) do
+    target_ids_by_type
+    |> Map.take(@secret_box_trainer_types)
+    |> Map.values()
+    |> Enum.reject(&is_nil/1)
+  end
+
+  defp fetch_secret_box_targets(state, player_id, target_ids_by_type) do
+    Enum.reduce_while(@secret_box_trainer_types, {:ok, []}, fn trainer_type, {:ok, targets} ->
+      case Map.get(target_ids_by_type, trainer_type) do
+        nil ->
+          {:cont, {:ok, targets}}
+
+        instance_id ->
+          case find_in_player_zone(state, player_id, :deck, instance_id) do
+            {:ok, card} -> {:cont, {:ok, targets ++ [{trainer_type, card}]}}
+            {:error, reason} -> {:halt, {:error, reason}}
+          end
+      end
+    end)
+  end
+
+  defp require_secret_box_targets(targets) do
+    Enum.reduce_while(targets, :ok, fn {trainer_type, target}, :ok ->
+      with {:ok, metadata} <- Metadata.fetch(target.card_id),
+           :ok <- require_secret_box_target(metadata, trainer_type) do
+        {:cont, :ok}
+      else
+        {:error, reason} -> {:halt, {:error, reason}}
+      end
+    end)
+  end
+
+  defp require_secret_box_target(
+         %Metadata{category: :trainer, trainer_type: actual_trainer_type},
+         expected_trainer_type
+       )
+       when actual_trainer_type == expected_trainer_type,
+       do: :ok
+
+  defp require_secret_box_target(
+         %Metadata{id: card_id, category: :trainer, trainer_type: actual_trainer_type},
+         expected_trainer_type
+       ),
+       do:
+         {:error,
+          {:invalid_secret_box_target, card_id, expected_trainer_type, actual_trainer_type}}
+
+  defp require_secret_box_target(%Metadata{id: card_id}, trainer_type),
+    do: {:error, {:invalid_secret_box_target, card_id, trainer_type}}
 
   defp require_basic_team_rocket_pokemon_targets(targets) do
     Enum.reduce_while(targets, :ok, fn target, :ok ->

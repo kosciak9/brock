@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Secret Box Item Discard/Search Behavior
+- Added: Secret Box `TWM-163` now has a TWM DSL manifest entry and registry overlay, mapping the ACE SPEC Item to a reducer action that requires discarding 3 other cards from hand before searching the deck for up to one Item, Tool, Supporter, and Stadium by cached Trainer subtype
+- Preserved: static Item metadata, ACE SPEC rarity, Trainer subtype, and printed effect text continue to come from the committed TCGdex cache; the overlay declares only executable discard/search behavior
+- Updated: `mix brock.cards.coverage` now reports Secret Box as implemented for Festival Lead 27445 and Rocket's Mewtwo 27459, reducing behavior-missing cards to 22 and behavior-missing families to 36
+- Verified: Secret Box reducer smoke, targeted registry tests, `mix brock.cards.coverage`, and `mix test test/brock/tcg/sim` pass
+
 ## [2026-05-29] implementation | Battle Cage Stadium Damage-Counter Prevention
 - Added: Battle Cage `PFL-085` now has a PFL DSL manifest entry and registry overlay, mapping the Stadium to a `:before_damage` hook that prevents damage counters from opponent Pokémon attack/Ability effects from being placed on Benched Pokémon
 - Preserved: static Stadium metadata and printed effect text continue to come from the committed TCGdex cache; the overlay declares only executable prevention behavior

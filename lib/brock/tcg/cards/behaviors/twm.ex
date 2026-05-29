@@ -91,6 +91,16 @@ defmodule Brock.Tcg.Cards.Behaviors.TWM do
     card_effect(effect: %{type: :draw_cards_if_damaged_as_active_by_attack, count: 2})
   end
 
+  card "TWM-163" do
+    card_effect(
+      effect: %{
+        type: :discard_3_then_search_item_tool_supporter_stadium_to_hand,
+        discard_count: 3,
+        trainer_types: [:item, :tool, :supporter, :stadium]
+      }
+    )
+  end
+
   card "TWM-165" do
     card_effect(
       effect: %{
