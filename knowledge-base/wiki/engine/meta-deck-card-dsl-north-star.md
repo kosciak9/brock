@@ -283,6 +283,7 @@ Cards may exist as `metadata_cached` before their deck is supported. This is exp
 - Added first representative behavior manifest module, `Brock.Tcg.Cards.Behaviors.TWM`, declaring Dragapult ex `Phantom Dive` executable effect overlay without moving static facts out of the metadata cache.
 - Ported Dragapult ex `Jet Headbutt` as the first representative plain-damage DSL manifest entry, relying on cached TCGdex damage/cost metadata without adding a static overlay.
 - Ported Drakloak `Recon Directive` as the first representative Ability DSL manifest entry, relying on cached TCGdex Ability metadata and adding only the executable effect overlay.
+- Ported Unfair Stamp as the first representative Item card-effect DSL manifest entry, relying on cached TCGdex Trainer metadata and adding only the executable shuffle/draw eligibility overlay.
 - Port representative existing cards before broad migration.
 - Start with cards that demonstrate different behavior families: plain damage, attack effect, Ability, Item, Supporter, Tool, Stadium, and Special Energy.
 
