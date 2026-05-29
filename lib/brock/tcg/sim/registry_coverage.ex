@@ -38,7 +38,8 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
     "MEG-115" => :energy_switch,
     "TWM-150" => :handheld_fan,
     "ASC-181" => :air_balloon,
-    "MEG-117" => :forest_of_vitality
+    "MEG-117" => :forest_of_vitality,
+    "MEG-132" => :wallys_compassion
   }
 
   @implemented_effect_types MapSet.new([
@@ -52,6 +53,7 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
                               :draw_then_shuffle_self_into_deck,
                               :draw_when_attached_from_hand,
                               :evolution_draw,
+                              :heal_mega_evolution_pokemon_ex_then_return_attached_energy_to_hand,
                               :lock_opponent_items_next_turn,
                               :move_basic_energy_between_own_pokemon,
                               :move_damage_counters,

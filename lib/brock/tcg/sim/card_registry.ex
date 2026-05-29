@@ -204,6 +204,9 @@ defmodule Brock.Tcg.Sim.CardRegistry do
       }
     },
     "MEG-119" => %{name: "Lillie's Determination", supertype: :trainer, trainer_type: :supporter},
+    "MEG-132" => %{
+      effect: %{type: :heal_mega_evolution_pokemon_ex_then_return_attached_energy_to_hand}
+    },
     "SCR-133" => %{name: "Crispin", supertype: :trainer, trainer_type: :supporter},
     "MEG-114" => %{name: "Boss's Orders", supertype: :trainer, trainer_type: :supporter},
     "POR-076" => %{name: "Judge", supertype: :trainer, trainer_type: :supporter},

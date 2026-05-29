@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Wally's Compassion Supporter Behavior
+- Added: Wally's Compassion `MEG-132` now has a DSL card-effect manifest entry and an executable reducer action that heals all damage from a chosen Mega Evolution Pokémon ex and, when damage was healed, returns attached Energy to hand
+- Preserved: target and attached-Energy eligibility use cached TCGdex static facts, while exact Supporter text was checked against the committed cache and Limitless
+- Updated: `mix brock.cards.coverage` now reports Wally's Compassion as implemented for Lopunny Dudunsparce 27514, reducing imported-deck `behavior_missing` card count by one
+- Verified: focused reducer smoke check, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Cyrano Supporter Behavior
 - Added: Cyrano `SSP-170` now has a DSL card-effect manifest entry and an executable reducer action that searches up to three chosen Pokémon ex from the player's deck and puts them into hand
 - Preserved: target eligibility uses cached TCGdex static facts and the registry overlay declares only executable behavior, while exact card text was checked against the committed cache and Limitless

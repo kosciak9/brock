@@ -759,6 +759,31 @@ defmodule Brock.Tcg.Sim.Engine do
   end
 
   defp reduce(state, %Action{
+         type: :wallys_compassion,
+         player_id: player_id,
+         params: %{instance_id: wally_id, target_id: target_id}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, wally} <- find_in_player_zone(state, player_id, :hand, wally_id),
+         {:ok, wally_metadata} <- CardRegistry.fetch(wally.card_id),
+         :ok <- require_card_id(wally, "MEG-132"),
+         :ok <- require_supporter_available_if_supporter(wally_metadata, state, player_id),
+         {:ok, target} <- find_in_play(state, player_id, target_id),
+         {:ok, target_metadata} <- Metadata.fetch(target.card_id),
+         :ok <- require_mega_evolution_pokemon_ex(target_metadata),
+         {:ok, state} <- discard_card_from_hand(state, player_id, wally, wally_metadata) do
+      if target.damage > 0 do
+        with {:ok, state} <- heal_all_pokemon_damage(state, player_id, target_id) do
+          return_attached_energy_to_hand(state, player_id, target_id)
+        end
+      else
+        {:ok, state}
+      end
+    end
+  end
+
+  defp reduce(state, %Action{
          type: :dawn,
          player_id: player_id,
          params: %{
@@ -1890,6 +1915,59 @@ defmodule Brock.Tcg.Sim.Engine do
          {:ok, player} <- fetch_player(state, player_id) do
       healed = %{target | damage: max(target.damage - damage, 0)}
       {:ok, put_player(state, replace_in_play(player, healed))}
+    end
+  end
+
+  defp heal_all_pokemon_damage(state, player_id, instance_id) do
+    with {:ok, target} <- find_in_play(state, player_id, instance_id),
+         {:ok, player} <- fetch_player(state, player_id) do
+      healed = %{target | damage: 0}
+      {:ok, put_player(state, replace_in_play(player, healed))}
+    end
+  end
+
+  defp return_attached_energy_to_hand(state, player_id, target_id) do
+    with {:ok, target} <- find_in_play(state, player_id, target_id),
+         {:ok, player} <- fetch_player(state, player_id),
+         {:ok, returned_energy} <- attached_energy_to_hand_cards(target.attachments) do
+      returned_energy_ids = MapSet.new(returned_energy, & &1.instance_id)
+
+      updated_target = %{
+        target
+        | attachments:
+            Enum.reject(target.attachments, &MapSet.member?(returned_energy_ids, &1.instance_id))
+      }
+
+      player =
+        player
+        |> replace_in_play(updated_target)
+        |> Map.update!(:hand, &(returned_energy ++ &1))
+
+      {:ok, put_player(state, player)}
+    end
+  end
+
+  defp attached_energy_to_hand_cards(attachments) do
+    Enum.reduce_while(attachments, {:ok, []}, fn attachment, {:ok, returned_energy} ->
+      with {:ok, true} <- energy_card?(attachment),
+           {:ok, :hand} <- ZoneMovement.transition(:attached, :hand),
+           {:ok, :in_hand} <- CardLifecycle.transition(attachment.lifecycle, :return_to_hand) do
+        returned = %{attachment | zone: :hand, lifecycle: :in_hand}
+        {:cont, {:ok, [returned | returned_energy]}}
+      else
+        {:ok, false} -> {:cont, {:ok, returned_energy}}
+        {:error, reason} -> {:halt, {:error, reason}}
+      end
+    end)
+    |> case do
+      {:ok, returned_energy} -> {:ok, Enum.reverse(returned_energy)}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp energy_card?(%{card_id: card_id}) do
+    with {:ok, metadata} <- Metadata.fetch(card_id) do
+      {:ok, metadata.category == :energy}
     end
   end
 
@@ -3282,6 +3360,18 @@ defmodule Brock.Tcg.Sim.Engine do
 
   defp require_pokemon_ex_target(metadata),
     do: {:error, {:invalid_pokemon_ex_target, metadata.id}}
+
+  defp require_mega_evolution_pokemon_ex(metadata) do
+    category = Map.get(metadata, :supertype) || Map.get(metadata, :category)
+    name = Map.get(metadata, :name)
+
+    if category == :pokemon && is_binary(name) && String.starts_with?(name, "Mega ") &&
+         String.ends_with?(name, " ex") do
+      :ok
+    else
+      {:error, {:not_mega_evolution_pokemon_ex, metadata.id}}
+    end
+  end
 
   defp require_evolved_this_turn(%{turn_number: turn_number}, %{turn_entered_play: turn_number}),
     do: :ok
