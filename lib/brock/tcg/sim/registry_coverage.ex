@@ -33,6 +33,7 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
     "TWM-143" => :bug_catching_set,
     "DRI-168" => :sacred_ash,
     "DRI-178" => :team_rockets_transceiver,
+    "JTG-143" => :black_belts_training,
     "SSP-170" => :cyrano,
     "TEF-145" => :ciphermaniacs_codebreaking,
     "MEG-115" => :energy_switch,
@@ -75,7 +76,8 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
                               :switch_self_with_bench,
                               :top_n_choose_grass_pokemon_or_basic_grass_energy_to_hand,
                               :top_n_choose_supporter_to_hand,
-                              :top_two_choose_one_to_hand_other_to_bottom
+                              :top_two_choose_one_to_hand_other_to_bottom,
+                              :turn_bonus_attack_damage_to_opponent_active_pokemon_ex
                             ])
 
   def report do

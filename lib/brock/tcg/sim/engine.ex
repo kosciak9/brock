@@ -759,6 +759,26 @@ defmodule Brock.Tcg.Sim.Engine do
   end
 
   defp reduce(state, %Action{
+         type: :black_belts_training,
+         player_id: player_id,
+         params: %{instance_id: black_belt_id}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, black_belt} <- find_in_player_zone(state, player_id, :hand, black_belt_id),
+         {:ok, black_belt_metadata} <- CardRegistry.fetch(black_belt.card_id),
+         :ok <- require_card_id(black_belt, "JTG-143"),
+         :ok <- require_supporter_available_if_supporter(black_belt_metadata, state, player_id),
+         {:ok, state} <- discard_card_from_hand(state, player_id, black_belt, black_belt_metadata) do
+      put_player_marker(
+        state,
+        player_id,
+        {:damage_bonus_to_opponent_active_pokemon_ex, :black_belts_training}
+      )
+    end
+  end
+
+  defp reduce(state, %Action{
          type: :wallys_compassion,
          player_id: player_id,
          params: %{instance_id: wally_id, target_id: target_id}
@@ -2735,6 +2755,12 @@ defmodule Brock.Tcg.Sim.Engine do
 
   defp put_player(state, player),
     do: %{state | players: Map.put(state.players, player.id, player)}
+
+  defp put_player_marker(state, player_id, marker) do
+    with {:ok, player} <- fetch_player(state, player_id) do
+      {:ok, put_player(state, %{player | markers: MapSet.put(player.markers, marker)})}
+    end
+  end
 
   defp require_active_player(%{active_player: player_id}, player_id), do: :ok
 

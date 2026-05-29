@@ -26,7 +26,12 @@ defmodule Brock.Tcg.Sim.Hooks do
   end
 
   def run(state, :modify_damage, context) do
-    with {:ok, damage} <- modify_attack_damage_if_brave_bangle_active(state, context) do
+    with {:ok, damage} <- modify_attack_damage_if_brave_bangle_active(state, context),
+         {:ok, damage} <-
+           modify_attack_damage_if_black_belts_training_active(
+             state,
+             %{context | damage: damage}
+           ) do
       {:ok, damage}
     end
   end
@@ -77,6 +82,40 @@ defmodule Brock.Tcg.Sim.Hooks do
   end
 
   defp modify_attack_damage_if_brave_bangle_active(_state, %{damage: damage}), do: {:ok, damage}
+
+  defp modify_attack_damage_if_black_belts_training_active(
+         state,
+         %{
+           source: :attack,
+           damage: damage,
+           attacking_player_id: attacking_player_id,
+           target_player_id: target_player_id,
+           target_id: target_id,
+           target_zone: :active
+         }
+       )
+       when is_integer(damage) and damage > 0 do
+    with true <- attacking_player_id != target_player_id,
+         {:ok, attacking_player} <- fetch_player(state, attacking_player_id),
+         true <-
+           MapSet.member?(
+             attacking_player.markers,
+             {:damage_bonus_to_opponent_active_pokemon_ex, :black_belts_training}
+           ),
+         {:ok, target} <- find_in_play(state, target_player_id, target_id),
+         true <- active_target?(state, target_player_id, target),
+         {:ok, target_metadata} <- CardRegistry.fetch(target.card_id),
+         true <- pokemon_ex?(target_metadata) do
+      {:ok, damage + 40}
+    else
+      false -> {:ok, damage}
+      true -> {:ok, damage}
+      {:error, reason} -> {:halt, reason}
+    end
+  end
+
+  defp modify_attack_damage_if_black_belts_training_active(_state, %{damage: damage}),
+    do: {:ok, damage}
 
   defp draw_cards_if_lucky_helmet_active(
          state,

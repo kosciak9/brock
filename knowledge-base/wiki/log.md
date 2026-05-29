@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Black Belt's Training Supporter Behavior
+- Added: Black Belt's Training `JTG-143` now has a DSL card-effect manifest entry and an executable Supporter reducer action that marks the player's turn for +40 attack damage to the opponent's Active Pokémon ex
+- Preserved: static Supporter text and metadata continue to come from the committed TCGdex cache; the card text was cross-checked against Limitless before coding
+- Updated: `mix brock.cards.coverage` now reports Black Belt's Training as implemented for Festival Lead 27445, reducing imported-deck `behavior_missing` card count by one
+- Verified: focused damage-modifier smoke check, `mix brock.cards.coverage`, and `mix test test/brock/tcg/sim` pass
+
 ## [2026-05-29] implementation | Lucky Helmet Tool Behavior
 - Added: Lucky Helmet `TWM-158` now has a DSL card-effect manifest entry and an executable `:after_damage` hook that draws 2 cards when the attached Active Pokémon is damaged by an opponent's attack
 - Preserved: static Tool text and metadata continue to come from the committed TCGdex cache; the registry overlay declares only executable behavior

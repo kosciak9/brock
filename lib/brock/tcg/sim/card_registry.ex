@@ -475,6 +475,12 @@ defmodule Brock.Tcg.Sim.CardRegistry do
       trainer_type: :item,
       effect: %{type: :search_team_rocket_supporter_to_hand}
     },
+    "JTG-143" => %{
+      effect: %{
+        type: :turn_bonus_attack_damage_to_opponent_active_pokemon_ex,
+        bonus_damage: 40
+      }
+    },
     "TWM-150" => %{name: "Handheld Fan", supertype: :trainer, trainer_type: :tool},
     "TWM-158" => %{
       effect: %{type: :draw_cards_if_damaged_as_active_by_attack, count: 2}
