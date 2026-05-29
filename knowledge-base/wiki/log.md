@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Lucky Helmet Tool Behavior
+- Added: Lucky Helmet `TWM-158` now has a DSL card-effect manifest entry and an executable `:after_damage` hook that draws 2 cards when the attached Active Pokémon is damaged by an opponent's attack
+- Preserved: static Tool text and metadata continue to come from the committed TCGdex cache; the registry overlay declares only executable behavior
+- Updated: `mix brock.cards.coverage` now reports Lucky Helmet as implemented for Rocket's Mewtwo 27459, reducing imported-deck `behavior_missing` card count by one
+- Verified: focused hook smoke check, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Wally's Compassion Supporter Behavior
 - Added: Wally's Compassion `MEG-132` now has a DSL card-effect manifest entry and an executable reducer action that heals all damage from a chosen Mega Evolution Pokémon ex and, when damage was healed, returns attached Energy to hand
 - Preserved: target and attached-Energy eligibility use cached TCGdex static facts, while exact Supporter text was checked against the committed cache and Limitless

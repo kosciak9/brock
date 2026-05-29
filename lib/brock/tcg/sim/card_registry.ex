@@ -476,6 +476,9 @@ defmodule Brock.Tcg.Sim.CardRegistry do
       effect: %{type: :search_team_rocket_supporter_to_hand}
     },
     "TWM-150" => %{name: "Handheld Fan", supertype: :trainer, trainer_type: :tool},
+    "TWM-158" => %{
+      effect: %{type: :draw_cards_if_damaged_as_active_by_attack, count: 2}
+    },
     "ASC-181" => %{name: "Air Balloon", supertype: :trainer, trainer_type: :tool},
     "WHT-080" => %{
       effect: %{

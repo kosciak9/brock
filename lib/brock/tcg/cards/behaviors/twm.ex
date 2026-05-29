@@ -36,6 +36,10 @@ defmodule Brock.Tcg.Cards.Behaviors.TWM do
     )
   end
 
+  card "TWM-158" do
+    card_effect(effect: %{type: :draw_cards_if_damaged_as_active_by_attack, count: 2})
+  end
+
   card "TWM-165" do
     card_effect(
       effect: %{

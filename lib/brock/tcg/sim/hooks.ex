@@ -9,6 +9,8 @@ defmodule Brock.Tcg.Sim.Hooks do
   """
 
   alias Brock.Tcg.Sim.CardRegistry
+  alias Brock.Tcg.Sim.StateMachines.CardLifecycle
+  alias Brock.Tcg.Sim.StateMachines.ZoneMovement
 
   def run(state, :before_play_trainer, context) do
     with {:ok, state} <- prevent_item_if_locked(state, context),
@@ -36,7 +38,8 @@ defmodule Brock.Tcg.Sim.Hooks do
   end
 
   def run(state, :after_damage, context) do
-    with {:ok, state} <- move_attack_energy_if_handheld_fan_active(state, context) do
+    with {:ok, state} <- draw_cards_if_lucky_helmet_active(state, context),
+         {:ok, state} <- move_attack_energy_if_handheld_fan_active(state, context) do
       {:ok, state}
     end
   end
@@ -74,6 +77,35 @@ defmodule Brock.Tcg.Sim.Hooks do
   end
 
   defp modify_attack_damage_if_brave_bangle_active(_state, %{damage: damage}), do: {:ok, damage}
+
+  defp draw_cards_if_lucky_helmet_active(
+         state,
+         %{
+           source: :attack,
+           attacking_player_id: attacking_player_id,
+           target_player_id: defending_player_id,
+           target_id: target_id,
+           target_zone: :active,
+           damage: damage
+         }
+       )
+       when is_integer(damage) and damage > 0 and attacking_player_id != defending_player_id do
+    with {:ok, defender} <- find_in_play(state, defending_player_id, target_id),
+         true <- active_target?(state, defending_player_id, defender),
+         %{card_id: "TWM-158"} <- defender.tool do
+      case draw_cards(state, defending_player_id, 2) do
+        {:ok, state} -> {:ok, state}
+        {:error, reason} -> {:halt, reason}
+      end
+    else
+      false -> {:ok, state}
+      nil -> {:ok, state}
+      {:error, reason} -> {:halt, reason}
+      _other_tool -> {:ok, state}
+    end
+  end
+
+  defp draw_cards_if_lucky_helmet_active(state, _context), do: {:ok, state}
 
   defp move_attack_energy_if_handheld_fan_active(
          state,
@@ -123,6 +155,31 @@ defmodule Brock.Tcg.Sim.Hooks do
   end
 
   defp move_attack_energy_if_handheld_fan_active(state, _context), do: {:ok, state}
+
+  defp draw_cards(state, _player_id, 0), do: {:ok, state}
+
+  defp draw_cards(state, player_id, count) when count > 0 do
+    with {:ok, state} <- draw_card(state, player_id) do
+      draw_cards(state, player_id, count - 1)
+    end
+  end
+
+  defp draw_card(state, player_id) do
+    with {:ok, player} <- fetch_player(state, player_id) do
+      case player.deck do
+        [] ->
+          {:error, :cannot_draw_from_empty_deck}
+
+        [card | deck] ->
+          with {:ok, :hand} <- ZoneMovement.transition(:deck, :hand),
+               {:ok, :in_hand} <- CardLifecycle.transition(card.lifecycle, :draw) do
+            card = %{card | zone: :hand, lifecycle: :in_hand}
+            player = %{player | deck: deck, hand: [card | player.hand]}
+            {:ok, put_player(state, player)}
+          end
+      end
+    end
+  end
 
   defp prevent_bench_attack_damage_if_spherical_shield(
          state,
