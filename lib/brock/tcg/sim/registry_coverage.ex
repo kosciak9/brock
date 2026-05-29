@@ -51,6 +51,7 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
                               :bench_basic_psychic_from_deck_when_attached_to_psychic,
                               :bonus_attack_damage_to_pokemon_ex_if_attacker_has_no_rule_box,
                               :bonus_damage_if_defender_pokemon_ex,
+                              :bonus_damage_on_coin_heads,
                               :bonus_damage_per_energy_attached_to_defender,
                               :choose_switch_active_or_turn_bonus_attack_damage_to_opponent_active_pokemon_ex_or_v,
                               :confuse_defender_active,

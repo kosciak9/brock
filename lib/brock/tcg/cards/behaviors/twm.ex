@@ -8,6 +8,13 @@ defmodule Brock.Tcg.Cards.Behaviors.TWM do
     attack(:branch_poke, effect: nil)
   end
 
+  card "TWM-017" do
+    attack(:tumbling_attack,
+      damage: 10,
+      effect: %{type: :bonus_damage_on_coin_heads, bonus_damage: 20}
+    )
+  end
+
   card "TWM-128" do
     attack(:petty_grudge, effect: nil)
     attack(:bite, effect: nil)

@@ -38,6 +38,14 @@ defmodule Brock.Tcg.Sim.CardRegistry do
         branch_poke: %{effect: nil}
       }
     },
+    "TWM-017" => %{
+      attacks: %{
+        tumbling_attack: %{
+          damage: 10,
+          effect: %{type: :bonus_damage_on_coin_heads, bonus_damage: 20}
+        }
+      }
+    },
     "SCR-012" => %{
       attacks: %{
         spray_fluid: %{effect: nil}

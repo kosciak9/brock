@@ -2435,6 +2435,23 @@ defmodule Brock.Tcg.Sim.Engine do
     basic_pokemon_in_play_count(state, player_id) * damage_per_pokemon
   end
 
+  defp base_attack_damage(_state, %{
+         attack: %{
+           damage: damage,
+           effect: %{type: :bonus_damage_on_coin_heads, bonus_damage: bonus_damage}
+         },
+         params: %{coin_result: :heads}
+       }) do
+    damage + bonus_damage
+  end
+
+  defp base_attack_damage(_state, %{
+         attack: %{damage: damage, effect: %{type: :bonus_damage_on_coin_heads}},
+         params: %{coin_result: :tails}
+       }) do
+    damage
+  end
+
   defp base_attack_damage(_state, %{attack: attack}), do: Map.fetch!(attack, :damage)
 
   defp basic_pokemon_in_play_count(state, player_id) do
@@ -2733,6 +2750,28 @@ defmodule Brock.Tcg.Sim.Engine do
       do: :ok,
       else: {:error, :missing_discard_trainer_target_for_attack}
   end
+
+  defp require_attack_effect_params(
+         %{effect: %{type: :bonus_damage_on_coin_heads}},
+         %{coin_result: result},
+         _defender
+       )
+       when result in [:heads, :tails],
+       do: :ok
+
+  defp require_attack_effect_params(
+         %{effect: %{type: :bonus_damage_on_coin_heads}},
+         %{coin_result: result},
+         _defender
+       ),
+       do: {:error, {:invalid_coin_result, result}}
+
+  defp require_attack_effect_params(
+         %{effect: %{type: :bonus_damage_on_coin_heads}},
+         _params,
+         _defender
+       ),
+       do: {:error, :missing_coin_result}
 
   defp require_attack_effect_params(_attack, _params, _defender), do: :ok
 
