@@ -78,6 +78,7 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
                               :search_team_rocket_supporter_to_hand,
                               :search_supporter_when_benched_from_hand,
                               :self_damage,
+                              :shuffle_self_and_attached_into_deck,
                               :switch_self_with_bench,
                               :top_n_choose_grass_pokemon_or_basic_grass_energy_to_hand,
                               :top_n_choose_supporter_to_hand,

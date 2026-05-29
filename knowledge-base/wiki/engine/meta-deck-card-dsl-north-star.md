@@ -327,6 +327,7 @@ Cards may exist as `metadata_cached` before their deck is supported. This is exp
 - Implemented Passimian `SSP-111` as an imported-deck variable-damage attack behavior slice, with an SSP DSL manifest entry and registry overlay for `Coordinated Throwing` that counts the player's Basic Pokémon in play while keeping static attack text in the TCGdex cache.
 - Implemented Applin `TWM-017` as an imported-deck coin-based variable-damage attack behavior slice, with a TWM DSL manifest entry and registry overlay for `Tumbling Attack` that requires explicit `coin_result` params while keeping static attack text in the TCGdex cache.
 - Implemented Applin `TWM-126` as an imported-deck search/plain-damage attack behavior slice, with TWM DSL manifest entries and a registry overlay for `Find a Friend` and `Rolling Tackle` that keep static attack text, cost, and damage facts in the TCGdex cache.
+- Implemented Abra `TWM-080` as an imported-deck Active-only shuffle Ability/plain-damage attack behavior slice, with TWM DSL manifest entries, a registry overlay for `Teleporter` and `Beam`, and a reducer Ability path that shuffles Abra plus attached cards into the deck while keeping static facts in the TCGdex cache.
 - Implement missing behavior families for the four imported meta decks.
 - Use coverage to divide work by behavior family and ruling risk.
 

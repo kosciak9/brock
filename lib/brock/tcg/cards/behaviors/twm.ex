@@ -15,6 +15,11 @@ defmodule Brock.Tcg.Cards.Behaviors.TWM do
     )
   end
 
+  card "TWM-080" do
+    ability(:teleporter, effect: %{type: :shuffle_self_and_attached_into_deck})
+    attack(:beam, effect: nil)
+  end
+
   card "TWM-126" do
     attack(:find_a_friend,
       damage: 0,

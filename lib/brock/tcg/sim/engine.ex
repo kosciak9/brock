@@ -1100,6 +1100,29 @@ defmodule Brock.Tcg.Sim.Engine do
   defp reduce(state, %Action{
          type: :use_ability,
          player_id: player_id,
+         params: %{source_id: source_id, ability_id: :teleporter}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, player} <- fetch_player(state, player_id),
+         {:ok, source} <- require_active_source(player, player_id, source_id),
+         {:ok, _ability} <- require_ability(state, source, :teleporter),
+         :ok <- require_marker_available(player, {:ability_used, source_id, :teleporter}) do
+      shuffled_cards = reset_tree_for_deck(source)
+
+      player =
+        player
+        |> remove_in_play(source.instance_id)
+        |> Map.update!(:deck, &(shuffled_cards ++ &1))
+        |> Map.update!(:markers, &MapSet.put(&1, {:ability_used, source_id, :teleporter}))
+
+      {:ok, put_player(state, player)}
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :use_ability,
+         player_id: player_id,
          params: %{
            source_id: source_id,
            ability_id: :adrena_brain,
@@ -2987,6 +3010,18 @@ defmodule Brock.Tcg.Sim.Engine do
     do: {:error, {:missing_active_pokemon, player_id}}
 
   defp require_active_pokemon(_player_id, _player), do: :ok
+
+  defp require_active_source(%{active: active}, player_id, instance_id)
+       when not is_nil(active) do
+    if active.instance_id == instance_id do
+      {:ok, active}
+    else
+      {:error, {:pokemon_not_active, player_id, instance_id}}
+    end
+  end
+
+  defp require_active_source(_player, player_id, instance_id),
+    do: {:error, {:pokemon_not_active, player_id, instance_id}}
 
   defp require_can_attack(%{status: status}) when status in [:asleep, :paralyzed],
     do: {:error, {:cannot_attack_while, status}}

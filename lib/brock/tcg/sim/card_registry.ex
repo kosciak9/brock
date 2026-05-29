@@ -46,6 +46,14 @@ defmodule Brock.Tcg.Sim.CardRegistry do
         }
       }
     },
+    "TWM-080" => %{
+      abilities: %{
+        teleporter: %{effect: %{type: :shuffle_self_and_attached_into_deck}}
+      },
+      attacks: %{
+        beam: %{effect: nil}
+      }
+    },
     "TWM-126" => %{
       attacks: %{
         find_a_friend: %{damage: 0, effect: %{type: :search_pokemon_to_hand}},
