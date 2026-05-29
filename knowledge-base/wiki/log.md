@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Lopunny Dudunsparce Deck Import
+- Added: `Brock.Tcg.Sim.Decks.LopunnyDudunsparce27514` static deck module from Limitless deck 27514 using `Brock.Tcg.Sim.Decklist`
+- Verified: source deck totals 60 cards from 17 Pokémon, 35 Trainer, and 8 Energy cards
+- Verified: `mix test test/brock/tcg/sim` passes with 75 tests
+- Verified: `mix brock.cards.coverage` still reports the current fixed-deck registry coverage successfully
+
 ## [2026-05-29] implementation | Festival Lead Deck Import
 - Added: `Brock.Tcg.Sim.Decks.FestivalLead27445` static deck module from Limitless deck 27445 using `Brock.Tcg.Sim.Decklist`
 - Verified: source deck totals 60 cards from 23 Pokémon, 32 Trainer, and 5 Energy cards
