@@ -339,6 +339,7 @@ Cards may exist as `metadata_cached` before their deck is supported. This is exp
 - Implemented Team Rocket's Ariana `DRI-171` as an imported-deck Supporter draw behavior slice, with a DRI DSL manifest entry, registry overlay, and reducer action that draws until 5 cards or until 8 cards when all of the player's Pokémon in play are Team Rocket's Pokémon while keeping static Supporter text in the TCGdex cache.
 - Ported Dudunsparce `TEF-129` `Land Crush` to an explicit TEF DSL manifest entry and registry overlay, keeping cached attack cost and damage as the static source of truth while reducing generic-damage coverage shared by Alakazam/Dudunsparce 27147 and Lopunny Dudunsparce 27514.
 - Ported Dedenne `SSP-087` `Gnaw` to an explicit SSP DSL manifest entry and registry overlay, keeping cached attack cost and damage as the static source of truth while reducing Alakazam/Dudunsparce 27147 generic-damage coverage.
+- Ported Kadabra `MEG-055` `Super Psy Bolt` to an explicit MEG DSL manifest entry and registry overlay, keeping cached attack cost and damage as the static source of truth while reducing Alakazam/Dudunsparce 27147 generic-damage coverage.
 - Implement missing behavior families for the four imported meta decks.
 - Use coverage to divide work by behavior family and ruling risk.
 

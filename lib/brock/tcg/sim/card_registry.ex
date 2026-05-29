@@ -355,7 +355,7 @@ defmodule Brock.Tcg.Sim.CardRegistry do
         psychic_draw: %{name: "Psychic Draw", effect: %{type: :evolution_draw, count: 2}}
       },
       attacks: %{
-        super_psy_bolt: %{name: "Super Psy Bolt", cost: [:psychic], damage: 30}
+        super_psy_bolt: %{name: "Super Psy Bolt", cost: [:psychic], damage: 30, effect: nil}
       }
     },
     "MEG-056" => %{

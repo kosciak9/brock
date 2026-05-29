@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | MEG Kadabra Plain-Damage Attack Behavior
+- Added: Kadabra `MEG-055` now has an MEG DSL manifest entry for `Psychic Draw` and `Super Psy Bolt`, and the registry overlay marks `Super Psy Bolt` as explicit exact plain-damage behavior instead of generic damage
+- Preserved: cached TCGdex metadata remains the source of truth for static Pokémon metadata, Ability text, attack cost, and damage; `P Super Psy Bolt 30` was cross-checked against Limitless before coding
+- Updated: `mix brock.cards.coverage` now reports one fewer `generic_damage_only` behavior family for Alakazam/Dudunsparce 27147
+- Verified: focused manifest/registry smoke check, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | SSP Dedenne Plain-Damage Attack Behavior
 - Added: Dedenne `SSP-087` now has an SSP DSL manifest entry for `Electromagnetic Sonar` and `Gnaw`, and the registry overlay marks `Gnaw` as explicit exact plain-damage behavior instead of generic damage
 - Preserved: cached TCGdex metadata remains the source of truth for static Pokémon metadata, attack cost, damage, and raw attack text; `P Gnaw 30` was cross-checked against Limitless before coding

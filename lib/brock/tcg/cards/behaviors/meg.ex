@@ -3,6 +3,11 @@ defmodule Brock.Tcg.Cards.Behaviors.MEG do
 
   use Brock.Tcg.Cards.DSL
 
+  card "MEG-055" do
+    ability(:psychic_draw, effect: %{type: :evolution_draw, count: 2})
+    attack(:super_psy_bolt, effect: nil)
+  end
+
   card "MEG-117" do
     card_effect(
       effect: %{
