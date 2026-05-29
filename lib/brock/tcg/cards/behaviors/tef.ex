@@ -15,6 +15,10 @@ defmodule Brock.Tcg.Cards.Behaviors.TEF do
 
   card "TEF-128" do
     attack(:gnaw, effect: nil)
+
+    attack(:dig,
+      effect: %{type: :prevent_damage_and_effects_from_attacks_next_turn_on_coin_heads}
+    )
   end
 
   card "TEF-129" do

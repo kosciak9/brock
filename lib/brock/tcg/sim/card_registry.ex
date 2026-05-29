@@ -402,7 +402,10 @@ defmodule Brock.Tcg.Sim.CardRegistry do
     },
     "TEF-128" => %{
       attacks: %{
-        gnaw: %{effect: nil}
+        gnaw: %{effect: nil},
+        dig: %{
+          effect: %{type: :prevent_damage_and_effects_from_attacks_next_turn_on_coin_heads}
+        }
       }
     },
     "TEF-129" => %{

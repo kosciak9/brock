@@ -76,6 +76,7 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
                               :pokemon_lose_self_knock_out_abilities,
                               :prevent_attack_damage_to_non_rule_box_bench,
                               :prevent_attack_damage_and_effects_to_bench,
+                              :prevent_damage_and_effects_from_attacks_next_turn_on_coin_heads,
                               :recover_trainer_from_discard_to_hand,
                               :return_attacker_and_attached_to_hand,
                               :search_deck_for_cards_to_top,

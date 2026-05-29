@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | TEF Dunsparce Dig Prevention Attack Behavior
+- Added: Dunsparce `TEF-128` now has a TEF DSL manifest entry and registry overlay for `Dig`, mapping heads to a next-turn marker that prevents opponent attack damage and attack effects done to that Pokémon
+- Preserved: cached TCGdex metadata remains the source of truth for static Pokémon metadata, attack cost, damage, and raw attack text; `CC Dig 30` and its prevention text were cross-checked against the committed cache and Limitless before coding
+- Updated: `mix brock.cards.coverage` now reports `TEF-128` as implemented for Lopunny Dudunsparce 27514, reducing behavior-missing cards to 28 and behavior-missing families to 43
+- Verified: focused simulator tests, explicit `Dig` runtime smoke, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | TEF Dunsparce Plain-Damage Attack Behavior
 - Added: Dunsparce `TEF-128` now has a TEF DSL manifest entry for `Gnaw`, and the registry overlay marks `Gnaw` as explicit exact plain-damage behavior instead of generic cached damage
 - Preserved: cached TCGdex metadata remains the source of truth for static Pokémon metadata, attack cost, and damage; `C Gnaw 10` was cross-checked against the committed cache and Limitless before coding

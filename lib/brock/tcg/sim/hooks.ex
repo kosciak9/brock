@@ -43,8 +43,15 @@ defmodule Brock.Tcg.Sim.Hooks do
   end
 
   def run(state, :before_damage, context) do
-    with {:ok, state} <- prevent_bench_attack_damage_if_spherical_shield(state, context),
+    with {:ok, state} <- prevent_damage_if_dig_protected(state, context),
+         {:ok, state} <- prevent_bench_attack_damage_if_spherical_shield(state, context),
          {:ok, state} <- prevent_bench_attack_damage_if_flower_curtain(state, context) do
+      {:ok, state}
+    end
+  end
+
+  def run(state, :before_attack_effect, context) do
+    with {:ok, state} <- prevent_attack_effect_if_dig_protected(state, context) do
       {:ok, state}
     end
   end
@@ -303,6 +310,40 @@ defmodule Brock.Tcg.Sim.Hooks do
 
   defp prevent_bench_attack_damage_if_flower_curtain(state, _context), do: {:ok, state}
 
+  defp prevent_damage_if_dig_protected(
+         state,
+         %{
+           source: source,
+           attacking_player_id: attacking_player_id,
+           target_player_id: target_player_id,
+           target_id: target_id
+         }
+       )
+       when source in [:attack, :attack_effect] and attacking_player_id != target_player_id do
+    if dig_protected?(state, target_player_id, target_id),
+      do: {:halt, {:damage_prevented_by_attack_effect, "TEF-128", :dig}},
+      else: {:ok, state}
+  end
+
+  defp prevent_damage_if_dig_protected(state, _context), do: {:ok, state}
+
+  defp prevent_attack_effect_if_dig_protected(
+         state,
+         %{
+           source: :attack_effect,
+           attacking_player_id: attacking_player_id,
+           target_player_id: target_player_id,
+           target_id: target_id
+         }
+       )
+       when attacking_player_id != target_player_id do
+    if dig_protected?(state, target_player_id, target_id),
+      do: {:halt, {:attack_effect_prevented_by_attack_effect, "TEF-128", :dig}},
+      else: {:ok, state}
+  end
+
+  defp prevent_attack_effect_if_dig_protected(state, _context), do: {:ok, state}
+
   defp prevent_colorless_ability_if_watchtower(
          %{stadium: %{card_id: "DRI-180"}} = _state,
          %{metadata: %{supertype: :pokemon, type: :colorless, id: card_id}}
@@ -485,4 +526,16 @@ defmodule Brock.Tcg.Sim.Hooks do
       {:error, _reason} -> false
     end
   end
+
+  defp dig_protected?(state, player_id, target_id) do
+    with {:ok, player} <- fetch_player(state, player_id),
+         true <- in_play_instance?(player, target_id) do
+      MapSet.member?(player.markers, {:prevent_damage_and_effects_from_attacks, target_id, :dig})
+    else
+      _not_protected -> false
+    end
+  end
+
+  defp in_play_instance?(player, instance_id),
+    do: Enum.any?(in_play_cards(player), &(&1.instance_id == instance_id))
 end

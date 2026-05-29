@@ -1383,20 +1383,15 @@ defmodule Brock.Tcg.Sim.Engine do
       case resolve_confusion_check(state, pending_attack) do
         {:ok, state} ->
           with {:ok, damage} <- attack_damage(state, pending_attack),
+               {:ok, state, damage_result} <-
+                 damage_active_pokemon_from_attack(state, pending_attack, damage),
                {:ok, state} <-
-                 damage_pokemon(
-                   state,
-                   pending_attack.target_player_id,
-                   pending_attack.target_id,
-                   damage
-                 ),
-               {:ok, state} <- run_after_attack_damage_hooks(state, pending_attack, damage),
+                 maybe_run_after_attack_damage_hooks(state, pending_attack, damage, damage_result),
                {:ok, state} <-
-                 resolve_knock_outs_after_damage(
+                 maybe_resolve_knock_outs_after_attack_damage(
                    state,
-                   player_id,
-                   pending_attack.target_player_id,
-                   pending_attack.target_id
+                   pending_attack,
+                   damage_result
                  ),
                {:ok, state} <- resolve_attack_effect(state, pending_attack) do
             {:ok, %{state | turn_lifecycle: turn_lifecycle, pending_attack: nil}}
@@ -2502,6 +2497,61 @@ defmodule Brock.Tcg.Sim.Engine do
     end
   end
 
+  defp damage_active_pokemon_from_attack(state, pending_attack, damage) do
+    context = %{
+      source: :attack,
+      attack: pending_attack.attack,
+      attacking_player_id: pending_attack.player_id,
+      attacker_id: pending_attack.attacker_id,
+      target_player_id: pending_attack.target_player_id,
+      target_id: pending_attack.target_id,
+      target_zone: :active,
+      damage: damage,
+      damage_kind: :damage,
+      params: pending_attack.params
+    }
+
+    case Hooks.run(state, :before_damage, context) do
+      {:ok, state} ->
+        with {:ok, state} <-
+               damage_pokemon(
+                 state,
+                 pending_attack.target_player_id,
+                 pending_attack.target_id,
+                 damage
+               ) do
+          {:ok, state, :damage_applied}
+        end
+
+      {:halt, {:damage_prevented_by_ability, _card_id, _ability_id}} ->
+        {:ok, state, :damage_prevented}
+
+      {:halt, {:damage_prevented_by_attack_effect, _card_id, _attack_id}} ->
+        {:ok, state, :damage_prevented}
+
+      {:halt, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp maybe_run_after_attack_damage_hooks(state, _pending_attack, _damage, :damage_prevented),
+    do: {:ok, state}
+
+  defp maybe_run_after_attack_damage_hooks(state, pending_attack, damage, :damage_applied),
+    do: run_after_attack_damage_hooks(state, pending_attack, damage)
+
+  defp maybe_resolve_knock_outs_after_attack_damage(state, _pending_attack, :damage_prevented),
+    do: {:ok, state}
+
+  defp maybe_resolve_knock_outs_after_attack_damage(state, pending_attack, :damage_applied) do
+    resolve_knock_outs_after_damage(
+      state,
+      pending_attack.player_id,
+      pending_attack.target_player_id,
+      pending_attack.target_id
+    )
+  end
+
   defp modify_attack_damage(
          state,
          %{
@@ -2782,16 +2832,57 @@ defmodule Brock.Tcg.Sim.Engine do
     end
   end
 
-  defp resolve_attack_effect(state, %{
-         attack: %{effect: %{type: :confuse_defender_active}},
-         target_player_id: target_player_id,
-         target_id: target_id
-       }) do
-    case find_in_play(state, target_player_id, target_id) do
-      {:ok, target} -> set_pokemon_status(state, target_player_id, target, :confused)
-      {:error, _reason} -> {:ok, state}
+  defp resolve_attack_effect(
+         state,
+         %{
+           attack: %{effect: %{type: :confuse_defender_active}},
+           target_player_id: target_player_id,
+           target_id: target_id
+         } = pending_attack
+       ) do
+    case attack_effect_prevention_result(
+           state,
+           pending_attack,
+           target_player_id,
+           target_id,
+           :active
+         ) do
+      {:ok, state, :continue} ->
+        case find_in_play(state, target_player_id, target_id) do
+          {:ok, target} -> set_pokemon_status(state, target_player_id, target, :confused)
+          {:error, _reason} -> {:ok, state}
+        end
+
+      {:ok, state, :prevented} ->
+        {:ok, state}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
+
+  defp resolve_attack_effect(state, %{
+         attack: %{
+           effect: %{type: :prevent_damage_and_effects_from_attacks_next_turn_on_coin_heads}
+         },
+         player_id: player_id,
+         attacker_id: attacker_id,
+         params: %{coin_result: :heads}
+       }) do
+    put_player_marker(
+      state,
+      player_id,
+      {:prevent_damage_and_effects_from_attacks, attacker_id, :dig}
+    )
+  end
+
+  defp resolve_attack_effect(state, %{
+         attack: %{
+           effect: %{type: :prevent_damage_and_effects_from_attacks_next_turn_on_coin_heads}
+         },
+         params: %{coin_result: :tails}
+       }),
+       do: {:ok, state}
 
   defp resolve_attack_effect(state, %{
          attack: %{effect: %{type: :damage_one_opponent_pokemon, damage: damage}},
@@ -2799,20 +2890,17 @@ defmodule Brock.Tcg.Sim.Engine do
          target_player_id: target_player_id,
          params: %{target_id: target_id}
        }) do
-    if bench_target?(state, target_player_id, target_id) do
-      damage_bench_pokemon_from_attack_effect(
-        state,
-        player_id,
-        target_player_id,
-        target_id,
-        damage,
-        :damage
-      )
-    else
-      with {:ok, state} <- damage_pokemon(state, target_player_id, target_id, damage) do
-        resolve_knock_outs_after_damage(state, player_id, target_player_id, target_id)
-      end
-    end
+    target_zone = if bench_target?(state, target_player_id, target_id), do: :bench, else: :active
+
+    damage_pokemon_from_attack_effect(
+      state,
+      player_id,
+      target_player_id,
+      target_id,
+      target_zone,
+      damage,
+      :damage
+    )
   end
 
   defp resolve_attack_effect(state, %{
@@ -2876,12 +2964,32 @@ defmodule Brock.Tcg.Sim.Engine do
          damage,
          damage_kind
        ) do
+    damage_pokemon_from_attack_effect(
+      state,
+      attacking_player_id,
+      target_player_id,
+      target_id,
+      :bench,
+      damage,
+      damage_kind
+    )
+  end
+
+  defp damage_pokemon_from_attack_effect(
+         state,
+         attacking_player_id,
+         target_player_id,
+         target_id,
+         target_zone,
+         damage,
+         damage_kind
+       ) do
     context = %{
       source: :attack_effect,
       attacking_player_id: attacking_player_id,
       target_player_id: target_player_id,
       target_id: target_id,
-      target_zone: :bench,
+      target_zone: target_zone,
       damage: damage,
       damage_kind: damage_kind
     }
@@ -2894,6 +3002,40 @@ defmodule Brock.Tcg.Sim.Engine do
 
       {:halt, {:damage_prevented_by_ability, _card_id, _ability_id}} ->
         {:ok, state}
+
+      {:halt, {:damage_prevented_by_attack_effect, _card_id, _attack_id}} ->
+        {:ok, state}
+
+      {:halt, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp attack_effect_prevention_result(
+         state,
+         pending_attack,
+         target_player_id,
+         target_id,
+         target_zone
+       ) do
+    context = %{
+      source: :attack_effect,
+      attack: pending_attack.attack,
+      attacking_player_id: pending_attack.player_id,
+      attacker_id: pending_attack.attacker_id,
+      target_player_id: target_player_id,
+      target_id: target_id,
+      target_zone: target_zone,
+      effect_kind: :effect,
+      params: pending_attack.params
+    }
+
+    case Hooks.run(state, :before_attack_effect, context) do
+      {:ok, state} ->
+        {:ok, state, :continue}
+
+      {:halt, {:attack_effect_prevented_by_attack_effect, _card_id, _attack_id}} ->
+        {:ok, state, :prevented}
 
       {:halt, reason} ->
         {:error, reason}
@@ -3009,6 +3151,28 @@ defmodule Brock.Tcg.Sim.Engine do
 
   defp require_attack_effect_params(
          %{effect: %{type: :bonus_damage_on_coin_heads}},
+         _params,
+         _defender
+       ),
+       do: {:error, :missing_coin_result}
+
+  defp require_attack_effect_params(
+         %{effect: %{type: :prevent_damage_and_effects_from_attacks_next_turn_on_coin_heads}},
+         %{coin_result: result},
+         _defender
+       )
+       when result in [:heads, :tails],
+       do: :ok
+
+  defp require_attack_effect_params(
+         %{effect: %{type: :prevent_damage_and_effects_from_attacks_next_turn_on_coin_heads}},
+         %{coin_result: result},
+         _defender
+       ),
+       do: {:error, {:invalid_coin_result, result}}
+
+  defp require_attack_effect_params(
+         %{effect: %{type: :prevent_damage_and_effects_from_attacks_next_turn_on_coin_heads}},
          _params,
          _defender
        ),
