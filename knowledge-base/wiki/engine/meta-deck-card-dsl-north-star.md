@@ -332,6 +332,7 @@ Cards may exist as `metadata_cached` before their deck is supported. This is exp
 - Implemented Shaymin `DRI-010` as an imported-deck bench-protection Ability/plain-damage attack behavior slice, with a DRI DSL manifest entry, registry overlay for `Flower Curtain` and `Smash Kick`, and a `:before_damage` hook that prevents attack damage to the player's non-rule-box Benched Pokémon while preserving damage-counter effects.
 - Ported Psyduck `ASC-039` to explicit ASC DSL manifest entries for `Damp` and plain-damage `Ram`, keeping static Ability text, attack cost, and damage facts in the TCGdex cache while reducing imported-deck generic-damage coverage.
 - Ported Genesect `SFA-040` `Magnetic Blast` to an explicit SFA DSL manifest entry and registry overlay, keeping static attack cost and damage facts in the TCGdex cache while reducing imported-deck generic-damage coverage.
+- Ported Dunsparce `JTG-120` to an explicit JTG DSL manifest entry for `Trading Places` and plain-damage `Ram`, keeping static attack text, cost, and damage facts in the TCGdex cache while reducing generic-damage coverage shared by Alakazam/Dudunsparce 27147 and Lopunny Dudunsparce 27514.
 - Implement missing behavior families for the four imported meta decks.
 - Use coverage to divide work by behavior family and ruling risk.
 

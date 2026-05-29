@@ -369,7 +369,7 @@ defmodule Brock.Tcg.Sim.CardRegistry do
           damage: 0,
           effect: %{type: :switch_self_with_bench}
         },
-        ram: %{name: "Ram", cost: [:colorless, :colorless], damage: 20}
+        ram: %{name: "Ram", cost: [:colorless, :colorless], damage: 20, effect: nil}
       }
     },
     "TEF-129" => %{

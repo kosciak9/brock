@@ -3,6 +3,14 @@ defmodule Brock.Tcg.Cards.Behaviors.JTG do
 
   use Brock.Tcg.Cards.DSL
 
+  card "JTG-120" do
+    attack(:trading_places,
+      effect: %{type: :switch_self_with_bench}
+    )
+
+    attack(:ram, effect: nil)
+  end
+
   card "JTG-143" do
     card_effect(
       effect: %{

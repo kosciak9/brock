@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | JTG Dunsparce Plain-Damage Attack Behavior
+- Added: Dunsparce `JTG-120` now has a JTG DSL manifest entry for `Trading Places` and `Ram`, and the registry overlay marks `Ram` as explicit exact plain-damage behavior instead of generic damage
+- Preserved: cached TCGdex metadata remains the source of truth for static Pokémon metadata, attack cost, damage, and raw attack text; `C Trading Places` and `CC Ram 20` were cross-checked against Limitless before coding
+- Updated: `mix brock.cards.coverage` now reports one fewer `generic_damage_only` behavior family across Alakazam/Dudunsparce 27147 and Lopunny Dudunsparce 27514
+- Verified: focused manifest/registry smoke check, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Genesect Plain-Damage Attack Behavior
 - Added: Genesect `SFA-040` now has an SFA DSL manifest entry and registry overlay for `Magnetic Blast`, explicitly marking the attack as exact plain-damage behavior instead of generic damage
 - Preserved: cached TCGdex metadata remains the source of truth for static Pokémon metadata, attack cost, and damage; `MCC Magnetic Blast 100` was cross-checked against Limitless before coding
