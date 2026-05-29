@@ -258,6 +258,7 @@ Cards may exist as `metadata_cached` before their deck is supported. This is exp
 - Added a deck macro foundation for generated/static deck modules: source identity,
   names, quantities, `card_ids/0`, and compile-time 60-card validation now live in
   `Brock.Tcg.Sim.Decklist`.
+- Imported Raging Bolt Ogerpon 27599 as a static deck module using the deck macro.
 - Import the four new Limitless decks.
 - Cache TCGdex metadata for all six supported decks.
 - Keep importer/cache tests offline by default; tag network tests as `:external`.

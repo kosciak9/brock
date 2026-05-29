@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Raging Bolt Ogerpon Deck Import
+- Added: `Brock.Tcg.Sim.Decks.RagingBoltOgerpon27599` static deck module from Limitless deck 27599 using `Brock.Tcg.Sim.Decklist`
+- Verified: source deck totals 60 cards from 19 Pokémon, 26 Trainer, and 15 Energy cards
+- Verified: `mix test test/brock/tcg/sim` passes with 75 tests
+- Verified: `mix brock.cards.coverage` still reports the current fixed-deck registry coverage successfully
+
 ## [2026-05-29] implementation | Deck Macro Foundation
 - Added: `Brock.Tcg.Sim.Decklist` macro for generated/static deck modules with compile-time source identity and 60-card validation
 - Updated: Dragapult 27431 and Alakazam/Dudunsparce 27147 deck modules to use the macro while preserving `source_url/0`, `counts/0`, and `card_ids/0`
