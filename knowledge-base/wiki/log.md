@@ -1,5 +1,10 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Imported Basic Energy Registry Support
+- Added: all deck-pool Basic Energy IDs now resolve through metadata-only registry overlays, including imported-deck Grass, Water, Lightning, and Fighting Energy
+- Preserved: static Energy names/types continue to come from the committed TCGdex cache, with provided Energy types inferred by the existing registry facade
+- Verified: targeted registry test, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Energy Switch Item Behavior
 - Added: Energy Switch `MEG-115` now has a DSL card-effect manifest entry and an executable reducer action that moves a Basic Energy from one of the player's Pokémon to another
 - Updated: `mix brock.cards.coverage` now reports Energy Switch as implemented across Raging Bolt Ogerpon 27599 and Rocket's Mewtwo 27459

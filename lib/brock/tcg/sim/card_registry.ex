@@ -227,24 +227,13 @@ defmodule Brock.Tcg.Sim.CardRegistry do
     },
     "MEG-127" => %{name: "Risky Ruins", supertype: :trainer, trainer_type: :stadium},
     "DRI-180" => %{name: "Team Rocket's Watchtower", supertype: :trainer, trainer_type: :stadium},
-    "MEE-002" => %{
-      name: "Fire Energy",
-      supertype: :energy,
-      energy_type: :basic,
-      provides: [:fire]
-    },
-    "MEE-005" => %{
-      name: "Psychic Energy",
-      supertype: :energy,
-      energy_type: :basic,
-      provides: [:psychic]
-    },
-    "MEE-007" => %{
-      name: "Darkness Energy",
-      supertype: :energy,
-      energy_type: :basic,
-      provides: [:darkness]
-    },
+    "MEE-001" => %{},
+    "MEE-002" => %{},
+    "MEE-003" => %{},
+    "MEE-004" => %{},
+    "MEE-005" => %{},
+    "MEE-006" => %{},
+    "MEE-007" => %{},
     "MEG-054" => %{
       name: "Abra",
       supertype: :pokemon,
