@@ -43,6 +43,12 @@ defmodule Brock.Tcg.Sim.CardRegistry do
         spray_fluid: %{effect: nil}
       }
     },
+    "PFL-083" => %{
+      attacks: %{
+        run_around: %{effect: %{type: :switch_self_with_bench}},
+        kick: %{effect: nil}
+      }
+    },
     "TWM-128" => %{
       name: "Dreepy",
       supertype: :pokemon,

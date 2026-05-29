@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Buneary Switch Attack Behavior
+- Added: Buneary `PFL-083` now has a DSL attack manifest entry and registry overlays for `Run Around` and `Kick`, mapping the switch attack to the existing `:switch_self_with_bench` primitive and marking `Kick` as exact plain-damage behavior while keeping cost, damage, and static facts in the TCGdex cache
+- Preserved: cached TCGdex metadata remains the source of truth, and the attack text was cross-checked against Limitless before coding
+- Updated: `mix brock.cards.coverage` now reports Buneary as implemented for Lopunny Dudunsparce 27514, reducing imported-deck `behavior_missing` card count by one
+- Verified: focused manifest/registry smoke check, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | SCR Applin Plain-Damage Attack Behavior
 - Added: Applin `SCR-012` now has a DSL attack manifest entry and registry overlay for `Spray Fluid`, explicitly marking the attack as exact plain-damage behavior while keeping cost, damage, and static facts in the TCGdex cache
 - Preserved: cached TCGdex metadata remains the source of truth, and the attack text was cross-checked against Limitless before coding
