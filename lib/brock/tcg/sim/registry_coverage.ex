@@ -73,6 +73,7 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
                               :recover_trainer_from_discard_to_hand,
                               :return_attacker_and_attached_to_hand,
                               :search_deck_for_cards_to_top,
+                              :search_pokemon_to_hand,
                               :search_pokemon_ex_to_hand,
                               :search_team_rocket_supporter_to_hand,
                               :search_supporter_when_benched_from_hand,

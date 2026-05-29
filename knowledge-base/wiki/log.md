@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | TWM Applin Search Attack Behavior
+- Added: Applin `TWM-126` now has DSL attack manifest entries and registry overlays for `Find a Friend` and `Rolling Tackle`, mapping `Find a Friend` to an executable deck Pokémon search-to-hand attack primitive and marking `Rolling Tackle` as exact plain-damage behavior while keeping static cost, damage, and printed text in the TCGdex cache
+- Preserved: cached TCGdex metadata remains the source of truth, and the attack text was cross-checked against Limitless before coding
+- Updated: `mix brock.cards.coverage` now reports `TWM-126` as implemented for Festival Lead 27445, reducing imported-deck `behavior_missing` card count by one and imported-deck `generic_damage_only` family count by one
+- Verified: focused manifest/registry/engine smoke check, `mix brock.cards.coverage`, and `mix test test/brock/tcg/sim` pass
+
 ## [2026-05-29] implementation | Buneary Switch Attack Behavior
 - Added: Buneary `PFL-083` now has a DSL attack manifest entry and registry overlays for `Run Around` and `Kick`, mapping the switch attack to the existing `:switch_self_with_bench` primitive and marking `Kick` as exact plain-damage behavior while keeping cost, damage, and static facts in the TCGdex cache
 - Preserved: cached TCGdex metadata remains the source of truth, and the attack text was cross-checked against Limitless before coding

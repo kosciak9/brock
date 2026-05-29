@@ -46,6 +46,12 @@ defmodule Brock.Tcg.Sim.CardRegistry do
         }
       }
     },
+    "TWM-126" => %{
+      attacks: %{
+        find_a_friend: %{damage: 0, effect: %{type: :search_pokemon_to_hand}},
+        rolling_tackle: %{effect: nil}
+      }
+    },
     "SCR-012" => %{
       attacks: %{
         spray_fluid: %{effect: nil}

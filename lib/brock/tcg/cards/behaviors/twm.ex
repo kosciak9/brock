@@ -15,6 +15,15 @@ defmodule Brock.Tcg.Cards.Behaviors.TWM do
     )
   end
 
+  card "TWM-126" do
+    attack(:find_a_friend,
+      damage: 0,
+      effect: %{type: :search_pokemon_to_hand}
+    )
+
+    attack(:rolling_tackle, effect: nil)
+  end
+
   card "TWM-128" do
     attack(:petty_grudge, effect: nil)
     attack(:bite, effect: nil)

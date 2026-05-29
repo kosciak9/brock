@@ -2612,6 +2612,18 @@ defmodule Brock.Tcg.Sim.Engine do
   end
 
   defp resolve_attack_effect(state, %{
+         attack: %{effect: %{type: :search_pokemon_to_hand}},
+         player_id: player_id,
+         params: %{target_id: target_id}
+       }) do
+    with {:ok, target} <- find_in_player_zone(state, player_id, :deck, target_id),
+         {:ok, target_metadata} <- CardRegistry.fetch(target.card_id),
+         :ok <- require_pokemon(target_metadata) do
+      move_deck_card_to_hand(state, player_id, target)
+    end
+  end
+
+  defp resolve_attack_effect(state, %{
          attack: %{effect: %{type: :return_attacker_and_attached_to_hand}},
          player_id: player_id,
          attacker_id: attacker_id
@@ -2749,6 +2761,17 @@ defmodule Brock.Tcg.Sim.Engine do
     if Map.has_key?(params, :target_id),
       do: :ok,
       else: {:error, :missing_discard_trainer_target_for_attack}
+  end
+
+  defp require_attack_effect_params(
+         %{effect: %{type: :search_pokemon_to_hand}},
+         params,
+         _defender
+       ) do
+    case Map.fetch(params, :target_id) do
+      {:ok, target_id} when not is_nil(target_id) -> :ok
+      _missing_or_nil -> {:error, :missing_deck_pokemon_target_for_attack}
+    end
   end
 
   defp require_attack_effect_params(
