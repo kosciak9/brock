@@ -1,0 +1,15 @@
+defmodule Brock.Tcg.Cards.Behaviors.TEF do
+  @moduledoc false
+
+  use Brock.Tcg.Cards.DSL
+
+  card "TEF-024" do
+    ability(:spherical_shield,
+      effect: %{type: :prevent_attack_damage_and_effects_to_bench}
+    )
+
+    attack(:psychic,
+      effect: %{type: :bonus_damage_per_energy_attached_to_defender, bonus_damage: 30}
+    )
+  end
+end

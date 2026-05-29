@@ -61,8 +61,15 @@ defmodule Brock.Tcg.Sim.CardRegistryTest do
     assert psychic_energy.provides == [:psychic]
   end
 
-  test "fetch_attack rejects cached raw text without an executable overlay" do
-    assert CardRegistry.fetch_attack("TEF-024", :psychic) ==
-             {:error, {:missing_executable_attack_behavior, "TEF-024", :psychic}}
+  test "fetch_attack overlays Rabsca Psychic variable damage behavior" do
+    assert {:ok, attack} = CardRegistry.fetch_attack("TEF-024", :psychic)
+
+    assert attack.damage == 10
+    assert attack.raw_effect =~ "30 more damage for each Energy"
+
+    assert attack.effect == %{
+             type: :bonus_damage_per_energy_attached_to_defender,
+             bonus_damage: 30
+           }
   end
 end

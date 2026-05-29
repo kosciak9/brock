@@ -2026,7 +2026,28 @@ defmodule Brock.Tcg.Sim.Engine do
     end
   end
 
+  defp base_attack_damage(state, %{
+         attack: %{
+           damage: damage,
+           effect: %{type: :bonus_damage_per_energy_attached_to_defender} = effect
+         },
+         target_player_id: target_player_id,
+         target_id: target_id
+       }) do
+    with {:ok, target} <- find_in_play(state, target_player_id, target_id) do
+      damage + attached_energy_count(target) * Map.fetch!(effect, :bonus_damage)
+    else
+      {:error, _reason} -> damage
+    end
+  end
+
   defp base_attack_damage(_state, %{attack: attack}), do: Map.fetch!(attack, :damage)
+
+  defp attached_energy_count(pokemon) do
+    Enum.count(pokemon.attachments, fn attachment ->
+      match?({:ok, %{supertype: :energy}}, CardRegistry.fetch(attachment.card_id))
+    end)
+  end
 
   defp apply_weakness_and_resistance(0, _state, _pending_attack), do: 0
 

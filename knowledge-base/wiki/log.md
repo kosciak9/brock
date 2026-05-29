@@ -1,5 +1,10 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Rabsca Psychic Variable-Damage Attack
+- Added: Rabsca `Psychic` now has an executable variable-damage overlay for `10 + 30` damage per Energy attached to the opponent's Active Pokémon
+- Added: `Brock.Tcg.Cards.Behaviors.TEF` manifest coverage for Rabsca `Spherical Shield` and `Psychic` without adding static card metadata to the DSL
+- Verified: targeted registry test, runtime reducer smoke check, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Handheld Fan After-Damage Hook
 - Added: `Brock.Tcg.Sim.Hooks` now handles Handheld Fan `TWM-150` attack-triggered Energy movement through the `:after_damage` phase
 - Migrated: declared attack resolution now routes post-damage hook checks through `Brock.Tcg.Sim.Hooks` instead of using the engine-local Handheld Fan helper

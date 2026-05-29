@@ -371,6 +371,13 @@ defmodule Brock.Tcg.Sim.CardRegistry do
           name: "Spherical Shield",
           effect: %{type: :prevent_attack_damage_and_effects_to_bench}
         }
+      },
+      attacks: %{
+        psychic: %{
+          name: "Psychic",
+          damage: 10,
+          effect: %{type: :bonus_damage_per_energy_attached_to_defender, bonus_damage: 30}
+        }
       }
     },
     "SFA-040" => %{

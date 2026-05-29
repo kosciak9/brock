@@ -305,6 +305,7 @@ Cards may exist as `metadata_cached` before their deck is supported. This is exp
 
 ### Phase 5: new meta-deck behavior families
 
+- Implemented Rabsca `Psychic` as a variable-damage attack primitive and TEF DSL manifest entry, closing the remaining fixed-deck `behavior_missing` coverage gap before broader new-deck behavior-family work.
 - Implement missing behavior families for the four imported meta decks.
 - Use coverage to divide work by behavior family and ruling risk.
 

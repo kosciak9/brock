@@ -43,6 +43,7 @@ defmodule Brock.Tcg.Sim.RegistryCoverage do
                               :active_damage_counters_per_hand_card,
                               :bench_basic_psychic_from_deck_when_attached_to_psychic,
                               :bonus_damage_if_defender_pokemon_ex,
+                              :bonus_damage_per_energy_attached_to_defender,
                               :confuse_defender_active,
                               :damage_one_opponent_pokemon,
                               :draw_if_own_pokemon_knocked_out_last_turn,
