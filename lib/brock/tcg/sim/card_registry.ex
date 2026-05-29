@@ -297,6 +297,17 @@ defmodule Brock.Tcg.Sim.CardRegistry do
       effect: %{type: :heal_mega_evolution_pokemon_ex_then_return_attached_energy_to_hand}
     },
     "SCR-133" => %{name: "Crispin", supertype: :trainer, trainer_type: :supporter},
+    "MEG-104" => %{
+      abilities: %{
+        run_errand: %{effect: %{type: :active_draw_once_per_turn, count: 2}}
+      },
+      attacks: %{
+        rapid_fire_combo: %{
+          damage: 200,
+          effect: %{type: :bonus_damage_per_coin_heads_count, bonus_damage: 50}
+        }
+      }
+    },
     "MEG-114" => %{name: "Boss's Orders", supertype: :trainer, trainer_type: :supporter},
     "POR-076" => %{name: "Judge", supertype: :trainer, trainer_type: :supporter},
     "PFL-087" => %{name: "Dawn", supertype: :trainer, trainer_type: :supporter},

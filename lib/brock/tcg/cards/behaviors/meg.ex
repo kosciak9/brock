@@ -3,6 +3,15 @@ defmodule Brock.Tcg.Cards.Behaviors.MEG do
 
   use Brock.Tcg.Cards.DSL
 
+  card "MEG-104" do
+    ability(:run_errand, effect: %{type: :active_draw_once_per_turn, count: 2})
+
+    attack(:rapid_fire_combo,
+      damage: 200,
+      effect: %{type: :bonus_damage_per_coin_heads_count, bonus_damage: 50}
+    )
+  end
+
   card "MEG-055" do
     ability(:psychic_draw, effect: %{type: :evolution_draw, count: 2})
     attack(:super_psy_bolt, effect: nil)

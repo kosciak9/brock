@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Mega Kangaskhan ex Ability and Variable-Damage Attack
+- Added: Mega Kangaskhan ex `MEG-104` now has a MEG DSL manifest entry and registry overlay for `Run Errand` and `Rapid-Fire Combo`, mapping the Ability to Active-only draw 2 with a once-per-turn Run Errand marker and the attack to explicit heads-count variable damage of `200 + 50×heads`
+- Preserved: static Pokémon metadata, Ability text, attack cost, and printed variable-damage text continue to come from the committed TCGdex cache; the overlay declares only executable behavior and explicit randomness inputs
+- Updated: `mix brock.cards.coverage` now reports Mega Kangaskhan ex as implemented for Raging Bolt Ogerpon 27599, reducing behavior-missing cards to 20 and behavior-missing families to 33
+- Verified: focused Mega Kangaskhan runtime smoke, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass; Tidewave project eval was unavailable because the MCP endpoint is connected to an unrelated project context
+
 ## [2026-05-29] implementation | Mist Energy Attack-Effect Prevention Behavior
 - Added: Mist Energy `TEF-161` now has a TEF DSL manifest entry and registry overlay, providing `{C}` Energy and mapping its prevention text to hook-backed protection from opponent attack effects done to the attached Pokémon
 - Preserved: static Special Energy metadata and printed effect text continue to come from the committed TCGdex cache; the overlay declares only executable prevention behavior and the provided Energy type needed by the current engine

@@ -1259,6 +1259,24 @@ defmodule Brock.Tcg.Sim.Engine do
   defp reduce(state, %Action{
          type: :use_ability,
          player_id: player_id,
+         params: %{source_id: source_id, ability_id: :run_errand}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, player} <- fetch_player(state, player_id),
+         {:ok, source} <- require_active_source(player, player_id, source_id),
+         {:ok, ability} <- require_ability(state, source, :run_errand),
+         :ok <- require_marker_available(player, {:ability_used, :run_errand}),
+         {:ok, state} <- draw_cards(state, player_id, ability.effect.count),
+         {:ok, player} <- fetch_player(state, player_id) do
+      player = %{player | markers: MapSet.put(player.markers, {:ability_used, :run_errand})}
+      {:ok, put_player(state, player)}
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :use_ability,
+         player_id: player_id,
          params: %{source_id: source_id, ability_id: :run_away_draw}
        }) do
     with :ok <- require_active_player(state, player_id),
@@ -2852,6 +2870,16 @@ defmodule Brock.Tcg.Sim.Engine do
     damage
   end
 
+  defp base_attack_damage(_state, %{
+         attack: %{
+           damage: damage,
+           effect: %{type: :bonus_damage_per_coin_heads_count, bonus_damage: bonus_damage}
+         },
+         params: %{heads_count: heads_count}
+       }) do
+    damage + heads_count * bonus_damage
+  end
+
   defp base_attack_damage(%{stadium: nil}, %{
          attack: %{effect: %{type: :damage_only_if_stadium_in_play}}
        }) do
@@ -3369,6 +3397,28 @@ defmodule Brock.Tcg.Sim.Engine do
          _defender
        ),
        do: {:error, :missing_coin_result}
+
+  defp require_attack_effect_params(
+         %{effect: %{type: :bonus_damage_per_coin_heads_count}},
+         %{heads_count: heads_count},
+         _defender
+       )
+       when is_integer(heads_count) and heads_count >= 0,
+       do: :ok
+
+  defp require_attack_effect_params(
+         %{effect: %{type: :bonus_damage_per_coin_heads_count}},
+         %{heads_count: heads_count},
+         _defender
+       ),
+       do: {:error, {:invalid_heads_count, heads_count}}
+
+  defp require_attack_effect_params(
+         %{effect: %{type: :bonus_damage_per_coin_heads_count}},
+         _params,
+         _defender
+       ),
+       do: {:error, :missing_heads_count}
 
   defp require_attack_effect_params(
          %{effect: %{type: :prevent_damage_and_effects_from_attacks_next_turn_on_coin_heads}},
