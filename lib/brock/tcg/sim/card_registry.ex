@@ -625,6 +625,9 @@ defmodule Brock.Tcg.Sim.CardRegistry do
         team_rocket_hand_size: 8
       }
     },
+    "DRI-173" => %{
+      effect: %{type: :draw_after_playing_team_rocket_supporter, count: 2}
+    },
     "DRI-174" => %{
       effect: %{
         type: :switch_active_team_rocket_with_benched_team_rocket_then_gust_opponent

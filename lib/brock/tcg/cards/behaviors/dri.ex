@@ -46,6 +46,10 @@ defmodule Brock.Tcg.Cards.Behaviors.DRI do
     )
   end
 
+  card "DRI-173" do
+    card_effect(effect: %{type: :draw_after_playing_team_rocket_supporter, count: 2})
+  end
+
   card "DRI-174" do
     card_effect(
       effect: %{

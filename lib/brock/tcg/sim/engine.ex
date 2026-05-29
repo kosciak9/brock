@@ -842,6 +842,19 @@ defmodule Brock.Tcg.Sim.Engine do
     end
   end
 
+  defp reduce(state, %Action{type: :team_rockets_factory, player_id: player_id}) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         :ok <- require_stadium_in_play(state, "DRI-173"),
+         {:ok, factory_metadata} <- CardRegistry.fetch("DRI-173"),
+         {:ok, player} <- fetch_player(state, player_id),
+         :ok <- require_team_rocket_supporter_played_this_turn(player),
+         :ok <- require_marker_available(player, {:stadium_used, :team_rockets_factory}),
+         {:ok, state} <- draw_cards(state, player_id, factory_metadata.effect.count) do
+      put_player_marker(state, player_id, {:stadium_used, :team_rockets_factory})
+    end
+  end
+
   defp reduce(state, %Action{
          type: :ciphermaniacs_codebreaking,
          player_id: player_id,
@@ -1869,17 +1882,32 @@ defmodule Brock.Tcg.Sim.Engine do
     with {:ok, player} <- fetch_player(state, player_id) do
       discarded = %{card | zone: :discard, lifecycle: :discarded}
 
-      player = %{
-        player
-        | hand: reject_instance(player.hand, card.instance_id),
-          discard: [discarded | player.discard],
-          supporter_played?:
-            player.supporter_played? || Map.get(metadata, :trainer_type) == :supporter
-      }
+      player =
+        %{
+          player
+          | hand: reject_instance(player.hand, card.instance_id),
+            discard: [discarded | player.discard],
+            supporter_played?:
+              player.supporter_played? || Map.get(metadata, :trainer_type) == :supporter
+        }
+        |> mark_team_rocket_supporter_played(metadata)
 
       {:ok, put_player(state, player)}
     end
   end
+
+  defp mark_team_rocket_supporter_played(player, metadata) do
+    if team_rocket_supporter?(metadata) do
+      %{player | markers: MapSet.put(player.markers, :team_rocket_supporter_played_this_turn)}
+    else
+      player
+    end
+  end
+
+  defp team_rocket_supporter?(%{trainer_type: :supporter, name: name}) when is_binary(name),
+    do: String.contains?(name, "Team Rocket")
+
+  defp team_rocket_supporter?(_metadata), do: false
 
   defp discard_card_from_deck(state, player_id, card) do
     with {:ok, player} <- fetch_player(state, player_id) do
@@ -4099,6 +4127,22 @@ defmodule Brock.Tcg.Sim.Engine do
 
   defp require_team_rocket_pokemon_knocked_out_during_opponents_last_turn(_player),
     do: {:error, :team_rockets_archer_requires_team_rocket_ko_during_opponents_last_turn}
+
+  defp require_team_rocket_supporter_played_this_turn(%{markers: markers}) do
+    if MapSet.member?(markers, :team_rocket_supporter_played_this_turn) do
+      :ok
+    else
+      {:error, :team_rockets_factory_requires_team_rocket_supporter_played_this_turn}
+    end
+  end
+
+  defp require_stadium_in_play(%{stadium: %{card_id: card_id}}, card_id), do: :ok
+
+  defp require_stadium_in_play(%{stadium: nil}, expected_card_id),
+    do: {:error, {:stadium_not_in_play, expected_card_id}}
+
+  defp require_stadium_in_play(%{stadium: %{card_id: actual_card_id}}, expected_card_id),
+    do: {:error, {:wrong_stadium_in_play, expected_card_id, actual_card_id}}
 
   defp require_different_energy_types(_hand_energy_metadata, nil), do: :ok
 

@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Team Rocket's Factory Stadium Draw Behavior
+- Added: Team Rocket's Factory `DRI-173` now has a DRI DSL manifest entry and registry overlay, mapping the Stadium to a once-per-turn draw action after the player has played a Supporter with "Team Rocket" in its name from hand that turn
+- Preserved: static Stadium metadata and printed effect text continue to come from the committed TCGdex cache; the overlay declares only executable draw behavior and the engine records the prerequisite with a per-turn marker when Team Rocket Supporters are discarded from hand
+- Updated: `mix brock.cards.coverage` now reports Team Rocket's Factory as implemented for Rocket's Mewtwo 27459, reducing behavior-missing cards to 17 and behavior-missing families to 29
+- Verified: focused `mix run --no-start` runtime smoke for Team Rocket Supporter marker/draw/once-per-turn behavior, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass; Tidewave project eval is unavailable for Brock validation because the connected app returned `Application.spec(:brock) == nil`
+
 ## [2026-05-29] implementation | Festival Grounds Special-Condition Stadium Behavior
 - Added: Festival Grounds `TWM-149` now has a TWM DSL manifest entry and registry overlay, mapping the Stadium to recovery from Special Conditions for Pokémon with Energy attached and immunity to new Special Conditions while the Stadium remains in play
 - Preserved: static Stadium metadata and printed effect text continue to come from the committed TCGdex cache; the overlay declares only executable behavior and the engine uses existing attached-Energy and status state
