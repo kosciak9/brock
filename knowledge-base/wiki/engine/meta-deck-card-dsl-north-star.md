@@ -287,6 +287,7 @@ Cards may exist as `metadata_cached` before their deck is supported. This is exp
 - Ported Lana's Aid as the first representative Supporter card-effect DSL manifest entry, relying on cached TCGdex Trainer metadata and adding only the executable discard-recovery overlay.
 - Ported Air Balloon as the first representative Tool card-effect DSL manifest entry, relying on cached TCGdex Trainer metadata and adding only the executable retreat-cost reduction overlay.
 - Ported Forest of Vitality as the first representative Stadium card-effect DSL manifest entry, relying on cached TCGdex Trainer metadata and adding only the executable same-turn Grass Evolution exception overlay.
+- Ported Telepathic Psychic Energy as the first representative Special Energy card-effect DSL manifest entry, relying on cached TCGdex Energy metadata and adding only the executable attach/search overlay.
 - Port representative existing cards before broad migration.
 - Start with cards that demonstrate different behavior families: plain damage, attack effect, Ability, Item, Supporter, Tool, Stadium, and Special Energy.
 

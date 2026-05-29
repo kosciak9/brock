@@ -1,5 +1,10 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Special Energy Card-Effect DSL Manifest Entry
+- Added: Telepathic Psychic Energy `POR-088` to `Brock.Tcg.Cards.Behaviors.POR` as the first representative Special Energy card-effect behavior manifest entry
+- Preserved: cached TCGdex Energy type and raw effect remain the static source of truth; the DSL entry only declares the executable attach/search overlay
+- Verified: manifest check with `MIX_ENV=test mix run --no-start -e ...`, `mix test test/brock/tcg/cards/metadata_test.exs test/brock/tcg/sim/card_registry_test.exs`, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Stadium Card-Effect DSL Manifest Entry
 - Added: Forest of Vitality `MEG-117` to `Brock.Tcg.Cards.Behaviors.MEG` as the first representative Stadium card-effect behavior manifest entry
 - Preserved: cached TCGdex Stadium type and raw effect remain the static source of truth; the DSL entry only declares the executable same-turn Grass Evolution exception overlay
