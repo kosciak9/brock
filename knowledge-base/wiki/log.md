@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Battle Cage Stadium Damage-Counter Prevention
+- Added: Battle Cage `PFL-085` now has a PFL DSL manifest entry and registry overlay, mapping the Stadium to a `:before_damage` hook that prevents damage counters from opponent Pokémon attack/Ability effects from being placed on Benched Pokémon
+- Preserved: static Stadium metadata and printed effect text continue to come from the committed TCGdex cache; the overlay declares only executable prevention behavior
+- Updated: `mix brock.cards.coverage` now reports Battle Cage as implemented for Lopunny Dudunsparce 27514, reducing behavior-missing cards to 23 and behavior-missing families to 37
+- Verified: focused Battle Cage runtime smoke, `mix brock.cards.coverage`, and `mix test test/brock/tcg/sim` pass
+
 ## [2026-05-29] implementation | Fan Rotom First-Turn Search and Stadium Attack Behavior
 - Added: Fan Rotom `SCR-118` now has an SCR DSL manifest entry and registry overlay for `Fan Call` and `Assault Landing`, mapping the Ability to a first-turn-only search for up to 3 cached Colorless Pokémon with 100 HP or less and the attack to 70 damage only while a Stadium is in play
 - Preserved: static Pokémon metadata, Ability text, attack cost, damage, and raw attack text continue to come from the committed TCGdex cache; the overlay declares only executable behavior and target validation uses cached metadata

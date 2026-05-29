@@ -347,6 +347,7 @@ Cards may exist as `metadata_cached` before their deck is supported. This is exp
 - Implemented Team Rocket's Giovanni `DRI-174` as an imported-deck Supporter switch/gust behavior slice, with a DRI DSL manifest entry, registry overlay, and reducer action that requires switching the player's Active Team Rocket's Pokémon with a Benched Team Rocket's Pokémon before gusting an opponent's Benched Pokémon.
 - Implemented Team Rocket's Archer `DRI-170` as an imported-deck Supporter comeback-hand-refresh behavior slice, with a DRI DSL manifest entry, registry overlay, Team Rocket-specific last-turn KO eligibility marker, and reducer action that shuffles both players' hands into their decks before drawing 5 cards for the player and 3 for the opponent.
 - Implemented Fan Rotom `SCR-118` as an imported-deck first-turn Colorless Pokémon search Ability and Stadium-conditional attack behavior slice, with an SCR DSL manifest entry, registry overlay, reducer Ability path, and Stadium-gated damage primitive while keeping static Ability and attack text in the TCGdex cache.
+- Implemented Battle Cage `PFL-085` as an imported-deck Stadium prevention behavior slice, with a PFL DSL manifest entry, registry overlay, and `:before_damage` hook that prevents damage counters from opponent Pokémon attack/Ability effects from being placed on Benched Pokémon while preserving static Stadium text in the TCGdex cache.
 - Implement missing behavior families for the four imported meta decks.
 - Use coverage to divide work by behavior family and ruling risk.
 

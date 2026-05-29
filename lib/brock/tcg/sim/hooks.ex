@@ -45,7 +45,8 @@ defmodule Brock.Tcg.Sim.Hooks do
   def run(state, :before_damage, context) do
     with {:ok, state} <- prevent_damage_if_dig_protected(state, context),
          {:ok, state} <- prevent_bench_attack_damage_if_spherical_shield(state, context),
-         {:ok, state} <- prevent_bench_attack_damage_if_flower_curtain(state, context) do
+         {:ok, state} <- prevent_bench_attack_damage_if_flower_curtain(state, context),
+         {:ok, state} <- prevent_bench_damage_counters_if_battle_cage(state, context) do
       {:ok, state}
     end
   end
@@ -310,6 +311,36 @@ defmodule Brock.Tcg.Sim.Hooks do
   end
 
   defp prevent_bench_attack_damage_if_flower_curtain(state, _context), do: {:ok, state}
+
+  defp prevent_bench_damage_counters_if_battle_cage(
+         %{stadium: %{card_id: "PFL-085"}} = _state,
+         %{
+           source: :attack_effect,
+           attacking_player_id: attacking_player_id,
+           target_player_id: target_player_id,
+           target_zone: :bench,
+           damage_kind: :damage_counters
+         }
+       )
+       when attacking_player_id != target_player_id do
+    {:halt, {:damage_prevented_by_stadium, "PFL-085", :battle_cage}}
+  end
+
+  defp prevent_bench_damage_counters_if_battle_cage(
+         %{stadium: %{card_id: "PFL-085"}} = _state,
+         %{
+           source: :ability_effect,
+           source_player_id: source_player_id,
+           target_player_id: target_player_id,
+           target_zone: :bench,
+           damage_kind: :damage_counters
+         }
+       )
+       when source_player_id != target_player_id do
+    {:halt, {:damage_prevented_by_stadium, "PFL-085", :battle_cage}}
+  end
+
+  defp prevent_bench_damage_counters_if_battle_cage(state, _context), do: {:ok, state}
 
   defp prevent_damage_if_dig_protected(
          state,

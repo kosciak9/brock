@@ -2252,8 +2252,57 @@ defmodule Brock.Tcg.Sim.Engine do
   defp move_damage_counters(state, from_player_id, from_id, target_player_id, target_id, counters) do
     damage = counters * 10
 
-    with {:ok, state} <- heal_pokemon_damage(state, from_player_id, from_id, damage) do
+    with {:ok, target} <- find_in_play(state, target_player_id, target_id),
+         {:ok, state, :continue} <-
+           maybe_prevent_damage_counter_move(
+             state,
+             from_player_id,
+             target_player_id,
+             target_id,
+             target.zone,
+             damage
+           ),
+         {:ok, state} <- heal_pokemon_damage(state, from_player_id, from_id, damage) do
       damage_pokemon(state, target_player_id, target_id, damage)
+    else
+      {:ok, state, :prevented} -> {:ok, state}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp maybe_prevent_damage_counter_move(
+         state,
+         source_player_id,
+         target_player_id,
+         target_id,
+         target_zone,
+         damage
+       ) do
+    context = %{
+      source: :ability_effect,
+      source_player_id: source_player_id,
+      target_player_id: target_player_id,
+      target_id: target_id,
+      target_zone: target_zone,
+      damage: damage,
+      damage_kind: :damage_counters
+    }
+
+    case Hooks.run(state, :before_damage, context) do
+      {:ok, state} ->
+        {:ok, state, :continue}
+
+      {:halt, {:damage_prevented_by_ability, _card_id, _ability_id}} ->
+        {:ok, state, :prevented}
+
+      {:halt, {:damage_prevented_by_attack_effect, _card_id, _attack_id}} ->
+        {:ok, state, :prevented}
+
+      {:halt, {:damage_prevented_by_stadium, _card_id, _effect_id}} ->
+        {:ok, state, :prevented}
+
+      {:halt, reason} ->
+        {:error, reason}
     end
   end
 
@@ -2620,6 +2669,9 @@ defmodule Brock.Tcg.Sim.Engine do
         {:ok, state, :damage_prevented}
 
       {:halt, {:damage_prevented_by_attack_effect, _card_id, _attack_id}} ->
+        {:ok, state, :damage_prevented}
+
+      {:halt, {:damage_prevented_by_stadium, _card_id, _effect_id}} ->
         {:ok, state, :damage_prevented}
 
       {:halt, reason} ->
@@ -3117,6 +3169,9 @@ defmodule Brock.Tcg.Sim.Engine do
         {:ok, state}
 
       {:halt, {:damage_prevented_by_attack_effect, _card_id, _attack_id}} ->
+        {:ok, state}
+
+      {:halt, {:damage_prevented_by_stadium, _card_id, _effect_id}} ->
         {:ok, state}
 
       {:halt, reason} ->

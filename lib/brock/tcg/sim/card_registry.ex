@@ -117,6 +117,9 @@ defmodule Brock.Tcg.Sim.CardRegistry do
         kick: %{effect: nil}
       }
     },
+    "PFL-085" => %{
+      effect: %{type: :prevent_damage_counters_to_bench_from_opponent_pokemon_effects}
+    },
     "TWM-128" => %{
       attacks: %{
         petty_grudge: %{effect: nil},
