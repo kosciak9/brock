@@ -3,6 +3,11 @@ defmodule Brock.Tcg.Cards.Behaviors.ASC do
 
   use Brock.Tcg.Cards.DSL
 
+  card "ASC-039" do
+    ability(:damp, effect: %{type: :pokemon_lose_self_knock_out_abilities})
+    attack(:ram, effect: nil)
+  end
+
   card "ASC-181" do
     card_effect(
       effect: %{

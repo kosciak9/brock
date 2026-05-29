@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Psyduck Plain-Damage Attack Behavior
+- Added: Psyduck `ASC-039` now has ASC DSL manifest entries for `Damp` and `Ram`, and the registry overlay marks `Ram` as explicit exact plain-damage behavior instead of generic damage
+- Preserved: cached TCGdex metadata remains the source of truth for static Pokémon metadata, Ability text, attack cost, and damage; the `Ram 20` attack text was cross-checked against Limitless before coding
+- Updated: `mix brock.cards.coverage` now reports one fewer `generic_damage_only` behavior family across Alakazam/Dudunsparce 27147, Festival Lead 27445, and Lopunny Dudunsparce 27514
+- Verified: focused manifest/registry smoke check, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Shaymin Bench-Protection Ability Behavior
 - Added: Shaymin `DRI-010` now has a DSL Ability/attack manifest entry and registry overlays for `Flower Curtain` and `Smash Kick`, mapping `Flower Curtain` to a `:before_damage` hook that prevents attack damage to the player's non-rule-box Benched Pokémon while allowing damage-counter effects to continue
 - Preserved: static Pokémon metadata, Ability text, attack cost, and damage continue to come from the committed TCGdex cache; the Ability text was cross-checked against Limitless before coding

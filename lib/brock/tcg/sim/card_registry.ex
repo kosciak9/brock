@@ -476,7 +476,7 @@ defmodule Brock.Tcg.Sim.CardRegistry do
         }
       },
       attacks: %{
-        ram: %{name: "Ram", cost: [:colorless, :colorless], damage: 20}
+        ram: %{name: "Ram", cost: [:colorless, :colorless], damage: 20, effect: nil}
       }
     },
     "SSP-087" => %{
