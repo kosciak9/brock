@@ -261,7 +261,7 @@ Cards may exist as `metadata_cached` before their deck is supported. This is exp
 - Imported Raging Bolt Ogerpon 27599 as a static deck module using the deck macro.
 - Imported Festival Lead 27445 as a static deck module using the deck macro.
 - Imported Lopunny Dudunsparce 27514 as a static deck module using the deck macro.
-- Import the remaining new Limitless deck: Rocket's Mewtwo 27459.
+- Imported Rocket's Mewtwo 27459 as a static deck module using the deck macro.
 - Cache TCGdex metadata for all six supported decks.
 - Keep importer/cache tests offline by default; tag network tests as `:external`.
 
