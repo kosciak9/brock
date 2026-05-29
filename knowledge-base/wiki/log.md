@@ -1,5 +1,10 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Supporter Card-Effect DSL Manifest Entry
+- Added: Lana's Aid `TWM-155` to `Brock.Tcg.Cards.Behaviors.TWM` as the first representative Supporter card-effect behavior manifest entry
+- Preserved: cached TCGdex Supporter type and raw effect remain the static source of truth; the DSL entry only declares the executable discard-recovery overlay
+- Verified: manifest check with `MIX_ENV=test mix run --no-start -e ...`, `mix test test/brock/tcg/cards/metadata_test.exs test/brock/tcg/sim/card_registry_test.exs`, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Item Card-Effect DSL Manifest Entry
 - Added: Unfair Stamp `TWM-165` to `Brock.Tcg.Cards.Behaviors.TWM` as the first representative Item card-effect behavior manifest entry
 - Preserved: cached TCGdex Trainer type, ACE SPEC rarity, and raw effect remain the static source of truth; the DSL entry only declares the executable KO-eligibility shuffle/draw overlay

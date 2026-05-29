@@ -17,6 +17,15 @@ defmodule Brock.Tcg.Cards.Behaviors.TWM do
     )
   end
 
+  card "TWM-155" do
+    card_effect(
+      effect: %{
+        type: :recover_non_rule_box_pokemon_and_basic_energy_from_discard_to_hand,
+        max_targets: 3
+      }
+    )
+  end
+
   card "TWM-165" do
     card_effect(
       effect: %{
