@@ -762,6 +762,31 @@ defmodule Brock.Tcg.Sim.Engine do
   end
 
   defp reduce(state, %Action{
+         type: :team_rockets_giovanni,
+         player_id: player_id,
+         params: %{instance_id: giovanni_id, bench_id: bench_id, target_id: target_id}
+       }) do
+    with :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, giovanni} <- find_in_player_zone(state, player_id, :hand, giovanni_id),
+         {:ok, giovanni_metadata} <- CardRegistry.fetch(giovanni.card_id),
+         :ok <- require_card_id(giovanni, "DRI-174"),
+         :ok <- require_supporter_available_if_supporter(giovanni_metadata, state, player_id),
+         {:ok, player} <- fetch_player(state, player_id),
+         :ok <- require_active_pokemon(player_id, player),
+         :ok <- require_team_rocket_pokemon_for_giovanni(player.active, :active),
+         {:ok, bench_card} <- find_in_player_zone(state, player_id, :bench, bench_id),
+         :ok <- require_team_rocket_pokemon_for_giovanni(bench_card, :bench),
+         {:ok, opponent_id} <- opponent_id(state, player_id),
+         {:ok, target} <- find_in_player_zone(state, opponent_id, :bench, target_id),
+         {:ok, state} <- discard_card_from_hand(state, player_id, giovanni, giovanni_metadata),
+         {:ok, state} <-
+           switch_own_bench_to_active(state, player_id, bench_card, retreated?: false) do
+      switch_opponent_bench_to_active(state, opponent_id, target)
+    end
+  end
+
+  defp reduce(state, %Action{
          type: :ciphermaniacs_codebreaking,
          player_id: player_id,
          params: %{instance_id: ciphermaniac_id, target_ids: target_ids}
@@ -2719,6 +2744,14 @@ defmodule Brock.Tcg.Sim.Engine do
       {:ok, %Metadata{category: :pokemon, name: "Team Rocket's " <> _name}},
       Metadata.fetch(pokemon.card_id)
     )
+  end
+
+  defp require_team_rocket_pokemon_for_giovanni(pokemon, position) do
+    if team_rocket_pokemon?(pokemon) do
+      :ok
+    else
+      {:error, {:team_rockets_giovanni_requires_team_rocket_pokemon, position, pokemon.card_id}}
+    end
   end
 
   defp in_play_pokemon(player) do

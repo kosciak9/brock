@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Team Rocket's Giovanni Supporter Behavior
+- Added: Team Rocket's Giovanni `DRI-174` now has a DRI DSL manifest entry and registry overlay, mapping the Supporter to a reducer action that switches the player's Active Team Rocket's Pokémon with a chosen Benched Team Rocket's Pokémon, then switches a chosen opponent Benched Pokémon into the Active Spot
+- Preserved: static Supporter metadata and printed text continue to come from the committed TCGdex cache; the exact effect text was cross-checked against Limitless before coding
+- Updated: `mix brock.cards.coverage` now reports Team Rocket's Giovanni as implemented for Rocket's Mewtwo 27459, reducing behavior-missing cards to 26 and behavior-missing families to 41
+- Verified: focused Giovanni reducer smoke, `mix brock.cards.coverage`, and `mix test test/brock/tcg/sim` pass
+
 ## [2026-05-29] implementation | Counter Gain Tool Attack-Cost Behavior
 - Added: Counter Gain `SSP-169` now has an SSP DSL manifest entry and registry overlay, mapping the Tool to attack-cost validation that removes one `{C}` requirement from attacks used by the attached Pokémon only while that Pokémon's player has more Prize cards remaining than the opponent
 - Preserved: static Tool metadata and printed effect text continue to come from the committed TCGdex cache; the overlay declares only executable behavior and the reducer uses current Prize counts at attack declaration time

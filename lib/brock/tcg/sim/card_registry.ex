@@ -571,6 +571,11 @@ defmodule Brock.Tcg.Sim.CardRegistry do
         team_rocket_hand_size: 8
       }
     },
+    "DRI-174" => %{
+      effect: %{
+        type: :switch_active_team_rocket_with_benched_team_rocket_then_gust_opponent
+      }
+    },
     "DRI-177" => %{
       effect: %{type: :search_basic_team_rocket_pokemon_to_hand, max_targets: 3}
     },

@@ -36,6 +36,14 @@ defmodule Brock.Tcg.Cards.Behaviors.DRI do
     )
   end
 
+  card "DRI-174" do
+    card_effect(
+      effect: %{
+        type: :switch_active_team_rocket_with_benched_team_rocket_then_gust_opponent
+      }
+    )
+  end
+
   card "DRI-177" do
     card_effect(effect: %{type: :search_basic_team_rocket_pokemon_to_hand, max_targets: 3})
   end
