@@ -268,6 +268,7 @@ Cards may exist as `metadata_cached` before their deck is supported. This is exp
 
 ### Phase 2: metadata-backed registry facade
 
+- Added `Brock.Tcg.Cards.Metadata` to read normalized static facts from the committed TCGdex cache for representative Pokémon, Trainer, and Energy cards without changing engine behavior yet.
 - Convert `CardRegistry.fetch/1` into a compatibility facade.
 - Serve static card data from normalized cached TCGdex metadata.
 - Overlay existing authored behavior.

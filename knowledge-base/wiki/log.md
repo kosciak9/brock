@@ -1,5 +1,10 @@
 # Wiki Log
 
+## [2026-05-29] implementation | TCGdex Metadata Normalization
+- Added: `Brock.Tcg.Cards.Metadata` offline reader for normalized metadata from committed TCGdex cache payloads
+- Covered: representative Pokémon (`TWM-130`), Trainer (`TWM-165`), and Energy (`POR-088`) static fields while preserving raw printed effects for later behavior overlays
+- Verified: `mix test test/brock/tcg/cards/metadata_test.exs`, `mix test test/brock/tcg/sim`, and `mix brock.cards.coverage` pass
+
 ## [2026-05-29] implementation | TCGdex Metadata Cache Foundation
 - Added: `Brock.Tcg.Data.TCGdex` adapter/cache helper and opt-in `mix brock.cards.sync` network task
 - Cached: TCGdex metadata for 15 deck-pool sets and 101 unique cards across the six known Limitless deck modules under `priv/tcg/cards/tcgdex`
