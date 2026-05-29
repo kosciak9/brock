@@ -1,5 +1,10 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Stadium Card-Effect DSL Manifest Entry
+- Added: Forest of Vitality `MEG-117` to `Brock.Tcg.Cards.Behaviors.MEG` as the first representative Stadium card-effect behavior manifest entry
+- Preserved: cached TCGdex Stadium type and raw effect remain the static source of truth; the DSL entry only declares the executable same-turn Grass Evolution exception overlay
+- Verified: manifest check with `MIX_ENV=test mix run --no-start -e ...`, `mix test test/brock/tcg/cards/metadata_test.exs test/brock/tcg/sim/card_registry_test.exs`, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Tool Card-Effect DSL Manifest Entry
 - Added: Air Balloon `ASC-181` to `Brock.Tcg.Cards.Behaviors.ASC` as the first representative Tool card-effect behavior manifest entry
 - Preserved: cached TCGdex Tool type and raw effect remain the static source of truth; the DSL entry only declares the executable retreat-cost reduction overlay
