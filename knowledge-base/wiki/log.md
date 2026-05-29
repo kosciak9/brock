@@ -1,5 +1,11 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Fan Rotom First-Turn Search and Stadium Attack Behavior
+- Added: Fan Rotom `SCR-118` now has an SCR DSL manifest entry and registry overlay for `Fan Call` and `Assault Landing`, mapping the Ability to a first-turn-only search for up to 3 cached Colorless Pokémon with 100 HP or less and the attack to 70 damage only while a Stadium is in play
+- Preserved: static Pokémon metadata, Ability text, attack cost, damage, and raw attack text continue to come from the committed TCGdex cache; the overlay declares only executable behavior and target validation uses cached metadata
+- Updated: `mix brock.cards.coverage` now reports Fan Rotom as implemented for Lopunny Dudunsparce 27514, reducing behavior-missing cards to 24 and behavior-missing families to 38
+- Verified: focused Fan Rotom runtime smoke, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Team Rocket's Archer Supporter Behavior
 - Added: Team Rocket's Archer `DRI-170` now has a DRI DSL manifest entry and registry overlay, mapping the Supporter to a reducer action that requires a Team Rocket's Pokémon KO during the opponent's last turn, shuffles both players' hands into their decks, then draws 5 cards for the player and 3 for the opponent
 - Preserved: static Supporter metadata and printed text continue to come from the committed TCGdex cache; the exact effect text was cross-checked against Limitless before coding

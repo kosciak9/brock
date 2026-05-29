@@ -1175,6 +1175,32 @@ defmodule Brock.Tcg.Sim.Engine do
   defp reduce(state, %Action{
          type: :use_ability,
          player_id: player_id,
+         params: %{source_id: source_id, ability_id: :fan_call} = params
+       }) do
+    target_ids = Map.get(params, :target_ids, [])
+
+    with true <- is_list(target_ids) || {:error, :fan_call_targets_must_be_list},
+         :ok <- require_active_player(state, player_id),
+         :ok <- require_turn_lifecycle(state, :action_window),
+         {:ok, source} <- find_in_play(state, player_id, source_id),
+         {:ok, ability} <- require_ability(state, source, :fan_call),
+         :ok <- require_player_first_turn(state, player_id, :fan_call),
+         {:ok, player} <- fetch_player(state, player_id),
+         :ok <- require_marker_available(player, {:ability_used, :fan_call}),
+         :ok <- require_max_target_ids(target_ids, ability.effect.max_targets, :fan_call),
+         :ok <- require_unique_target_ids(target_ids, :fan_call),
+         {:ok, targets} <- fetch_deck_cards(state, player_id, target_ids),
+         :ok <- require_colorless_pokemon_with_100_hp_or_less_targets(targets),
+         {:ok, state} <- move_deck_cards_to_hand(state, player_id, targets),
+         {:ok, player} <- fetch_player(state, player_id) do
+      player = %{player | markers: MapSet.put(player.markers, {:ability_used, :fan_call})}
+      {:ok, put_player(state, player)}
+    end
+  end
+
+  defp reduce(state, %Action{
+         type: :use_ability,
+         player_id: player_id,
          params: %{source_id: source_id, ability_id: :psychic_draw}
        }) do
     with :ok <- require_active_player(state, player_id),
@@ -2734,6 +2760,18 @@ defmodule Brock.Tcg.Sim.Engine do
     damage
   end
 
+  defp base_attack_damage(%{stadium: nil}, %{
+         attack: %{effect: %{type: :damage_only_if_stadium_in_play}}
+       }) do
+    0
+  end
+
+  defp base_attack_damage(_state, %{
+         attack: %{damage: damage, effect: %{type: :damage_only_if_stadium_in_play}}
+       }) do
+    damage
+  end
+
   defp base_attack_damage(_state, %{attack: attack}), do: Map.fetch!(attack, :damage)
 
   defp basic_pokemon_in_play_count(state, player_id) do
@@ -3625,6 +3663,20 @@ defmodule Brock.Tcg.Sim.Engine do
 
   defp require_first_player_can_play_supporter(_state, _player_id), do: :ok
 
+  defp require_player_first_turn(%{first_player: player_id, turn_number: 1}, player_id, _action),
+    do: :ok
+
+  defp require_player_first_turn(
+         %{first_player: first_player, turn_number: 2},
+         player_id,
+         _action
+       )
+       when first_player != player_id,
+       do: :ok
+
+  defp require_player_first_turn(%{turn_number: turn_number}, player_id, action),
+    do: {:error, {:not_players_first_turn, action, player_id, turn_number}}
+
   defp require_team_rockets_proton_supporter_available(
          %{trainer_type: :supporter},
          %{first_player: player_id, turn_number: 1} = state,
@@ -4050,6 +4102,34 @@ defmodule Brock.Tcg.Sim.Engine do
 
   defp require_bug_catching_set_target(metadata),
     do: {:error, {:invalid_bug_catching_set_target, metadata.id}}
+
+  defp require_colorless_pokemon_with_100_hp_or_less_targets(targets) do
+    Enum.reduce_while(targets, :ok, fn target, :ok ->
+      with {:ok, metadata} <- Metadata.fetch(target.card_id),
+           :ok <- require_colorless_pokemon_with_100_hp_or_less_target(metadata) do
+        {:cont, :ok}
+      else
+        {:error, reason} -> {:halt, {:error, reason}}
+      end
+    end)
+  end
+
+  defp require_colorless_pokemon_with_100_hp_or_less_target(%Metadata{
+         category: :pokemon,
+         hp: hp,
+         id: card_id,
+         types: types
+       })
+       when is_integer(hp) do
+    if :colorless in types and hp <= 100 do
+      :ok
+    else
+      {:error, {:invalid_fan_call_target, card_id}}
+    end
+  end
+
+  defp require_colorless_pokemon_with_100_hp_or_less_target(%Metadata{id: card_id}),
+    do: {:error, {:invalid_fan_call_target, card_id}}
 
   defp require_optional_team_rocket_supporter_target(nil), do: :ok
 

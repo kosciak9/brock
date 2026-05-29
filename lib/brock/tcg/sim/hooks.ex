@@ -197,16 +197,17 @@ defmodule Brock.Tcg.Sim.Hooks do
          state,
          %{
            source: :attack,
-           attack: attack,
+           attack: _attack,
            attacking_player_id: attacking_player_id,
            attacker_id: attacker_id,
            target_player_id: defending_player_id,
            target_id: target_id,
            target_zone: :active,
+           damage: damage,
            params: params
          }
        ) do
-    with true <- Map.get(attack, :damage, 0) > 0,
+    with true <- damage > 0,
          {:ok, defender} <- find_in_play(state, defending_player_id, target_id),
          %{card_id: "TWM-150"} <- defender.tool do
       with {:ok, attacker} <- find_in_play(state, attacking_player_id, attacker_id),

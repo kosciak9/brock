@@ -98,6 +98,19 @@ defmodule Brock.Tcg.Sim.CardRegistry do
         spray_fluid: %{effect: nil}
       }
     },
+    "SCR-118" => %{
+      abilities: %{
+        fan_call: %{
+          effect: %{
+            type: :search_colorless_pokemon_with_100_hp_or_less_to_hand_on_first_turn,
+            max_targets: 3
+          }
+        }
+      },
+      attacks: %{
+        assault_landing: %{effect: %{type: :damage_only_if_stadium_in_play}}
+      }
+    },
     "PFL-083" => %{
       attacks: %{
         run_around: %{effect: %{type: :switch_self_with_bench}},
