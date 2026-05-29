@@ -1,5 +1,10 @@
 # Wiki Log
 
+## [2026-05-29] implementation | Plain-Damage DSL Manifest Entry
+- Added: Dragapult ex `Jet Headbutt` to `Brock.Tcg.Cards.Behaviors.TWM` as the first representative plain-damage behavior manifest entry
+- Preserved: static attack cost and damage continue to come from cached TCGdex metadata; the DSL entry adds no hand-written static fields
+- Verified: `mix test test/brock/tcg/cards/metadata_test.exs test/brock/tcg/sim/card_registry_test.exs`, `mix brock.cards.coverage`, `mix test test/brock/tcg/sim`, and `mix precommit` pass
+
 ## [2026-05-29] implementation | Behavior DSL Foundation
 - Added: `Brock.Tcg.Cards.DSL` compile-time card behavior overlay DSL with manifest helpers
 - Guarded: DSL card, attack, and Ability references validate against committed TCGdex metadata and require executable `:effect` overlays when raw printed text exists
